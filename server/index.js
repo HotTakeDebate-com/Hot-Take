@@ -131,9 +131,9 @@ io.use(async (socket, next) => {
   }
 });
 
-/** @type {Map<string, { pro: string[], con: string[] }>} */
+/** @type {Map<string, { agree: string[], disagree: string[] }>} */
 const queues = new Map();
-/** @type {Map<string, { pro: string[], con: string[] }>} */
+/** @type {Map<string, { agree: string[], disagree: string[] }>} */
 const customQueues = new Map();
 /** @type {Map<string, { roomCode: string, statement: string, joinMode: 'open' | 'code', createdAtMs: number, createdBy: string, activeRoomId: string | null }>} */
 const customGames = new Map();
@@ -180,14 +180,14 @@ function logMetricsOnShutdown(signal) {
 
 function getQueue(topicId) {
   if (!queues.has(topicId)) {
-    queues.set(topicId, { pro: [], con: [] });
+    queues.set(topicId, { agree: [], disagree: [] });
   }
   return queues.get(topicId);
 }
 
 function getCustomQueue(roomCode) {
   if (!customQueues.has(roomCode)) {
-    customQueues.set(roomCode, { pro: [], con: [] });
+    customQueues.set(roomCode, { agree: [], disagree: [] });
   }
   return customQueues.get(roomCode);
 }
@@ -195,7 +195,7 @@ function getCustomQueue(roomCode) {
 function removeFromQueue(socketId, topicId, side) {
   const q = queues.get(topicId);
   if (!q) return;
-  const arr = side === 'pro' ? q.pro : q.con;
+  const arr = side === 'agree' ? q.agree : q.disagree;
   const i = arr.indexOf(socketId);
   if (i !== -1) arr.splice(i, 1);
 }
@@ -224,10 +224,10 @@ if (existsSync(dist)) {
 function removeFromCustomQueue(socketId, side, roomCode) {
   const q = customQueues.get(roomCode);
   if (!q) return;
-  const arr = side === 'pro' ? q.pro : q.con;
+  const arr = side === 'agree' ? q.agree : q.disagree;
   const i = arr.indexOf(socketId);
   if (i !== -1) arr.splice(i, 1);
-  if (q.pro.length === 0 && q.con.length === 0) {
+  if (q.agree.length === 0 && q.disagree.length === 0) {
     customQueues.delete(roomCode);
   }
 }
@@ -236,12 +236,12 @@ function queueHostForCustomLobby(game) {
   const hostSocket = io.sockets.sockets.get(game.createdBy);
   if (!hostSocket) return false;
   hostSocket.data.matchType = 'custom';
-  hostSocket.data.side = 'pro';
+  hostSocket.data.side = 'agree';
   hostSocket.data.customRoomCode = game.roomCode;
   hostSocket.data.topicId = null;
   hostSocket.data.roomId = null;
   const q = getCustomQueue(game.roomCode);
-  if (!q.pro.includes(hostSocket.id)) q.pro.push(hostSocket.id);
+  if (!q.agree.includes(hostSocket.id)) q.agree.push(hostSocket.id);
   return true;
 }
 
@@ -388,18 +388,18 @@ io.on('connection', (socket) => {
 
   socket.emit('custom-games-updated', listCustomGames());
 
-  const getRoomProConUids = (roomId) => {
+  const getRoomAgreeDisagreeUids = (roomId) => {
     const room = io.sockets.adapter.rooms.get(roomId);
-    if (!room) return { proUid: null, conUid: null };
-    let proUid = null;
-    let conUid = null;
+    if (!room) return { agreeUid: null, disagreeUid: null };
+    let agreeUid = null;
+    let disagreeUid = null;
     for (const sid of room) {
       const s = io.sockets.sockets.get(sid);
       if (!s?.data) continue;
-      if (s.data.side === 'pro') proUid = s.data.uid ?? null;
-      if (s.data.side === 'con') conUid = s.data.uid ?? null;
+      if (s.data.side === 'agree') agreeUid = s.data.uid ?? null;
+      if (s.data.side === 'disagree') disagreeUid = s.data.uid ?? null;
     }
-    return { proUid, conUid };
+    return { agreeUid, disagreeUid };
   };
 
   socket.on('join-queue', async ({ topicId, side }) => {
@@ -425,7 +425,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (!topicId || !ALLOWED_TOPIC_IDS.has(topicId) || (side !== 'pro' && side !== 'con')) {
+    if (!topicId || !ALLOWED_TOPIC_IDS.has(topicId) || (side !== 'agree' && side !== 'disagree')) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', { message: 'Invalid topic or side.' });
       return;
@@ -438,7 +438,7 @@ io.on('connection', (socket) => {
     socket.data.side = side;
 
     const q = getQueue(topicId);
-    const opposite = side === 'pro' ? 'con' : 'pro';
+    const opposite = side === 'agree' ? 'disagree' : 'agree';
     const oppositeList = q[opposite];
 
     while (oppositeList.length > 0) {
@@ -455,14 +455,14 @@ io.on('connection', (socket) => {
       peerSocket.data.roomId = roomId;
       peerSocket.join(roomId);
 
-      const proUidQuick =
-        socket.data.side === 'pro' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
-      const conUidQuick =
-        socket.data.side === 'con' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
+      const agreeUidQuick =
+        socket.data.side === 'agree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
+      const disagreeUidQuick =
+        socket.data.side === 'disagree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
       await persistMatchSession(firebaseAdminReady, {
         roomId,
-        proUid: proUidQuick,
-        conUid: conUidQuick,
+        agreeUid: agreeUidQuick,
+        disagreeUid: disagreeUidQuick,
         topicId,
         matchMode: 'quick',
         roomCode: null,
@@ -488,7 +488,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const myList = side === 'pro' ? q.pro : q.con;
+    const myList = side === 'agree' ? q.agree : q.disagree;
     if (!myList.includes(socket.id)) myList.push(socket.id);
     socket.emit('queued', { topicId, side });
   });
@@ -541,11 +541,11 @@ io.on('connection', (socket) => {
     });
 
     socket.data.matchType = 'custom';
-    socket.data.side = 'pro';
+    socket.data.side = 'agree';
     socket.data.customRoomCode = roomCode;
 
     const q = getCustomQueue(roomCode);
-    if (!q.pro.includes(socket.id)) q.pro.push(socket.id);
+    if (!q.agree.includes(socket.id)) q.agree.push(socket.id);
 
     socket.emit('custom-game-created', {
       roomCode,
@@ -553,7 +553,7 @@ io.on('connection', (socket) => {
       joinMode: normalizedJoinMode,
     });
     socket.emit('queued', {
-      side: 'pro',
+      side: 'agree',
       roomCode,
       matchMode: 'custom',
     });
@@ -584,7 +584,7 @@ io.on('connection', (socket) => {
     }
 
     const normalizedRoomCode = String(roomCode || '').trim().toUpperCase();
-    if ((side !== 'pro' && side !== 'con') || !roomCodeOk(normalizedRoomCode)) {
+    if ((side !== 'agree' && side !== 'disagree') || !roomCodeOk(normalizedRoomCode)) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
         message: 'Invalid side or room code. Use 3-24 letters/numbers.',
@@ -612,7 +612,7 @@ io.on('connection', (socket) => {
     socket.data.customRoomCode = normalizedRoomCode;
 
     const q = getCustomQueue(normalizedRoomCode);
-    const opposite = side === 'pro' ? 'con' : 'pro';
+    const opposite = side === 'agree' ? 'disagree' : 'agree';
     const oppositeList = q[opposite];
 
     while (oppositeList.length > 0) {
@@ -629,14 +629,14 @@ io.on('connection', (socket) => {
       peerSocket.data.roomId = roomId;
       peerSocket.join(roomId);
 
-      const proUidCustom =
-        socket.data.side === 'pro' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
-      const conUidCustom =
-        socket.data.side === 'con' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
+      const agreeUidCustom =
+        socket.data.side === 'agree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
+      const disagreeUidCustom =
+        socket.data.side === 'disagree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
       await persistMatchSession(firebaseAdminReady, {
         roomId,
-        proUid: proUidCustom,
-        conUid: conUidCustom,
+        agreeUid: agreeUidCustom,
+        disagreeUid: disagreeUidCustom,
         topicId: 'custom',
         matchMode: 'custom',
         roomCode: normalizedRoomCode,
@@ -670,7 +670,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const myList = side === 'pro' ? q.pro : q.con;
+    const myList = side === 'agree' ? q.agree : q.disagree;
     if (!myList.includes(socket.id)) myList.push(socket.id);
     socket.emit('queued', {
       side,
@@ -799,15 +799,15 @@ io.on('connection', (socket) => {
       });
       return;
     }
-    const { proUid, conUid } = getRoomProConUids(roomId);
+    const { agreeUid, disagreeUid } = getRoomAgreeDisagreeUids(roomId);
     await persistChatMessage(firebaseAdminReady, {
       roomId,
       authorUid: socket.data.uid ?? null,
       authorSocketId: socket.id,
       text: trimmed,
       sentAtMs: now,
-      proUid,
-      conUid,
+      agreeUid,
+      disagreeUid,
     });
     io.to(roomId).emit('debate-chat', {
       text: trimmed,

@@ -466,6 +466,30 @@
   font-weight: 600;
 }
 
+.topic-picker-lead {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: -0.5rem 0 1.5rem;
+}
+
+.topic-category {
+  margin-bottom: 1.75rem;
+}
+
+.topic-category:last-of-type {
+  margin-bottom: 0.5rem;
+}
+
+.topic-category-title {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
 .topic-grid {
   display: grid;
   gap: 0.75rem;
@@ -530,20 +554,20 @@
   transition: border-color 0.15s, background 0.15s;
 }
 
-.side-btn.pro {
+.side-btn.agree {
   border-color: rgba(125, 211, 252, 0.35);
 }
 
-.side-btn.pro:hover {
+.side-btn.agree:hover {
   background: rgba(125, 211, 252, 0.1);
   border-color: var(--pro);
 }
 
-.side-btn.con {
+.side-btn.disagree {
   border-color: rgba(252, 165, 165, 0.35);
 }
 
-.side-btn.con:hover {
+.side-btn.disagree:hover {
   background: rgba(252, 165, 165, 0.1);
   border-color: var(--con);
 }

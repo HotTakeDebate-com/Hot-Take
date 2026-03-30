@@ -1,34 +1,21 @@
-export const TOPICS = [
+/**
+ * Quick match: topics grouped by category. Each topic has a stable `id` for queues / Firestore.
+ * Server allowlist: ALLOWED_TOPIC_IDS (derived from all topics in categories).
+ */
+export const TOPIC_CATEGORIES = [
   {
-    id: 'climate',
-    label: 'Climate policy',
-    blurb: 'Carbon pricing, energy transition, international cooperation',
-  },
-  {
-    id: 'ai',
-    label: 'AI & society',
-    blurb: 'Regulation, work, safety, and access',
-  },
-  {
-    id: 'education',
-    label: 'Education',
-    blurb: 'Funding, standards, school choice, higher ed',
-  },
-  {
-    id: 'healthcare',
-    label: 'Healthcare',
-    blurb: 'Coverage, costs, public vs private models',
-  },
-  {
-    id: 'free-speech',
-    label: 'Free speech online',
-    blurb: 'Moderation, platforms, and the law',
-  },
-  {
-    id: 'housing',
-    label: 'Housing & cities',
-    blurb: 'Zoning, affordability, development',
+    id: 'society-government',
+    label: 'Society / Government',
+    topics: [
+      {
+        id: 'free-speech-includes-hate-speech',
+        label: 'Free speech should include all forms of hate speech.',
+        blurb: 'Argue for or against broad legal protection of hateful expression.',
+      },
+    ],
   },
 ];
+
+export const TOPICS = TOPIC_CATEGORIES.flatMap((c) => c.topics);
 
 export const ALLOWED_TOPIC_IDS = new Set(TOPICS.map((t) => t.id));

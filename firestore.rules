@@ -26,7 +26,7 @@ service cloud.firestore {
         allow create: if isOwnUserEmailDoc(userKey)
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.topicId is string
-          && request.resource.data.yourSide in ['pro', 'con']
+          && request.resource.data.yourSide in ['agree', 'disagree']
           && request.resource.data.reason is string
           && request.resource.data.startedAtMs is int
           && request.resource.data.endedAtMs is int
@@ -68,7 +68,7 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.reporterUid == request.auth.uid
         && request.resource.data.topicId is string
-        && request.resource.data.yourSide in ['pro', 'con']
+        && request.resource.data.yourSide in ['agree', 'disagree']
         && request.resource.data.category in ['harassment', 'spam', 'other']
         && request.resource.data.details is string
         && request.resource.data.details.size() > 0

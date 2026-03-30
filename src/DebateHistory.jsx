@@ -5,6 +5,12 @@ function topicTitle(id) {
   return TOPICS.find((t) => t.id === id)?.label ?? id;
 }
 
+function sideLabel(side) {
+  if (side === 'agree' || side === 'pro') return 'Agree';
+  if (side === 'disagree' || side === 'con') return 'Disagree';
+  return side ?? '—';
+}
+
 function formatStatementPreview(s) {
   if (!s || typeof s !== 'string') return null;
   const t = s.trim();
@@ -61,7 +67,7 @@ export default function DebateHistory({ rows, loading, error, onBack, onRefresh 
               <div className="history-item-main">
                 <strong>{topicTitle(row.topicId)}</strong>
                 <span className="history-side">
-                  You: {row.yourSide === 'pro' ? 'Pro' : 'Con'}
+                  You: {sideLabel(row.yourSide)}
                 </span>
               </div>
               <div className="history-item-meta">

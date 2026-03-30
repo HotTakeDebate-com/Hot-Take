@@ -166,7 +166,7 @@ export async function submitReport({
     reporterUid,
     topicId: topicId ?? '',
     roomId: roomId ?? null,
-    yourSide: yourSide === 'con' ? 'con' : 'pro',
+    yourSide: yourSide === 'disagree' ? 'disagree' : 'agree',
     category,
     details: text,
     createdAt: serverTimestamp(),

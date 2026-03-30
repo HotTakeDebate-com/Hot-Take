@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { TOPICS } from './topics.js';
+import { TOPICS, TOPIC_CATEGORIES } from './topics.js';
 import DebateHistory from './DebateHistory.jsx';
 import { fetchRecentDebates, logDebateSessionEnd, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
@@ -371,13 +371,13 @@ export default function App() {
     socket.on('custom-game-created', ({ roomCode, statement }) => {
       if (roomCode) setCustomRoomCode(roomCode);
       if (statement) setCustomStatement(statement);
-      setSide('pro');
+      setSide('agree');
       setCustomHostWaiting(true);
       setError(null);
       setDebateInfo({
         roomId: null,
         topicId: 'custom',
-        yourSide: 'pro',
+        yourSide: 'agree',
         isOfferer: false,
         matchMode: 'custom',
         roomCode: roomCode ?? null,
@@ -394,7 +394,7 @@ export default function App() {
             }
             debateSessionRef.current = {
               topicId: 'custom',
-              yourSide: 'pro',
+              yourSide: 'agree',
               roomId: roomCode ?? null,
               startedAtMs: Date.now(),
               peerUid: null,
@@ -418,7 +418,7 @@ export default function App() {
       setDebateInfo((prev) => ({
         roomId: null,
         topicId: 'custom',
-        yourSide: 'pro',
+        yourSide: 'agree',
         isOfferer: false,
         matchMode: 'custom',
         roomCode: roomCode ?? prev?.roomCode ?? null,
@@ -492,7 +492,7 @@ export default function App() {
     });
 
     socket.on('peer-left', () => {
-      if (matchModeRef.current === 'custom' && sideRef.current === 'pro') {
+      if (matchModeRef.current === 'custom' && sideRef.current === 'agree') {
         setDebateChatMessages([]);
         setDebateChatDraft('');
         setCustomHostWaiting(true);
@@ -614,10 +614,10 @@ export default function App() {
     }
     setCustomRoomCode(roomCode);
     setError(null);
-    setSide('con');
+    setSide('disagree');
     if (!sock.connected) sock.connect();
     setWaiting(true);
-    sock.emit('join-custom-room', { side: 'con', roomCode });
+    sock.emit('join-custom-room', { side: 'disagree', roomCode });
   };
 
   const joinByCode = () => {
@@ -721,8 +721,8 @@ export default function App() {
               <div className="app-header-main">
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
-                  Pick a topic, take a side, and get matched with someone who disagrees for a
-                  real-time video conversation.
+                  Pick a statement, choose agree or disagree, and get matched with someone on the other
+                  side for a real-time video conversation.
                 </p>
               </div>
               <div className="header-actions">
@@ -787,8 +787,8 @@ export default function App() {
       {step === 'welcome' && (
         <div className="panel welcome-actions">
           <p style={{ marginTop: 0, color: 'var(--muted)' }}>
-            You’re signed in. Choose a topic, then set up your camera and microphone in the panel
-            above before you start.
+            You’re signed in. Start quick match or a custom room, then set up your camera and
+            microphone in the panel above before you begin.
           </p>
           <div className="welcome-actions-row">
             <button type="button" className="btn btn-primary" onClick={startQuickMatch}>
@@ -802,8 +802,8 @@ export default function App() {
             </button>
           </div>
           <p className="mode-help-text">
-            Quick match pairs you with anyone on the opposite side. Custom room lets you share a
-            room code and debate someone specific.
+            Quick match pairs you with someone who picked the opposite answer (agree vs disagree).
+            Custom room lets you publish a statement, share a code, and debate a challenger.
           </p>
         </div>
       )}
@@ -983,7 +983,7 @@ export default function App() {
               </div>
             </div>
           )}
-          {!!customRoomCode && side === 'pro' && (
+          {!!customRoomCode && side === 'agree' && (
             <p className="mode-help-text">
               Current room code: <strong>{customRoomCode}</strong>{' '}
               <button type="button" className="auth-legal-link copy-code-btn" onClick={copyRoomCode}>
@@ -995,7 +995,7 @@ export default function App() {
             <div className="waiting" style={{ marginTop: '1.5rem' }}>
               <div className="spinner" aria-hidden />
               <p>
-                {side === 'pro'
+                {side === 'agree'
                   ? 'Your custom game is live. Waiting for someone who disagrees to join…'
                   : 'Joining debate…'}
               </p>
@@ -1025,19 +1025,29 @@ export default function App() {
       {step === 'topic' && (
         <div className="panel">
           <h2>Select a topic</h2>
-          <div className="topic-grid">
-            {TOPICS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className="topic-card"
-                onClick={() => pickTopic(t.id)}
-              >
-                <strong>{t.label}</strong>
-                <span>{t.blurb}</span>
-              </button>
-            ))}
-          </div>
+          <p className="topic-picker-lead">
+            Quick match is grouped by category. Choose a statement—then pick Agree or Disagree.
+          </p>
+          {TOPIC_CATEGORIES.map((cat) => (
+            <section key={cat.id} className="topic-category" aria-labelledby={`topic-cat-${cat.id}`}>
+              <h3 id={`topic-cat-${cat.id}`} className="topic-category-title">
+                {cat.label}
+              </h3>
+              <div className="topic-grid">
+                {cat.topics.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="topic-card"
+                    onClick={() => pickTopic(t.id)}
+                  >
+                    <strong>{t.label}</strong>
+                    {t.blurb ? <span>{t.blurb}</span> : null}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
           <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
             Back
           </button>
@@ -1048,14 +1058,14 @@ export default function App() {
         <div className="panel">
           <h2>{topicLabel(topicId)}</h2>
           <p style={{ color: 'var(--muted)', marginTop: '-0.5rem' }}>
-            Which side are you arguing for in this match?
+            Do you agree or disagree with the statement?
           </p>
           <div className="side-row">
-            <button type="button" className="side-btn pro" onClick={() => joinQueue('pro')}>
-              Pro / For
+            <button type="button" className="side-btn agree" onClick={() => joinQueue('agree')}>
+              Agree
             </button>
-            <button type="button" className="side-btn con" onClick={() => joinQueue('con')}>
-              Con / Against
+            <button type="button" className="side-btn disagree" onClick={() => joinQueue('disagree')}>
+              Disagree
             </button>
           </div>
           {waiting && (
@@ -1085,14 +1095,14 @@ export default function App() {
                   Statement: <strong>{debateInfo.statement ?? 'Custom debate'}</strong>
                   {' · '}
                   You:{' '}
-                  <strong>{debateInfo.yourSide === 'pro' ? 'Creator' : 'Disagreeing side'}</strong>
+                  <strong>{debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger'}</strong>
                 </>
               ) : (
                 <>
                   Topic: <strong>{topicLabel(debateInfo.topicId)}</strong>
                   {' · '}
                   You:{' '}
-                  <strong>{debateInfo.yourSide === 'pro' ? 'Pro' : 'Con'}</strong>
+                  <strong>{debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree'}</strong>
                 </>
               )}
               {debateInfo.matchMode === 'custom' && debateInfo.roomCode ? (
@@ -1173,7 +1183,7 @@ export default function App() {
               {camOn ? 'Camera off' : 'Camera on'}
             </button>
             {debateInfo.matchMode === 'custom' &&
-              debateInfo.yourSide === 'pro' &&
+              debateInfo.yourSide === 'agree' &&
               !customHostWaiting &&
               !!debateInfo.roomId && (
                 <button type="button" className="btn" onClick={kickOpponent}>

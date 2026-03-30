@@ -4,14 +4,16 @@ import admin from 'firebase-admin';
  * Match + chat persistence (Firebase Admin only). All paths under:
  *   users/{email}/debates/{roomId}           — session row (merge)
  *   users/{email}/debates/{roomId}/chat_messages — one doc per line (both users)
+ *
+ * Session rows use agreeUid / disagreeUid (arguing for vs against the statement).
  */
 
 export async function persistMatchSession(adminReady, payload) {
   if (!adminReady || !payload?.roomId) return;
   const {
     roomId,
-    proUid,
-    conUid,
+    agreeUid,
+    disagreeUid,
     topicId,
     matchMode,
     roomCode,
@@ -19,16 +21,16 @@ export async function persistMatchSession(adminReady, payload) {
   } = payload;
 
   const db = admin.firestore();
-  const [proEmail, conEmail] = await Promise.all([
-    authUidToUserDocEmail(proUid),
-    authUidToUserDocEmail(conUid),
+  const [agreeEmail, disagreeEmail] = await Promise.all([
+    authUidToUserDocEmail(agreeUid),
+    authUidToUserDocEmail(disagreeUid),
   ]);
 
   const row = {
     roomId,
     sessionKind: 'match',
-    proUid: proUid ?? null,
-    conUid: conUid ?? null,
+    agreeUid: agreeUid ?? null,
+    disagreeUid: disagreeUid ?? null,
     topicId: topicId ?? null,
     matchMode: matchMode === 'custom' ? 'custom' : 'quick',
     roomCode: roomCode ?? null,
@@ -38,21 +40,21 @@ export async function persistMatchSession(adminReady, payload) {
   };
 
   const tasks = [];
-  if (proEmail) {
+  if (agreeEmail) {
     tasks.push(
       db
         .collection('users')
-        .doc(proEmail)
+        .doc(agreeEmail)
         .collection('debates')
         .doc(roomId)
         .set(row, { merge: true })
     );
   }
-  if (conEmail && conEmail !== proEmail) {
+  if (disagreeEmail && disagreeEmail !== agreeEmail) {
     tasks.push(
       db
         .collection('users')
-        .doc(conEmail)
+        .doc(disagreeEmail)
         .collection('debates')
         .doc(roomId)
         .set(row, { merge: true })
@@ -78,16 +80,16 @@ async function authUidToUserDocEmail(uid) {
 
 export async function persistChatMessage(adminReady, payload) {
   if (!adminReady || !payload?.roomId || !payload.text) return;
-  const { roomId, authorUid, authorSocketId, text, sentAtMs, proUid, conUid } = payload;
+  const { roomId, authorUid, authorSocketId, text, sentAtMs, agreeUid, disagreeUid } = payload;
 
-  const proEmail = await authUidToUserDocEmail(proUid);
-  const conEmail = await authUidToUserDocEmail(conUid);
-  if (!proEmail || !conEmail) {
+  const agreeEmail = await authUidToUserDocEmail(agreeUid);
+  const disagreeEmail = await authUidToUserDocEmail(disagreeUid);
+  if (!agreeEmail || !disagreeEmail) {
     console.warn('[persist] chat_messages missing participant emails', roomId, {
-      proUid,
-      conUid,
-      proEmail,
-      conEmail,
+      agreeUid,
+      disagreeUid,
+      agreeEmail,
+      disagreeEmail,
     });
     return;
   }
@@ -101,7 +103,7 @@ export async function persistChatMessage(adminReady, payload) {
   };
 
   const db = admin.firestore();
-  const paths = proEmail === conEmail ? [proEmail] : [proEmail, conEmail];
+  const paths = agreeEmail === disagreeEmail ? [agreeEmail] : [agreeEmail, disagreeEmail];
   try {
     await Promise.all(
       paths.map((email) =>
