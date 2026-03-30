@@ -74,6 +74,10 @@ export const TOPIC_CATEGORIES = [
         id: 'men-harder-dating',
         label: 'Men have it harder in dating.',
       },
+      {
+        id: 'woman-body-count-determines-value',
+        label: "A woman's body count determines her value.",
+      },
     ],
   },
 ];
