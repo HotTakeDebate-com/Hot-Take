@@ -15,6 +15,10 @@ export const TOPIC_CATEGORIES = [
         id: 'censorship-more-dangerous-than-misinformation',
         label: 'Censorship is more dangerous than misinformation.',
       },
+      {
+        id: 'democratic-capitalism-failing-needs-replacement',
+        label: 'Democratic Capitalism is failing and needs to be replaced.',
+      },
     ],
   },
 ];
