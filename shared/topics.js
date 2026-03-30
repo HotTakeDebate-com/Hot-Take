@@ -22,8 +22,8 @@ export const TOPIC_CATEGORIES = [
     ],
   },
   {
-    id: 'health-wellness',
-    label: 'Health and Wellness',
+    id: 'diet-nutrition',
+    label: 'Diet and Nutrition',
     topics: [
       {
         id: 'feeding-children-junk-food-abusive',
@@ -37,6 +37,42 @@ export const TOPIC_CATEGORIES = [
         id: 'eating-meat-unnecessary-cruelty-pleasure',
         label:
           "Eating meat is unnecessary cruelty — you're choosing to kill animals for pleasure.",
+      },
+      {
+        id: 'most-supplements-scam',
+        label: 'Most supplements are a scam.',
+      },
+    ],
+  },
+  {
+    id: 'money-career',
+    label: 'Money and Career',
+    topics: [
+      {
+        id: 'college-waste-of-money',
+        label: 'College is a waste of money.',
+      },
+      {
+        id: 'billionaires-should-not-exist',
+        label: 'Billionaires should not exist.',
+      },
+      {
+        id: 'capitalism-more-harm-than-good',
+        label: 'Capitalism creates more harm than good.',
+      },
+    ],
+  },
+  {
+    id: 'love-relationships',
+    label: 'Love and Relationships',
+    topics: [
+      {
+        id: 'love-mostly-transactional',
+        label: 'Love is mostly transactional.',
+      },
+      {
+        id: 'men-harder-dating',
+        label: 'Men have it harder in dating.',
       },
     ],
   },
