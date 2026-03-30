@@ -11,6 +11,10 @@ export const TOPIC_CATEGORIES = [
         id: 'free-speech-includes-hate-speech',
         label: 'Free speech should include all forms of hate speech.',
       },
+      {
+        id: 'censorship-more-dangerous-than-misinformation',
+        label: 'Censorship is more dangerous than misinformation.',
+      },
     ],
   },
 ];
