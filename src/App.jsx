@@ -89,6 +89,8 @@ export default function App() {
   const [debateChatDraft, setDebateChatDraft] = useState('');
   /** Full-screen overlay from header menu: legal doc id, mission, or support. */
   const [headerOverlay, setHeaderOverlay] = useState(null);
+  /** Local-only avatar preview (optional). Stored in localStorage for convenience. */
+  const [headerAvatarDataUrl, setHeaderAvatarDataUrl] = useState(null);
 
   const rtcConfigRef = useRef(FALLBACK_RTC);
   const socketRef = useRef(null);
@@ -102,6 +104,7 @@ export default function App() {
   const debateSessionRef = useRef(null);
   const matchModeRef = useRef(null);
   const sideRef = useRef(null);
+  const headerAvatarInputRef = useRef(null);
 
   useEffect(() => {
     matchModeRef.current = matchMode;
@@ -172,6 +175,44 @@ export default function App() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('chitchat:avatarDataUrl');
+      if (stored) setHeaderAvatarDataUrl(stored);
+    } catch {
+      /* localStorage may be unavailable */
+    }
+  }, []);
+
+  const onPickHeaderAvatar = () => {
+    headerAvatarInputRef.current?.click();
+  };
+
+  const onHeaderAvatarSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type?.startsWith('image/')) return;
+
+    // Keep it lightweight: just store a preview locally for now.
+    if (file.size > 2_000_000) {
+      setError('Avatar image is too large (max ~2MB). Please choose a smaller file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : null;
+      if (!dataUrl) return;
+      setHeaderAvatarDataUrl(dataUrl);
+      try {
+        window.localStorage.setItem('chitchat:avatarDataUrl', dataUrl);
+      } catch {
+        /* ignore localStorage quota errors */
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -729,6 +770,52 @@ export default function App() {
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
+              <div className="header-left-actions">
+                <button
+                  type="button"
+                  className="header-avatar-icon"
+                  aria-label="Choose a profile picture"
+                  onClick={onPickHeaderAvatar}
+                >
+                  {headerAvatarDataUrl ? (
+                    <img className="header-avatar-icon__img" src={headerAvatarDataUrl} alt="" />
+                  ) : (
+                    <svg
+                      className="header-avatar-icon__svg"
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M4 7.5C4 6.11929 5.11929 5 6.5 5H17.5C18.8807 5 20 6.11929 20 7.5V16.5C20 17.8807 18.8807 19 17.5 19H6.5C5.11929 19 4 17.8807 4 16.5V7.5Z"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
+                      <path
+                        d="M8 10.2C9.10457 10.2 10 9.30457 10 8.2C10 7.09543 9.10457 6.2 8 6.2C6.89543 6.2 6 7.09543 6 8.2C6 9.30457 6.89543 10.2 8 10.2Z"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
+                      <path
+                        d="M4.7 17.4L10.4 12.2C11.0 11.6 11.9 11.6 12.5 12.2L14.7 14.2L17 12.1C17.6 11.5 18.6 11.5 19.2 12.1L20 12.9"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </button>
+                <input
+                  ref={headerAvatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="header-avatar-input"
+                  onChange={onHeaderAvatarSelected}
+                />
+              </div>
               <div className="app-header-main">
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
