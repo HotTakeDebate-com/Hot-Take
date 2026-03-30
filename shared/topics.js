@@ -29,6 +29,15 @@ export const TOPIC_CATEGORIES = [
         id: 'feeding-children-junk-food-abusive',
         label: 'Feeding children junk food is abusive.',
       },
+      {
+        id: 'vegetables-not-optimal-human-diet',
+        label: 'Vegetables are not optimal in the human diet.',
+      },
+      {
+        id: 'eating-meat-unnecessary-cruelty-pleasure',
+        label:
+          "Eating meat is unnecessary cruelty — you're choosing to kill animals for pleasure.",
+      },
     ],
   },
 ];
