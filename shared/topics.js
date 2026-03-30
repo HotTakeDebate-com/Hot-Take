@@ -21,6 +21,16 @@ export const TOPIC_CATEGORIES = [
       },
     ],
   },
+  {
+    id: 'health-wellness',
+    label: 'Health and Wellness',
+    topics: [
+      {
+        id: 'feeding-children-junk-food-abusive',
+        label: 'Feeding children junk food is abusive.',
+      },
+    ],
+  },
 ];
 
 export const TOPICS = TOPIC_CATEGORIES.flatMap((c) => c.topics);

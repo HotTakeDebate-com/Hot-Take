@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { TOPICS, TOPIC_CATEGORIES } from './topics.js';
 import DebateHistory from './DebateHistory.jsx';
@@ -78,6 +78,10 @@ export default function App() {
   const [customHostWaiting, setCustomHostWaiting] = useState(false);
   /** Quick match: category picked first; then topics in that category. */
   const [quickCategoryId, setQuickCategoryId] = useState(null);
+  const quickCategoryTopics = useMemo(() => {
+    if (!quickCategoryId) return [];
+    return TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.topics ?? [];
+  }, [quickCategoryId]);
   /** Socket.IO id for labeling own chat messages. */
   const [socketId, setSocketId] = useState(null);
   /** In-debate text chat (cleared when match ends or opponent leaves). */
@@ -1061,18 +1065,24 @@ export default function App() {
                 Category:{' '}
                 <strong>{TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.label ?? ''}</strong>
               </p>
-              <div className="topic-grid">
-                {(TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.topics ?? []).map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className="topic-card"
-                    onClick={() => pickTopic(t.id)}
-                  >
-                    <strong className="topic-card-statement">{t.label}</strong>
-                  </button>
-                ))}
-              </div>
+              {quickCategoryTopics.length === 0 ? (
+                <p className="topic-picker-lead" style={{ marginBottom: '1rem' }}>
+                  No statements in this category yet. Check back soon or pick another category.
+                </p>
+              ) : (
+                <div className="topic-grid">
+                  {quickCategoryTopics.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="topic-card"
+                      onClick={() => pickTopic(t.id)}
+                    >
+                      <strong className="topic-card-statement">{t.label}</strong>
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 type="button"
                 className="back-btn"
