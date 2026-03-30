@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
@@ -44,10 +44,26 @@ export default function AuthScreen() {
   const [legalDoc, setLegalDoc] = useState(null);
   const [agreeAge18, setAgreeAge18] = useState(false);
   const [agreePolicies, setAgreePolicies] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
+  const avatarInputRef = useRef(null);
 
   const resetLegal = () => {
     setAgreeAge18(false);
     setAgreePolicies(false);
+  };
+
+  const onChooseAvatar = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const onAvatarSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setAvatarPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
   };
 
   const onSubmit = async (e) => {
@@ -124,6 +140,54 @@ export default function AuthScreen() {
     <div className="auth-screen">
       <div className="auth-screen-inner">
         <div className="auth-screen-card">
+          {mode === 'signup' && (
+            <>
+              <button
+                type="button"
+                className="auth-avatar-icon"
+                aria-label="Choose an avatar picture"
+                onClick={onChooseAvatar}
+              >
+                {avatarPreviewUrl ? (
+                  <img className="auth-avatar-icon__img" src={avatarPreviewUrl} alt="" />
+                ) : (
+                  <svg
+                    className="auth-avatar-icon__svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M4 7.5C4 6.11929 5.11929 5 6.5 5H17.5C18.8807 5 20 6.11929 20 7.5V16.5C20 17.8807 18.8807 19 17.5 19H6.5C5.11929 19 4 17.8807 4 16.5V7.5Z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                    <path
+                      d="M8 10.2C9.10457 10.2 10 9.30457 10 8.2C10 7.09543 9.10457 6.2 8 6.2C6.89543 6.2 6 7.09543 6 8.2C6 9.30457 6.89543 10.2 8 10.2Z"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                    <path
+                      d="M4.7 17.4L10.4 12.2C11.0 11.6 11.9 11.6 12.5 12.2L14.7 14.2L17 12.1C17.6 11.5 18.6 11.5 19.2 12.1L20 12.9"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="auth-avatar-input"
+                onChange={onAvatarSelected}
+              />
+            </>
+          )}
           <div className="auth-screen-logo-wrap">
             <BrandLogo />
           </div>
