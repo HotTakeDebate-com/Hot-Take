@@ -1046,10 +1046,7 @@ export default function App() {
                     className="topic-card topic-category-card"
                     onClick={() => setQuickCategoryId(cat.id)}
                   >
-                    <strong>{cat.label}</strong>
-                    <span>
-                      {cat.topics.length} statement{cat.topics.length === 1 ? '' : 's'}
-                    </span>
+                    <strong className="topic-card-statement">{cat.label}</strong>
                   </button>
                 ))}
               </div>
@@ -1072,8 +1069,7 @@ export default function App() {
                     className="topic-card"
                     onClick={() => pickTopic(t.id)}
                   >
-                    <strong>{t.label}</strong>
-                    {t.blurb ? <span>{t.blurb}</span> : null}
+                    <strong className="topic-card-statement">{t.label}</strong>
                   </button>
                 ))}
               </div>

@@ -494,11 +494,6 @@
   margin-bottom: 0.25rem;
 }
 
-.topic-category-card span {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
 .topic-grid {
   display: grid;
   gap: 0.75rem;
@@ -536,6 +531,11 @@
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.35rem;
+}
+
+.topic-card strong.topic-card-statement {
+  margin-bottom: 0;
+  line-height: 1.35;
 }
 
 .topic-card span {

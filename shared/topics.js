@@ -10,7 +10,6 @@ export const TOPIC_CATEGORIES = [
       {
         id: 'free-speech-includes-hate-speech',
         label: 'Free speech should include all forms of hate speech.',
-        blurb: 'Argue for or against broad legal protection of hateful expression.',
       },
     ],
   },
