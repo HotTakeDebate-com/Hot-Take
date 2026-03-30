@@ -76,6 +76,8 @@ export default function App() {
   const [customJoinMode, setCustomJoinMode] = useState('open');
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [customHostWaiting, setCustomHostWaiting] = useState(false);
+  /** Quick match: category picked first; then topics in that category. */
+  const [quickCategoryId, setQuickCategoryId] = useState(null);
   /** Socket.IO id for labeling own chat messages. */
   const [socketId, setSocketId] = useState(null);
   /** In-debate text chat (cleared when match ends or opponent leaves). */
@@ -563,6 +565,10 @@ export default function App() {
     socketRef.current?.emit('leave-queue');
     setWaiting(false);
     setSide(null);
+    if (matchMode === 'quick' && topicId) {
+      const cat = TOPIC_CATEGORIES.find((c) => c.topics.some((t) => t.id === topicId));
+      setQuickCategoryId(cat?.id ?? null);
+    }
     setStep(matchMode === 'custom' ? 'custom' : 'topic');
   };
 
@@ -571,6 +577,7 @@ export default function App() {
     setMatchMode('quick');
     setTopicId(null);
     setSide(null);
+    setQuickCategoryId(null);
     setStep('topic');
   };
 
@@ -1024,17 +1031,41 @@ export default function App() {
 
       {step === 'topic' && (
         <div className="panel">
-          <h2>Select a topic</h2>
-          <p className="topic-picker-lead">
-            Quick match is grouped by category. Choose a statement—then pick Agree or Disagree.
-          </p>
-          {TOPIC_CATEGORIES.map((cat) => (
-            <section key={cat.id} className="topic-category" aria-labelledby={`topic-cat-${cat.id}`}>
-              <h3 id={`topic-cat-${cat.id}`} className="topic-category-title">
-                {cat.label}
-              </h3>
+          {!quickCategoryId ? (
+            <>
+              <h2>Choose a category</h2>
+              <p className="topic-picker-lead">
+                Pick a category first. You&apos;ll choose a specific statement next, then Agree or
+                Disagree.
+              </p>
+              <div className="topic-grid topic-category-picker-grid">
+                {TOPIC_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className="topic-card topic-category-card"
+                    onClick={() => setQuickCategoryId(cat.id)}
+                  >
+                    <strong>{cat.label}</strong>
+                    <span>
+                      {cat.topics.length} statement{cat.topics.length === 1 ? '' : 's'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
+                Back
+              </button>
+            </>
+          ) : (
+            <>
+              <h2>Select a statement</h2>
+              <p className="topic-picker-lead">
+                Category:{' '}
+                <strong>{TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.label ?? ''}</strong>
+              </p>
               <div className="topic-grid">
-                {cat.topics.map((t) => (
+                {(TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.topics ?? []).map((t) => (
                   <button
                     key={t.id}
                     type="button"
@@ -1046,11 +1077,18 @@ export default function App() {
                   </button>
                 ))}
               </div>
-            </section>
-          ))}
-          <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
-            Back
-          </button>
+              <button
+                type="button"
+                className="back-btn"
+                onClick={() => {
+                  setQuickCategoryId(null);
+                  setTopicId(null);
+                }}
+              >
+                Back to categories
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -1079,7 +1117,15 @@ export default function App() {
           )}
           {error && step === 'side' && <div className="error-banner">{error}</div>}
           {!waiting && (
-            <button type="button" className="back-btn" onClick={() => setStep('topic')}>
+            <button
+              type="button"
+              className="back-btn"
+              onClick={() => {
+                const cat = TOPIC_CATEGORIES.find((c) => c.topics.some((t) => t.id === topicId));
+                setQuickCategoryId(cat?.id ?? null);
+                setStep('topic');
+              }}
+            >
               Back to topics
             </button>
           )}

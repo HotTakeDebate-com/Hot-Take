@@ -490,6 +490,15 @@
   letter-spacing: 0.02em;
 }
 
+.topic-category-picker-grid {
+  margin-bottom: 0.25rem;
+}
+
+.topic-category-card span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .topic-grid {
   display: grid;
   gap: 0.75rem;
