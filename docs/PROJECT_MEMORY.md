@@ -6,7 +6,7 @@
 |--------|--------|
 | **Site name** | **Chit Chat** |
 | **Project name (npm)** | `chit-chat` (workspace folder: `Debate Website`) |
-| **Last updated** | 2026-03-28 (verified email required for app + Firestore + Socket token) |
+| **Last updated** | 2026-03-30 (verified email required for app + Firestore + Socket token) |
 | **Database / BaaS** | **Firebase** — **Email/password Auth** + Firestore (`src/firebase.js`, `AuthScreen.jsx`) |
 
 ---
@@ -255,6 +255,7 @@ Copy `.env.example` to `.env` locally if needed (`.env` is gitignored). For Fire
 
 Short bullets for the **latest** context; keep recent history; trim only when noisy.
 
+- **2026-03-30:** **Quick Match categories + statements** — Updated `shared/topics.js` to add/seed **Diet and Nutrition** (`diet-nutrition`), **Money and Career** (`money-career`), and **Love and Relationships** (`love-relationships`) with initial statement entries; verified `npm run build` and redeployed by pushing to `main`. Quick Match shows the “No statements in this category yet” message for categories with empty `topics`. Category id rename from `health-wellness` → `diet-nutrition` may require re-selecting during an in-progress flow.
 - **2026-03-28:** **Verified email gate** — **`sendEmailVerification`** on signup; **`VerifyEmailScreen`** + **`firebaseEmailVerified`** in **`App.jsx`**; Firestore **`isSignedIn()`** requires **`email_verified`**; Socket.IO middleware rejects verified-false tokens. Deploy **rules** after pull.
 - **2026-03-25:** **User-nested match + chat** — Server writes **`users/{email}/debates/{roomId}`** ( **`sessionKind: 'match'`** ) and **`.../chat_messages`** (duplicated per participant); no new **`match_sessions`** writes. **`await persistMatchSession`** before **`matched`**; **`debate-chat`** passes pro/con UIDs from room roster. Rules: nested **`chat_messages`** read for owner. **`moderationApi`** collectionGroup + legacy fallback. Pushed **`d7c5e55`**; production validated in Console (nested path).
 - **2026-03-25:** **Firestore profiles by email** — **`users/{email}`** doc ids (see prior **`DEV_LOG`** session); client **`userProfileDocId`**, nested **`debates`** for history.

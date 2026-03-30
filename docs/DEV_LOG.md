@@ -6,6 +6,27 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ---
 
+## Session: 2026-03-30 (Quick Match: Diet/Nutrition, Money/Career, Love/Relationships)
+
+### Summary
+- Updated Quick Match categories and statements in **`shared/topics.js`**:
+  - Renamed **Health and Wellness** → **Diet and Nutrition** (`diet-nutrition`) and added early diet statements.
+  - Added **Money and Career** (`money-career`) statements.
+  - Added **Love and Relationships** (`love-relationships`) statements.
+- Verified the site builds via `npm run build`, then redeployed by pushing updated code to `main` (Railway GitHub auto-deploy).
+
+### Files
+- `shared/topics.js`
+- `docs/PROJECT_MEMORY.md`, `docs/DEV_LOG.md`
+
+### Deploy
+- Pushed updated `main` to trigger auto-deploy.
+
+### Follow-ups
+- If a user had an in-progress Quick Match flow with the old category id (`health-wellness`), they may need to re-select the category since we changed the category `id`.
+
+---
+
 ## Session: 2026-03-28 (verified email required)
 
 ### Summary
