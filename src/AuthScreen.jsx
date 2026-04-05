@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase.js';
 import BrandLogo from './BrandLogo.jsx';
@@ -36,8 +37,10 @@ function mapAuthError(code) {
 export default function AuthScreen() {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -51,6 +54,12 @@ export default function AuthScreen() {
     setAgreeAge18(false);
     setAgreePolicies(false);
   };
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
 
   const onChooseAvatar = () => {
     avatarInputRef.current?.click();
@@ -89,11 +98,24 @@ export default function AuthScreen() {
         );
         return;
       }
+      const name = displayName.trim();
+      if (name.length > 100) {
+        setError('Display name must be 100 characters or fewer.');
+        return;
+      }
     }
     setBusy(true);
     try {
       if (mode === 'signup') {
         const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const name = displayName.trim();
+        if (name) {
+          try {
+            await updateProfile(cred.user, { displayName: name.slice(0, 100) });
+          } catch {
+            /* profile update is optional; account still exists */
+          }
+        }
         try {
           await sendEmailVerification(cred.user);
         } catch {
@@ -131,6 +153,7 @@ export default function AuthScreen() {
   const flipMode = () => {
     setMode((m) => (m === 'signin' ? 'signup' : 'signin'));
     setError(null);
+    setDisplayName('');
     resetLegal();
   };
 
@@ -193,8 +216,17 @@ export default function AuthScreen() {
           </div>
           <h2 className="auth-screen-title">{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
           <p className="auth-screen-lead">
-            Chitchat — structured debate with people who disagree. Sign in with a real email; new accounts
-            must confirm the link we send before playing.
+            {mode === 'signin' ? (
+              <>
+                Welcome back. Use the email and password for your Hot Take account. You&apos;ll need a
+                verified email before matchmaking.
+              </>
+            ) : (
+              <>
+                Set up your account in a minute. We&apos;ll email you a link to verify your address—then
+                you can debate live. Use a real inbox you can open on this device.
+              </>
+            )}
           </p>
 
           <div className="auth-tabs">
@@ -204,6 +236,7 @@ export default function AuthScreen() {
               onClick={() => {
                 setMode('signin');
                 setError(null);
+                setDisplayName('');
                 resetLegal();
               }}
             >
@@ -215,6 +248,7 @@ export default function AuthScreen() {
               onClick={() => {
                 setMode('signup');
                 setError(null);
+                setDisplayName('');
                 resetLegal();
               }}
             >
@@ -239,20 +273,54 @@ export default function AuthScreen() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            {mode === 'signup' && (
+              <p className="auth-field-hint">This is your sign-in email and where we send verification.</p>
+            )}
 
-            <label className="auth-label" htmlFor="auth-password">
-              Password
-            </label>
+            {mode === 'signup' && (
+              <>
+                <label className="auth-label" htmlFor="auth-display-name">
+                  Display name <span className="auth-optional">(optional)</span>
+                </label>
+                <input
+                  id="auth-display-name"
+                  className="auth-input"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="How should others see you?"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  maxLength={100}
+                />
+              </>
+            )}
+
+            <div className="auth-password-row">
+              <label className="auth-label auth-password-row__label" htmlFor="auth-password">
+                Password
+              </label>
+              <button
+                type="button"
+                className="auth-password-toggle"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
             <input
               id="auth-password"
               className="auth-input"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
             />
+            {mode === 'signup' && (
+              <p className="auth-field-hint">At least 6 characters (pick something you don&apos;t reuse elsewhere).</p>
+            )}
 
             {mode === 'signup' && (
               <>
@@ -262,7 +330,7 @@ export default function AuthScreen() {
                 <input
                   id="auth-confirm"
                   className="auth-input"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}

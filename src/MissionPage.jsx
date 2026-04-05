@@ -5,12 +5,12 @@ export default function MissionPage({ onBack }) {
     <LegalDocumentShell title="Our Mission" onBack={onBack}>
       <section className="legal-section">
         <p>
-          At Chitchat, our mission is to create a space where meaningful conversation can thrive. We
+          At Hot Take, our mission is to create a space where meaningful conversation can thrive. We
           believe that open dialogue—when structured with respect, clarity, and purpose—has the
           power to challenge ideas, expand perspectives, and bring people closer to truth.
         </p>
         <p>
-          In a world where discussions are often fragmented or driven by noise, Chitchat is built to
+          In a world where discussions are often fragmented or driven by noise, Hot Take is built to
           restore thoughtful exchange by encouraging users to engage directly, listen actively, and
           debate constructively.
         </p>

@@ -132,6 +132,46 @@
   color: var(--accent-strong);
 }
 
+.auth-field-hint {
+  margin: -0.15rem 0 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.auth-optional {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.auth-password-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.auth-password-row__label {
+  margin-top: 0;
+}
+
+.auth-password-toggle {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-password-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .auth-screen .auth-label,
 .auth-screen-label {
   color: rgba(255, 255, 255, 0.75);

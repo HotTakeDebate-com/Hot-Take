@@ -7,13 +7,13 @@ Internal tools for **investigations**, **audit trails**, and **account enforceme
 ## Prerequisites
 
 1. **Firebase Admin** on the Node server (`FIREBASE_ADMIN_SERVICE_ACCOUNT` or ADC), same as Socket.IO and Firestore persistence.
-2. **`CHITCHAT_MODERATION_SECRET`** — long random string (16+ characters). On Railway or `.env` for local server **only** (never commit real values; never expose in the browser).
+2. **`HOT_TAKE_MODERATION_SECRET`** — long random string (16+ characters). On Railway or `.env` for local server **only** (never commit real values; never expose in the browser). **Legacy:** `CHITCHAT_MODERATION_SECRET` is still accepted if the new variable is unset.
 
 ## Authentication
 
 Every request must send the secret in **one** of these ways:
 
-- Header: `X-Chitchat-Moderation: <your-secret>`
+- Header: `X-Hot-Take-Moderation: <your-secret>` (legacy: `X-Chitchat-Moderation`)
 - Header: `Authorization: Bearer <your-secret>`
 
 Use **HTTPS** in production. If the secret leaks, rotate it immediately.
@@ -98,14 +98,14 @@ These call the **Admin Auth API** so the user cannot sign in until re-enabled.
 Replace `SECRET`, `HOST`, and `ROOM`.
 
 ```bash
-curl -sS -H "X-Chitchat-Moderation: SECRET" "https://HOST/api/mod/status"
+curl -sS -H "X-Hot-Take-Moderation: SECRET" "https://HOST/api/mod/status"
 
-curl -sS -H "X-Chitchat-Moderation: SECRET" "https://HOST/api/mod/reports?limit=20"
+curl -sS -H "X-Hot-Take-Moderation: SECRET" "https://HOST/api/mod/reports?limit=20"
 
-curl -sS -H "X-Chitchat-Moderation: SECRET" "https://HOST/api/mod/match/ROOM?chatLimit=500"
+curl -sS -H "X-Hot-Take-Moderation: SECRET" "https://HOST/api/mod/match/ROOM?chatLimit=500"
 
 curl -sS -X POST -H "Content-Type: application/json" \
-  -H "X-Chitchat-Moderation: SECRET" \
+  -H "X-Hot-Take-Moderation: SECRET" \
   -d '{"targetUid":"UID","action":"note","reason":"Reviewed; warned in email.","actorLabel":"ops"}' \
   "https://HOST/api/mod/actions"
 ```

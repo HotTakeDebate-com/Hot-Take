@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Chitchat — signed-in Firebase Auth user with verified email (email/password; no Anonymous).
+// Hot Take — signed-in Firebase Auth user with verified email (email/password; no Anonymous).
 // users/{email} — document id = lowercase email. Subcollections: debates (+ chat_messages from server), legacy text_chat.
 // Paste into Firebase Console → Firestore → Rules, or: firebase deploy --only firestore:rules
 
@@ -94,6 +94,45 @@ service cloud.firestore {
 
     match /moderation_actions/{actionId} {
       allow read, write: if false;
+    }
+
+    // Public profile card (safe fields only). Readable by any signed-in verified user.
+    match /publicProfiles/{profileKey} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwnUserEmailDoc(profileKey)
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.bio is string
+        && request.resource.data.bio.size() <= 500;
+      allow delete: if false;
+    }
+
+    // Social feed posts (text). Author may delete own post.
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.authorEmail == request.auth.token.email.lower()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if isSignedIn() && resource.data.authorUid == request.auth.uid;
+    }
+
+    // Who I follow (doc id = followee's lowercase email).
+    match /users/{userKey}/following/{targetKey} {
+      allow read: if isOwnUserEmailDoc(userKey);
+      allow create: if isOwnUserEmailDoc(userKey)
+        && targetKey is string
+        && targetKey != userKey
+        && targetKey.size() >= 3
+        && targetKey.size() <= 320
+        && request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.createdAt == request.time;
+      allow delete: if isOwnUserEmailDoc(userKey);
+      allow update: if false;
     }
   }
 }

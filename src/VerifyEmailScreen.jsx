@@ -89,8 +89,8 @@ export default function VerifyEmailScreen() {
           </div>
           <h2 className="auth-screen-title">Verify your email</h2>
           <p className="auth-screen-lead">
-            We sent a message to <strong>{email || 'your inbox'}</strong>. Open the link in that email to
-            confirm it&apos;s really you, then continue here.
+            Your account is created. We sent a message to <strong>{email || 'your inbox'}</strong>. Open the
+            link in that email to confirm it&apos;s really you, then tap continue below.
           </p>
 
           {error && (

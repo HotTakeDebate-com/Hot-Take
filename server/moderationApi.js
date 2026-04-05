@@ -3,7 +3,8 @@ import express from 'express';
 import admin from 'firebase-admin';
 
 /**
- * Operator-only REST API. Requires Firebase Admin + env CHITCHAT_MODERATION_SECRET (min 16 chars).
+ * Operator-only REST API. Requires Firebase Admin + env HOT_TAKE_MODERATION_SECRET
+ * (or legacy CHITCHAT_MODERATION_SECRET), min 16 chars.
  * Use HTTPS only in production. Rotate the secret if leaked.
  */
 
@@ -18,11 +19,16 @@ function timingSafeEq(a, b) {
 }
 
 function moderationAuth(req, res, next) {
-  const secret = process.env.CHITCHAT_MODERATION_SECRET;
+  const secret =
+    process.env.HOT_TAKE_MODERATION_SECRET || process.env.CHITCHAT_MODERATION_SECRET;
   if (!secret || secret.length < 16) {
-    return res.status(503).json({ error: 'Moderation API disabled (set CHITCHAT_MODERATION_SECRET, 16+ chars).' });
+    return res.status(503).json({
+      error:
+        'Moderation API disabled (set HOT_TAKE_MODERATION_SECRET or CHITCHAT_MODERATION_SECRET, 16+ chars).',
+    });
   }
-  const header = req.get('x-chitchat-moderation');
+  const header =
+    req.get('x-hot-take-moderation') || req.get('x-chitchat-moderation');
   const auth = req.get('authorization');
   const bearer =
     auth && /^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, '').trim() : '';

@@ -3,13 +3,13 @@ import LegalDocumentShell from './LegalDocumentShell.jsx';
 export default function CommunityGuidelines({ onBack }) {
   return (
     <LegalDocumentShell
-      title="Chitchat – Community Guidelines"
+      title="Hot Take – Community Guidelines"
       effectiveDate="March 22, 2026"
       onBack={onBack}
     >
       <section className="legal-section">
-        <h2>1. Purpose of Chitchat</h2>
-        <p>Chitchat is a platform for:</p>
+        <h2>1. Purpose of Hot Take</h2>
+        <p>Hot Take is a platform for:</p>
         <ul>
           <li>Structured debate</li>
           <li>Open discussion</li>
@@ -40,7 +40,7 @@ export default function CommunityGuidelines({ onBack }) {
         </ul>
 
         <h3 className="legal-subhead">Structured discussion matters</h3>
-        <p>Chitchat is not random shouting — it is:</p>
+        <p>Hot Take is not random shouting — it is:</p>
         <ul>
           <li>Turn-based debate</li>
           <li>Topic-focused</li>
@@ -114,7 +114,7 @@ export default function CommunityGuidelines({ onBack }) {
 
       <section className="legal-section">
         <h2>6. AI Moderation &amp; Enforcement</h2>
-        <p>Chitchat uses:</p>
+        <p>Hot Take uses:</p>
         <ul>
           <li>AI systems</li>
           <li>Automated detection</li>
@@ -174,7 +174,7 @@ export default function CommunityGuidelines({ onBack }) {
 
       <section className="legal-section">
         <h2>10. No Guaranteed Visibility</h2>
-        <p>Chitchat may:</p>
+        <p>Hot Take may:</p>
         <ul>
           <li>Limit reach</li>
           <li>Adjust visibility</li>
@@ -198,7 +198,7 @@ export default function CommunityGuidelines({ onBack }) {
       <section className="legal-section">
         <h2>12. Changes to Guidelines</h2>
         <p>We may update these guidelines at any time.</p>
-        <p>Continued use of Chitchat = acceptance of updates.</p>
+        <p>Continued use of Hot Take = acceptance of updates.</p>
       </section>
     </LegalDocumentShell>
   );

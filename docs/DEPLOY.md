@@ -1,4 +1,4 @@
-# Deploying Chit Chat
+# Deploying Hot Take
 
 ## What runs in production
 
@@ -40,8 +40,8 @@ After changing `VITE_*`, **rebuild** the client.
 From the repo root:
 
 ```bash
-docker build -t chit-chat .
-docker run -p 3001:3001 -e PORT=3001 chit-chat
+docker build -t hot-take .
+docker run -p 3001:3001 -e PORT=3001 hot-take
 ```
 
 Pass `ICE_SERVERS_JSON` at runtime if needed.

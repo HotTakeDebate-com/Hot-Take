@@ -1,14 +1,18 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
   where,
 } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import { auth, db, isFirebaseConfigured } from './firebase.js';
 
 /**
@@ -30,16 +34,17 @@ export async function syncUserPresence() {
     await setDoc(
       doc(db, 'users', profileId),
       {
-        app: 'chit-chat',
+        app: 'hot-take',
         lastSeenAt: serverTimestamp(),
         uid: u.uid,
         email: u.email ?? null,
+        ...(u.displayName?.trim() ? { displayName: u.displayName.trim().slice(0, 100) } : {}),
       },
       { merge: true }
     );
   } catch (e) {
     const code = e?.code ?? e?.message;
-    console.error('[chit-chat] syncUserPresence failed', code, e);
+    console.error('[hot-take] syncUserPresence failed', code, e);
   }
 }
 
@@ -85,7 +90,7 @@ export async function logDebateSessionEnd({
     await addDoc(collection(db, 'users', profileId, 'debates'), row);
   } catch (e) {
     const code = e?.code ?? e?.message;
-    console.error('[chit-chat] logDebateSessionEnd failed', code, e);
+    console.error('[hot-take] logDebateSessionEnd failed', code, e);
   }
 }
 
@@ -116,17 +121,17 @@ export async function fetchRecentDebates(max = 40) {
     rows.sort((a, b) => (b.endedAtMs ?? 0) - (a.endedAtMs ?? 0));
     return rows.slice(0, max);
   } catch (e) {
-    console.warn('[chit-chat] fetchRecentDebates', e);
+    console.warn('[hot-take] fetchRecentDebates', e);
     return [];
   }
 }
 
 const REPORT_COOLDOWN_MS = 90_000;
-const REPORT_COOLDOWN_STORAGE_KEY = 'chitchat:lastReportAt';
+const REPORT_COOLDOWN_STORAGE_KEY = 'hottake:lastReportAt';
+/** Legacy key from pre-rebrand builds; still honored for cooldown until it ages out. */
+const REPORT_COOLDOWN_LEGACY_KEY = 'chitchat:lastReportAt';
 
-function getReportCooldownRemainingMs() {
-  if (typeof window === 'undefined' || !window.localStorage) return 0;
-  const raw = window.localStorage.getItem(REPORT_COOLDOWN_STORAGE_KEY);
+function cooldownRemainingFromRaw(raw) {
   if (!raw) return 0;
   const last = parseInt(raw, 10);
   if (Number.isNaN(last)) return 0;
@@ -134,9 +139,17 @@ function getReportCooldownRemainingMs() {
   return Math.max(0, REPORT_COOLDOWN_MS - elapsed);
 }
 
+function getReportCooldownRemainingMs() {
+  if (typeof window === 'undefined' || !window.localStorage) return 0;
+  const a = cooldownRemainingFromRaw(window.localStorage.getItem(REPORT_COOLDOWN_STORAGE_KEY));
+  const b = cooldownRemainingFromRaw(window.localStorage.getItem(REPORT_COOLDOWN_LEGACY_KEY));
+  return Math.max(a, b);
+}
+
 function markReportSubmitted() {
   if (typeof window === 'undefined' || !window.localStorage) return;
-  window.localStorage.setItem(REPORT_COOLDOWN_STORAGE_KEY, String(Date.now()));
+  const now = String(Date.now());
+  window.localStorage.setItem(REPORT_COOLDOWN_STORAGE_KEY, now);
 }
 
 /** User-submitted moderation report (review in Firebase Console). */
@@ -179,4 +192,128 @@ export async function submitReport({
   }
   await addDoc(collection(db, 'reports'), doc);
   markReportSubmitted();
+}
+
+// --- Social: public profiles, follows, feed posts ---
+
+const MAX_POST_CHARS = 2000;
+const MAX_BIO_CHARS = 500;
+
+/** @returns {Promise<{ email: string, displayName: string, bio: string, updatedAt?: import('firebase/firestore').Timestamp } | null>} */
+export async function fetchPublicProfile(profileEmail) {
+  if (!isFirebaseConfigured || !db) return null;
+  const key = String(profileEmail ?? '').trim().toLowerCase();
+  if (!key) return null;
+  const snap = await getDoc(doc(db, 'publicProfiles', key));
+  if (!snap.exists()) {
+    return { email: key, displayName: '', bio: '', updatedAt: null };
+  }
+  const d = snap.data();
+  return {
+    email: key,
+    displayName: typeof d.displayName === 'string' ? d.displayName : '',
+    bio: typeof d.bio === 'string' ? d.bio : '',
+    updatedAt: d.updatedAt ?? null,
+  };
+}
+
+export async function savePublicProfile({ displayName, bio }) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser?.email) {
+    throw new Error('Not signed in.');
+  }
+  const key = userProfileDocId(auth.currentUser);
+  if (!key) throw new Error('No email on account.');
+  const dn = String(displayName ?? '').trim().slice(0, 100);
+  const b = String(bio ?? '').trim().slice(0, MAX_BIO_CHARS);
+  await setDoc(
+    doc(db, 'publicProfiles', key),
+    {
+      displayName: dn,
+      bio: b,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  try {
+    await updateProfile(auth.currentUser, { displayName: dn || auth.currentUser.displayName || '' });
+  } catch {
+    /* optional */
+  }
+  await syncUserPresence();
+}
+
+export async function fetchFollowingEmails() {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) return [];
+  const key = userProfileDocId(auth.currentUser);
+  if (!key) return [];
+  const snap = await getDocs(collection(db, 'users', key, 'following'));
+  return snap.docs.map((d) => d.id);
+}
+
+export async function followUser(targetEmail) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) throw new Error('Not signed in.');
+  const myKey = userProfileDocId(auth.currentUser);
+  const targetKey = String(targetEmail ?? '').trim().toLowerCase();
+  if (!myKey || !targetKey) throw new Error('Invalid profile.');
+  if (targetKey === myKey) throw new Error('You cannot follow yourself.');
+  await setDoc(doc(db, 'users', myKey, 'following', targetKey), {
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function unfollowUser(targetEmail) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) throw new Error('Not signed in.');
+  const myKey = userProfileDocId(auth.currentUser);
+  const targetKey = String(targetEmail ?? '').trim().toLowerCase();
+  if (!myKey || !targetKey) return;
+  await deleteDoc(doc(db, 'users', myKey, 'following', targetKey));
+}
+
+export async function isFollowingUser(targetEmail) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) return false;
+  const myKey = userProfileDocId(auth.currentUser);
+  const targetKey = String(targetEmail ?? '').trim().toLowerCase();
+  if (!myKey || !targetKey || targetKey === myKey) return false;
+  const snap = await getDoc(doc(db, 'users', myKey, 'following', targetKey));
+  return snap.exists();
+}
+
+export async function createPost(text) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser?.email) throw new Error('Not signed in.');
+  const u = auth.currentUser;
+  const key = userProfileDocId(u);
+  const raw = String(text ?? '').trim();
+  if (raw.length < 1 || raw.length > MAX_POST_CHARS) {
+    throw new Error(`Post must be 1–${MAX_POST_CHARS} characters.`);
+  }
+  await addDoc(collection(db, 'posts'), {
+    authorUid: u.uid,
+    authorEmail: key,
+    text: raw,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function deletePost(postId) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) throw new Error('Not signed in.');
+  const ref = doc(db, 'posts', postId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Post not found.');
+  if (snap.data()?.authorUid !== auth.currentUser.uid) throw new Error('Not your post.');
+  await deleteDoc(ref);
+}
+
+/**
+ * Loads recent posts (newest first). Following mode filters to `followingEmails` client-side (MVP).
+ */
+export async function fetchPostsForFeed({ feedMode, followingEmails = [], maxPosts = 80 }) {
+  if (!isFirebaseConfigured || !db) return [];
+  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(maxPosts));
+  const snap = await getDocs(q);
+  let rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  if (feedMode === 'following' && followingEmails.length > 0) {
+    const set = new Set(followingEmails.map((e) => String(e).toLowerCase()));
+    rows = rows.filter((r) => r.authorEmail && set.has(String(r.authorEmail).toLowerCase()));
+  }
+  return rows;
 }

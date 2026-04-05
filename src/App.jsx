@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { TOPICS, TOPIC_CATEGORIES } from './topics.js';
 import DebateHistory from './DebateHistory.jsx';
+import ProfilePanel from './ProfilePanel.jsx';
+import SocialFeed from './SocialFeed.jsx';
 import { fetchRecentDebates, logDebateSessionEnd, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
@@ -91,6 +93,10 @@ export default function App() {
   const [headerOverlay, setHeaderOverlay] = useState(null);
   /** Local-only avatar preview (optional). Stored in localStorage for convenience. */
   const [headerAvatarDataUrl, setHeaderAvatarDataUrl] = useState(null);
+  /** Social: view someone else's profile (null = own profile on profile step). */
+  const [socialProfileEmail, setSocialProfileEmail] = useState(null);
+  /** Where ProfilePanel "Back" returns: welcome home or feed. */
+  const [socialReturnStep, setSocialReturnStep] = useState('welcome');
 
   const rtcConfigRef = useRef(FALLBACK_RTC);
   const socketRef = useRef(null);
@@ -178,7 +184,8 @@ export default function App() {
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem('chitchat:avatarDataUrl');
+      let stored = window.localStorage.getItem('hottake:avatarDataUrl');
+      if (!stored) stored = window.localStorage.getItem('chitchat:avatarDataUrl');
       if (stored) setHeaderAvatarDataUrl(stored);
     } catch {
       /* localStorage may be unavailable */
@@ -206,7 +213,8 @@ export default function App() {
       if (!dataUrl) return;
       setHeaderAvatarDataUrl(dataUrl);
       try {
-        window.localStorage.setItem('chitchat:avatarDataUrl', dataUrl);
+        window.localStorage.setItem('hottake:avatarDataUrl', dataUrl);
+        window.localStorage.removeItem('chitchat:avatarDataUrl');
       } catch {
         /* ignore localStorage quota errors */
       }
@@ -240,6 +248,8 @@ export default function App() {
     setDebateInfo(null);
     setError(null);
     setConnState(null);
+    setSocialProfileEmail(null);
+    setSocialReturnStep('welcome');
   }, [authReady, firebaseUserId, cleanupMedia]);
 
   useEffect(() => {
@@ -719,6 +729,8 @@ export default function App() {
     setTopicId(null);
     setSide(null);
     setError(null);
+    setSocialProfileEmail(null);
+    setSocialReturnStep('welcome');
     try {
       if (auth) await signOut(auth);
     } catch {
@@ -819,8 +831,8 @@ export default function App() {
               <div className="app-header-main">
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
-                  Pick a statement, choose agree or disagree, and get matched with someone on the other
-                  side for a real-time video conversation.
+                  Live video debates: pick a side, get matched, argue face to face. There&apos;s also a
+                  light community feed and profiles when you want to share a take between rounds.
                 </p>
               </div>
               <div className="header-actions">
@@ -868,9 +880,12 @@ export default function App() {
 
       {showMainApp && (
         <>
-      {step !== 'debate' && step !== 'history' && (
+      {step !== 'debate' && step !== 'history' && step !== 'feed' && step !== 'profile' && (
         <details className="device-details" open>
-          <summary className="device-details-summary">Camera &amp; microphone</summary>
+          <summary className="device-details-summary">
+            Camera &amp; microphone
+            <span className="device-details-summary-hint"> — for Quick match &amp; custom debates</span>
+          </summary>
           <div className="panel device-details-panel">
             <DeviceSettings
               videoDeviceId={videoDeviceId}
@@ -884,26 +899,79 @@ export default function App() {
 
       {step === 'welcome' && (
         <div className="panel welcome-actions">
-          <p style={{ marginTop: 0, color: 'var(--muted)' }}>
-            You’re signed in. Start quick match or a custom room, then set up your camera and
-            microphone in the panel above before you begin.
+          <p className="welcome-hero-lead">
+            Choose a topic or statement, then meet someone on the other side over video. Allow your camera
+            and mic above before you join a match.
           </p>
-          <div className="welcome-actions-row">
-            <button type="button" className="btn btn-primary" onClick={startQuickMatch}>
-              Quick match
-            </button>
-            <button type="button" className="btn" onClick={startCustomMatch}>
-              Custom room
-            </button>
-            <button type="button" className="btn" onClick={openHistory}>
-              Past sessions
-            </button>
-          </div>
-          <p className="mode-help-text">
-            Quick match pairs you with someone who picked the opposite answer (agree vs disagree).
-            Custom room lets you publish a statement, share a code, and debate a challenger.
-          </p>
+
+          <section className="welcome-block welcome-block--debate" aria-labelledby="welcome-debate-title">
+            <h3 id="welcome-debate-title" className="welcome-block-title">
+              Live debates
+            </h3>
+            <p className="welcome-block-desc">
+              Quick match uses curated statements; custom room is your own statement and optional room
+              code. In-debate text chat stays available during the call.
+            </p>
+            <div className="welcome-actions-row welcome-debate-actions">
+              <button type="button" className="btn btn-primary" onClick={startQuickMatch}>
+                Quick match
+              </button>
+              <button type="button" className="btn btn-primary" onClick={startCustomMatch}>
+                Custom room
+              </button>
+              <button type="button" className="btn" onClick={openHistory}>
+                Past sessions
+              </button>
+            </div>
+          </section>
+
+          <section className="welcome-block welcome-block--social" aria-labelledby="welcome-social-title">
+            <h3 id="welcome-social-title" className="welcome-block-title">
+              Community
+            </h3>
+            <p className="welcome-block-desc">
+              Optional: post short takes, follow people, and edit how you appear to others—separate from
+              debate matchmaking.
+            </p>
+            <div className="welcome-actions-row welcome-social-actions">
+              <button type="button" className="btn" onClick={() => setStep('feed')}>
+                Open feed
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setSocialProfileEmail(null);
+                  setSocialReturnStep('welcome');
+                  setStep('profile');
+                }}
+              >
+                My profile
+              </button>
+            </div>
+          </section>
         </div>
+      )}
+
+      {step === 'feed' && (
+        <SocialFeed
+          onBack={() => setStep('welcome')}
+          onOpenProfile={(email) => {
+            setSocialProfileEmail(email);
+            setSocialReturnStep('feed');
+            setStep('profile');
+          }}
+        />
+      )}
+
+      {step === 'profile' && (
+        <ProfilePanel
+          targetEmail={socialProfileEmail}
+          onBack={() => {
+            setStep(socialReturnStep);
+            setSocialProfileEmail(null);
+          }}
+        />
       )}
 
       {step === 'custom' && (

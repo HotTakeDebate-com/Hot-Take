@@ -3,14 +3,14 @@ import LegalDocumentShell from './LegalDocumentShell.jsx';
 export default function TermsOfService({ onBack }) {
   return (
     <LegalDocumentShell
-      title="Chitchat – Terms of Service"
+      title="Hot Take – Terms of Service"
       effectiveDate="March 22, 2026"
       onBack={onBack}
     >
       <section className="legal-section">
         <h2>1. Acceptance of Terms</h2>
         <p>
-          By accessing or using Chitchat (“the Platform,” “we,” “us,” or “our”), you agree to be
+          By accessing or using Hot Take (“the Platform,” “we,” “us,” or “our”), you agree to be
           bound by these Terms of Service (“Terms”). If you do not agree, you must not use the
           Platform.
         </p>
@@ -25,7 +25,7 @@ export default function TermsOfService({ onBack }) {
           <li>Comply with all applicable laws</li>
         </ul>
         <p>
-          By using Chitchat, you represent and warrant that you meet these requirements.
+          By using Hot Take, you represent and warrant that you meet these requirements.
         </p>
         <p>We reserve the right to:</p>
         <ul>
@@ -36,7 +36,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>3. Description of Service</h2>
-        <p>Chitchat is a debate-focused social platform that allows users to:</p>
+        <p>Hot Take is a debate-focused social platform that allows users to:</p>
         <ul>
           <li>Participate in live and recorded debates</li>
           <li>Upload, share, and view content</li>
@@ -77,7 +77,7 @@ export default function TermsOfService({ onBack }) {
           <li>Attempt to hack, exploit, or disrupt the Platform</li>
         </ul>
         <p>
-          Chitchat supports open discussion, but illegal conduct and direct harm are strictly
+          Hot Take supports open discussion, but illegal conduct and direct harm are strictly
           prohibited.
         </p>
       </section>
@@ -85,7 +85,7 @@ export default function TermsOfService({ onBack }) {
       <section className="legal-section">
         <h2>6. User Content &amp; License</h2>
         <p>You retain ownership of your content.</p>
-        <p>However, by submitting content, you grant Chitchat a:</p>
+        <p>However, by submitting content, you grant Hot Take a:</p>
         <ul>
           <li>Worldwide</li>
           <li>Non-exclusive</li>
@@ -115,7 +115,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>7. Recording, Streaming &amp; Public Use</h2>
-        <p>By using Chitchat, you acknowledge and agree:</p>
+        <p>By using Hot Take, you acknowledge and agree:</p>
         <ul>
           <li>All debates may be recorded, stored, and publicly distributed</li>
           <li>Content may be used for promotion, marketing, or platform growth</li>
@@ -125,7 +125,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>8. AI Moderation &amp; Platform Control</h2>
-        <p>Chitchat may use automated systems, including AI, to:</p>
+        <p>Hot Take may use automated systems, including AI, to:</p>
         <ul>
           <li>Moderate content</li>
           <li>Structure debates</li>
@@ -146,7 +146,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>9. Monetization &amp; Platform Rights</h2>
-        <p>Chitchat reserves the right to:</p>
+        <p>Hot Take reserves the right to:</p>
         <ul>
           <li>Display advertisements</li>
           <li>Monetize user content</li>
@@ -171,7 +171,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>11. Third-Party Content</h2>
-        <p>Chitchat is not responsible for:</p>
+        <p>Hot Take is not responsible for:</p>
         <ul>
           <li>Content posted by users</li>
           <li>Opinions expressed during debates</li>
@@ -182,7 +182,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>12. No Professional Advice</h2>
-        <p>Content on Chitchat is for informational and entertainment purposes only.</p>
+        <p>Content on Hot Take is for informational and entertainment purposes only.</p>
         <p>It does not constitute:</p>
         <ul>
           <li>Medical advice</li>
@@ -206,7 +206,7 @@ export default function TermsOfService({ onBack }) {
       <section className="legal-section">
         <h2>14. Limitation of Liability</h2>
         <p>To the fullest extent permitted by law:</p>
-        <p>Chitchat shall not be liable for:</p>
+        <p>Hot Take shall not be liable for:</p>
         <ul>
           <li>Indirect, incidental, or consequential damages</li>
           <li>Loss of data, profits, or reputation</li>
@@ -217,7 +217,7 @@ export default function TermsOfService({ onBack }) {
 
       <section className="legal-section">
         <h2>15. Indemnification</h2>
-        <p>You agree to defend and indemnify Chitchat against any claims arising from:</p>
+        <p>You agree to defend and indemnify Hot Take against any claims arising from:</p>
         <ul>
           <li>Your use of the Platform</li>
           <li>Your content</li>
@@ -247,13 +247,13 @@ export default function TermsOfService({ onBack }) {
       <section className="legal-section">
         <h2>18. Changes to Terms</h2>
         <p>We may update these Terms at any time.</p>
-        <p>Continued use of Chitchat = acceptance of updated Terms.</p>
+        <p>Continued use of Hot Take = acceptance of updated Terms.</p>
       </section>
 
       <section className="legal-section">
         <h2>19. Governing Law</h2>
         <p>
-          These Terms are governed by the laws of the jurisdiction in which Chitchat operates.
+          These Terms are governed by the laws of the jurisdiction in which Hot Take operates.
         </p>
       </section>
     </LegalDocumentShell>

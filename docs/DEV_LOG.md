@@ -6,6 +6,29 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ---
 
+## Session: 2026-04-04 (rebrand: Hot Take)
+
+### Summary
+
+- Rebranded user-facing product name from **Chit Chat / Chitchat** to **Hot Take** across UI copy, **`index.html`**, **`BrandLogo`**, mission/auth text, and all in-app legal documents under **`src/legal/`**.
+- Renamed static logo asset to **`public/hottake-logo.png`** (was `chitchat-logo.png`).
+- npm package name **`hot-take`** (was `chit-chat`). Firestore presence field **`app: 'hot-take'`**.
+- Report cooldown **`localStorage`** key **`hottake:lastReportAt`**; legacy **`chitchat:lastReportAt`** still honored for remaining cooldown only.
+- Header avatar preview key **`hottake:avatarDataUrl`** with read fallback from **`chitchat:avatarDataUrl`**.
+- Moderation API: prefers **`HOT_TAKE_MODERATION_SECRET`** and header **`x-hot-take-moderation`**; legacy **`CHITCHAT_MODERATION_SECRET`** / **`x-chitchat-moderation`** still accepted.
+
+### Files
+
+- `index.html`, `package.json`, `package-lock.json`, `public/hottake-logo.png` (rename)
+- `src/BrandLogo.jsx`, `src/index.css`, `src/AuthScreen.jsx`, `src/MissionPage.jsx`, `src/App.jsx`, `src/chitChatFirestore.js`
+- `src/legal/*`
+- `server/moderationApi.js`, `firestore.rules`, `.env.example`
+- `docs/DEPLOY.md`, `docs/MODERATION.md`, `docs/PROJECT_MEMORY.md`, `docs/DEV_LOG.md`
+
+### Follow-ups
+
+- Optional: set **`HOT_TAKE_MODERATION_SECRET`** on Railway and mirror the value from **`CHITCHAT_MODERATION_SECRET`** (or remove the old var after confirming operators use the new header).
+
 ## Session: 2026-03-30 (Quick Match: Diet/Nutrition, Money/Career, Love/Relationships)
 
 ### Summary

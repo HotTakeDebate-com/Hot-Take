@@ -17,7 +17,7 @@ function ContactEmail() {
 export default function RecordingAgreement({ onBack }) {
   return (
     <LegalDocumentShell
-      title="Chitchat – Recording & Streaming Consent Agreement"
+      title="Hot Take – Recording & Streaming Consent Agreement"
       effectiveDate="March 22, 2026"
       onBack={onBack}
     >
@@ -25,11 +25,11 @@ export default function RecordingAgreement({ onBack }) {
         <h2>1. Overview</h2>
         <p>
           This Recording &amp; Streaming Consent Agreement (“Agreement”) governs your participation
-          in any audio, video, or text-based interactions on Chitchat that may be recorded, stored, or
+          in any audio, video, or text-based interactions on Hot Take that may be recorded, stored, or
           distributed.
         </p>
         <p>
-          By accessing or participating in any debate, discussion, or content session on Chitchat,
+          By accessing or participating in any debate, discussion, or content session on Hot Take,
           you agree to this Agreement.
         </p>
       </section>
@@ -53,7 +53,7 @@ export default function RecordingAgreement({ onBack }) {
       <section className="legal-section">
         <h2>3. Consent to Use &amp; Distribution</h2>
         <p>
-          You grant Chitchat a worldwide, irrevocable, royalty-free, sublicensable, and transferable
+          You grant Hot Take a worldwide, irrevocable, royalty-free, sublicensable, and transferable
           license to:
         </p>
         <ul>
@@ -78,7 +78,7 @@ export default function RecordingAgreement({ onBack }) {
         <ul>
           <li>Content may be publicly visible</li>
           <li>Content may be viewed by anyone on or off the platform</li>
-          <li>Content may be shared by third parties beyond Chitchat’s control</li>
+          <li>Content may be shared by third parties beyond Hot Take’s control</li>
         </ul>
         <p>You participate at your own discretion.</p>
       </section>
@@ -129,7 +129,7 @@ export default function RecordingAgreement({ onBack }) {
 
       <section className="legal-section">
         <h2>9. Enforcement</h2>
-        <p>Chitchat reserves the right to:</p>
+        <p>Hot Take reserves the right to:</p>
         <ul>
           <li>Remove or restrict content</li>
           <li>Suspend or terminate access</li>
@@ -140,7 +140,7 @@ export default function RecordingAgreement({ onBack }) {
       <section className="legal-section">
         <h2>10. Relationship to Terms of Service</h2>
         <p>
-          This Agreement is incorporated into and supplements the Chitchat Terms of Service.
+          This Agreement is incorporated into and supplements the Hot Take Terms of Service.
         </p>
         <p>
           In the event of a conflict, this Agreement will control regarding recording and content
@@ -151,7 +151,7 @@ export default function RecordingAgreement({ onBack }) {
       <section className="legal-section">
         <h2>11. Changes to Agreement</h2>
         <p>We may update this Agreement at any time.</p>
-        <p>Continued use of Chitchat constitutes acceptance of any updates.</p>
+        <p>Continued use of Hot Take constitutes acceptance of any updates.</p>
       </section>
 
       <section className="legal-section">
@@ -160,7 +160,7 @@ export default function RecordingAgreement({ onBack }) {
         <p>
           Email: <ContactEmail />
         </p>
-        <p>Company: Chitchat</p>
+        <p>Company: Hot Take</p>
       </section>
     </LegalDocumentShell>
   );

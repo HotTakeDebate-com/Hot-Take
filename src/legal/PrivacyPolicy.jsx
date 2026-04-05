@@ -17,21 +17,21 @@ function ContactEmail() {
 export default function PrivacyPolicy({ onBack }) {
   return (
     <LegalDocumentShell
-      title="Chitchat – Privacy Policy"
+      title="Hot Take – Privacy Policy"
       effectiveDate="March 22, 2026"
       onBack={onBack}
     >
       <section className="legal-section">
         <h2>1. Introduction</h2>
         <p>
-          Chitchat (“we,” “us,” or “our”) respects your privacy and is committed to protecting your
+          Hot Take (“we,” “us,” or “our”) respects your privacy and is committed to protecting your
           personal information.
         </p>
         <p>
           This Privacy Policy explains how we collect, use, disclose, and safeguard your information
-          when you use the Chitchat platform (“Platform”).
+          when you use the Hot Take platform (“Platform”).
         </p>
-        <p>By using Chitchat, you consent to the practices described in this Policy.</p>
+        <p>By using Hot Take, you consent to the practices described in this Policy.</p>
       </section>
 
       <section className="legal-section">
@@ -59,7 +59,7 @@ export default function PrivacyPolicy({ onBack }) {
         </ul>
 
         <h3 className="legal-subhead">C. Audio, Video &amp; Debate Content</h3>
-        <p>Because Chitchat is a debate platform:</p>
+        <p>Because Hot Take is a debate platform:</p>
         <ul>
           <li>We collect and store audio, video, and speech data</li>
           <li>This content may be recorded, processed, and analyzed</li>
@@ -129,7 +129,7 @@ export default function PrivacyPolicy({ onBack }) {
         </ul>
 
         <h3 className="legal-subhead">D. Business Transfers</h3>
-        <p>If Chitchat is involved in:</p>
+        <p>If Hot Take is involved in:</p>
         <ul>
           <li>A merger</li>
           <li>Acquisition</li>
@@ -189,13 +189,13 @@ export default function PrivacyPolicy({ onBack }) {
 
       <section className="legal-section">
         <h2>9. International Users</h2>
-        <p>If you access Chitchat from outside your country:</p>
+        <p>If you access Hot Take from outside your country:</p>
         <p>Your data may be transferred and processed in other jurisdictions</p>
       </section>
 
       <section className="legal-section">
         <h2>10. Children’s Privacy (18+ ONLY)</h2>
-        <p>Chitchat is strictly 18+ only.</p>
+        <p>Hot Take is strictly 18+ only.</p>
         <p>We do not knowingly collect data from minors.</p>
         <p>If we discover such data, we will delete it.</p>
       </section>
@@ -212,7 +212,7 @@ export default function PrivacyPolicy({ onBack }) {
       <section className="legal-section">
         <h2>12. Changes to This Policy</h2>
         <p>We may update this Privacy Policy at any time.</p>
-        <p>Continued use of Chitchat means you accept the updated Policy.</p>
+        <p>Continued use of Hot Take means you accept the updated Policy.</p>
       </section>
 
       <section className="legal-section">
@@ -221,7 +221,7 @@ export default function PrivacyPolicy({ onBack }) {
         <p>
           Email: <ContactEmail />
         </p>
-        <p>Company: Chitchat</p>
+        <p>Company: Hot Take</p>
       </section>
     </LegalDocumentShell>
   );
