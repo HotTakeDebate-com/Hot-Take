@@ -4,6 +4,7 @@ import { TOPICS, TOPIC_CATEGORIES } from './topics.js';
 import DebateHistory from './DebateHistory.jsx';
 import ProfilePanel from './ProfilePanel.jsx';
 import SocialFeed from './SocialFeed.jsx';
+import UserSearchPanel from './UserSearchPanel.jsx';
 import { fetchRecentDebates, logDebateSessionEnd, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
@@ -46,6 +47,26 @@ function topicLabel(id) {
 }
 
 const LEGAL_OVERLAY_IDS = new Set(['terms', 'privacy', 'community', 'recording']);
+
+function formatSocketConnectError(err) {
+  const raw = String(err?.message ?? '');
+  const msg = raw.toLowerCase();
+  if (msg.includes('verify your email')) {
+    return 'Please verify your email (check your inbox), then try again.';
+  }
+  if (
+    msg.includes('missing firebase') ||
+    msg.includes('invalid firebase') ||
+    msg.includes('auth token') ||
+    msg.includes('could not verify')
+  ) {
+    return 'Your session could not be verified. Refresh the page and sign in again.';
+  }
+  if (msg.includes('admin not configured')) {
+    return 'The server could not verify sign-in. Try again in a moment or contact support.';
+  }
+  return raw ? `Realtime connection failed (${raw}). Please refresh and try again.` : 'Realtime connection failed. Please refresh and try again.';
+}
 
 export default function App() {
   const [step, setStep] = useState('welcome');
@@ -95,8 +116,10 @@ export default function App() {
   const [headerAvatarDataUrl, setHeaderAvatarDataUrl] = useState(null);
   /** Social: view someone else's profile (null = own profile on profile step). */
   const [socialProfileEmail, setSocialProfileEmail] = useState(null);
-  /** Where ProfilePanel "Back" returns: welcome home or feed. */
+  /** Where ProfilePanel "Back" returns: welcome, feed, or search. */
   const [socialReturnStep, setSocialReturnStep] = useState('welcome');
+
+  const showHeaderSocialTabs = ['welcome', 'feed', 'profile', 'search', 'history'].includes(step);
 
   const rtcConfigRef = useRef(FALLBACK_RTC);
   const socketRef = useRef(null);
@@ -111,6 +134,11 @@ export default function App() {
   const matchModeRef = useRef(null);
   const sideRef = useRef(null);
   const headerAvatarInputRef = useRef(null);
+  /** True while effect cleanup is disconnecting the socket (ignore disconnect UI). */
+  const socketDisconnectIntentionalRef = useRef(false);
+  const socketEverConnectedRef = useRef(false);
+  /** Realtime signaling: Socket.IO connection to the debate server. */
+  const [realtimeStatus, setRealtimeStatus] = useState('connecting');
 
   useEffect(() => {
     matchModeRef.current = matchMode;
@@ -255,41 +283,76 @@ export default function App() {
   useEffect(() => {
     if (!isFirebaseConfigured || !firebaseUserId || !firebaseEmailVerified) return;
 
+    const user = auth.currentUser;
+    if (!user || user.uid !== firebaseUserId) return;
+
     let cancelled = false;
+    socketDisconnectIntentionalRef.current = false;
+    socketEverConnectedRef.current = false;
+    setRealtimeStatus('connecting');
 
-    (async () => {
-      const user = auth.currentUser;
-      if (!user || user.uid !== firebaseUserId) return;
-      let token;
-      try {
-        token = await user.getIdToken();
-      } catch {
-        if (!cancelled) {
-          setError('Could not get sign-in token. Please refresh and try again.');
+    const socket = io({
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      // Fresh token on every connect/reconnect so long-lived tabs stay valid when REQUIRE_FIREBASE_TOKEN is on.
+      auth: (cb) => {
+        const u = auth.currentUser;
+        if (!u || u.uid !== firebaseUserId) {
+          cb({});
+          return;
         }
-        return;
-      }
-      if (cancelled || !token) return;
+        u.getIdToken()
+          .then((token) => {
+            if (token) cb({ token });
+            else cb({});
+          })
+          .catch(() => {
+            cb({});
+            if (!cancelled) {
+              setError('Could not get sign-in token. Please refresh and try again.');
+            }
+          });
+      },
+    });
 
-      const socket = io({
-        path: '/socket.io',
-        transports: ['websocket', 'polling'],
-        auth: { token },
-      });
-      if (cancelled) {
-        socket.disconnect();
-        return;
-      }
+    socketRef.current = socket;
 
-      socketRef.current = socket;
+    const syncSocketId = () => setSocketId(socket.id ?? null);
 
-      const syncSocketId = () => setSocketId(socket.id ?? null);
-    socket.on('connect', syncSocketId);
-    if (socket.connected) syncSocketId();
+    socket.on('connect', () => {
+      socketEverConnectedRef.current = true;
+      if (!cancelled) setRealtimeStatus('connected');
+      syncSocketId();
+    });
+    if (socket.connected) {
+      socketEverConnectedRef.current = true;
+      setRealtimeStatus('connected');
+      syncSocketId();
+    }
+
+    socket.on('disconnect', () => {
+      if (socketDisconnectIntentionalRef.current || cancelled) return;
+      setRealtimeStatus('reconnecting');
+    });
+
+    socket.io.on('reconnect_attempt', () => {
+      if (!cancelled) setRealtimeStatus('reconnecting');
+    });
+    socket.io.on('reconnect', () => {
+      socketEverConnectedRef.current = true;
+      if (!cancelled) setRealtimeStatus('connected');
+    });
+    socket.io.on('reconnect_failed', () => {
+      if (!cancelled) setRealtimeStatus('disconnected');
+    });
 
     socket.on('connect_error', (err) => {
-      const detail = err?.message ? ` (${err.message})` : '';
-      setError(`Realtime connection failed${detail}. Please refresh and try again.`);
+      if (!cancelled) {
+        setError(formatSocketConnectError(err));
+        setRealtimeStatus(
+          socketEverConnectedRef.current ? 'reconnecting' : 'disconnected'
+        );
+      }
     });
 
     const processSignal = async ({ type, payload }) => {
@@ -530,6 +593,8 @@ export default function App() {
           message ??
             'You already have an active debate or queue in another tab/window. Go to that tab, click Leave debate or Cancel queue, then try again here.'
         );
+      } else if (code === 'auth_required') {
+        setError(message ?? 'Could not verify your account. Refresh the page and sign in again.');
       } else {
         setError(message ?? 'Could not join the queue.');
       }
@@ -579,11 +644,11 @@ export default function App() {
       setSide(null);
     });
 
-    })();
-
     return () => {
       cancelled = true;
+      socketDisconnectIntentionalRef.current = true;
       setSocketId(null);
+      setRealtimeStatus('connecting');
       const sock = socketRef.current;
       if (sock) {
         sock.emit('leave-queue');
@@ -592,8 +657,8 @@ export default function App() {
         socketRef.current = null;
       }
     };
-    // Handshake awaits getIdToken() so production REQUIRE_FIREBASE_TOKEN succeeds; effect deps
-    // stay on firebaseUserId only so hourly token refresh does not reconnect Socket.IO.
+    // Socket auth callback fetches a fresh ID token on each connect/reconnect. Effect deps stay on
+    // firebaseUserId (not token) so we don’t reconnect every hour; the callback still sends a new token.
   }, [cleanupMedia, flushDebateLog, firebaseUserId, firebaseEmailVerified]);
 
   const pickTopic = (id) => {
@@ -831,11 +896,59 @@ export default function App() {
               <div className="app-header-main">
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
-                  Live video debates: pick a side, get matched, argue face to face. There&apos;s also a
-                  light community feed and profiles when you want to share a take between rounds.
+                  Live video debates: pick a side, get matched, argue face to face. Use Feed, Profile, and
+                  Search in the corner when you want to connect off the debate floor.
                 </p>
               </div>
               <div className="header-actions">
+                <span
+                  className={`header-rt-status header-rt-status--${realtimeStatus}`}
+                  role="status"
+                  aria-live="polite"
+                  title={
+                    realtimeStatus === 'connected'
+                      ? 'Connected to debate servers'
+                      : realtimeStatus === 'reconnecting'
+                        ? 'Reconnecting to debate servers…'
+                        : realtimeStatus === 'connecting'
+                          ? 'Connecting to debate servers…'
+                          : 'Offline — refresh the page if this does not clear'
+                  }
+                >
+                  {realtimeStatus === 'connecting' && 'Connecting…'}
+                  {realtimeStatus === 'connected' && 'Live'}
+                  {realtimeStatus === 'reconnecting' && 'Reconnecting…'}
+                  {realtimeStatus === 'disconnected' && 'Offline'}
+                </span>
+                {showHeaderSocialTabs && (
+                  <nav className="header-social-tabs" aria-label="Feed and profiles">
+                    <button
+                      type="button"
+                      className={`header-social-tab ${step === 'feed' ? 'header-social-tab--active' : ''}`}
+                      onClick={() => setStep('feed')}
+                    >
+                      Feed
+                    </button>
+                    <button
+                      type="button"
+                      className={`header-social-tab ${step === 'profile' && socialProfileEmail == null ? 'header-social-tab--active' : ''}`}
+                      onClick={() => {
+                        setSocialProfileEmail(null);
+                        setSocialReturnStep('welcome');
+                        setStep('profile');
+                      }}
+                    >
+                      Profile
+                    </button>
+                    <button
+                      type="button"
+                      className={`header-social-tab ${step === 'search' ? 'header-social-tab--active' : ''}`}
+                      onClick={() => setStep('search')}
+                    >
+                      Search
+                    </button>
+                  </nav>
+                )}
                 <HeaderNavMenu
                   onPickLegal={(id) => setHeaderOverlay(id)}
                   onPickMission={() => setHeaderOverlay('mission')}
@@ -880,7 +993,7 @@ export default function App() {
 
       {showMainApp && (
         <>
-      {step !== 'debate' && step !== 'history' && step !== 'feed' && step !== 'profile' && (
+      {step !== 'debate' && step !== 'history' && step !== 'feed' && step !== 'profile' && step !== 'search' && (
         <details className="device-details" open>
           <summary className="device-details-summary">
             Camera &amp; microphone
@@ -924,32 +1037,6 @@ export default function App() {
               </button>
             </div>
           </section>
-
-          <section className="welcome-block welcome-block--social" aria-labelledby="welcome-social-title">
-            <h3 id="welcome-social-title" className="welcome-block-title">
-              Community
-            </h3>
-            <p className="welcome-block-desc">
-              Optional: post short takes, follow people, and edit how you appear to others—separate from
-              debate matchmaking.
-            </p>
-            <div className="welcome-actions-row welcome-social-actions">
-              <button type="button" className="btn" onClick={() => setStep('feed')}>
-                Open feed
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setSocialProfileEmail(null);
-                  setSocialReturnStep('welcome');
-                  setStep('profile');
-                }}
-              >
-                My profile
-              </button>
-            </div>
-          </section>
         </div>
       )}
 
@@ -970,6 +1057,17 @@ export default function App() {
           onBack={() => {
             setStep(socialReturnStep);
             setSocialProfileEmail(null);
+          }}
+        />
+      )}
+
+      {step === 'search' && (
+        <UserSearchPanel
+          onBack={() => setStep('welcome')}
+          onOpenProfile={(email) => {
+            setSocialProfileEmail(email);
+            setSocialReturnStep('search');
+            setStep('profile');
           }}
         />
       )}

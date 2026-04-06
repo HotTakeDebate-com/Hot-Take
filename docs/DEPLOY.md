@@ -16,6 +16,7 @@
 | `ICE_SERVERS_JSON` | No | Optional TURN/STUN JSON array for WebRTC. |
 | `REQUIRE_FIREBASE_TOKEN` | No | `true` enforces Firebase ID token verification for Socket.IO connections. |
 | `FIREBASE_ADMIN_SERVICE_ACCOUNT` | If enforcing | Service account JSON (raw JSON string or base64-encoded JSON). Alternative: host-provided `GOOGLE_APPLICATION_CREDENTIALS`. |
+| `REDIS_URL` | No | When set, enables the **Socket.IO Redis adapter** (multi-process) and **shared** join-queue rate limits across instances. Omit for single-node dev/deploy. |
 
 ### Client (build time — Vite)
 
@@ -55,3 +56,18 @@ If enabling enforced Socket.IO auth, also pass `REQUIRE_FIREBASE_TOKEN=true` and
 ## Firestore rules
 
 Deploy `firestore.rules` from this repo (Console or Firebase CLI) before relying on production data — especially if you previously used **test mode**.
+
+## Production readiness (safety + surviving traffic spikes)
+
+These steps reduce abuse, confusing failures, and “works on my machine” gaps when lots of people show up at once.
+
+1. **Enforce Socket.IO auth** — Set `REQUIRE_FIREBASE_TOKEN=true` and configure `FIREBASE_ADMIN_SERVICE_ACCOUNT` (or `GOOGLE_APPLICATION_CREDENTIALS`). Anonymous matchmaking without a verified user becomes impossible.
+2. **Trust the proxy** — By default the server trusts one reverse-proxy hop so `X-Forwarded-For` is used for rate limits. If you expose Node directly, set `TRUST_PROXY=0` (see `.env.example`).
+3. **Tune rate limits** — `RATE_LIMIT_JOIN_QUEUE_MAX` / `RATE_LIMIT_JOIN_QUEUE_WINDOW_MS` and `DEBATE_CHAT_MAX_PER_MIN` / `DEBATE_CHAT_MAX_LEN` live in `.env.example`. In-memory limits reset per process; for **multiple Node instances** use a shared store (e.g. Redis) or edge rate limiting.
+4. **Monitor `/health`** — Response includes `ok`, `uptimeSec`, `socketAuth`, `firebaseAdmin`, and `redis` (whether `REDIS_URL` connected). Wire your host or an external checker to alert when `ok` is false or the process is flapping.
+5. **TURN for WebRTC** — Under load, more users hit strict NAT; set `ICE_SERVERS_JSON` with a commercial TURN provider before blaming “random” failed calls.
+6. **Horizontal scale** — Matchmaking queues and custom lobbies stay **in-memory per Node process**. To run **multiple server replicas**, set **`REDIS_URL`**: the repo wires **`@socket.io/redis-adapter`** so Socket.IO events and rooms sync across processes, and **join-queue rate limits** use Redis so abuse limits apply cluster-wide. You still need a **single logical matchmaking layer** (or sticky sessions + accepted split-brain) for fair queues—Redis alone does not merge the in-memory queue Maps; for heavy viral load, plan a dedicated queue service or sticky routing to one matcher.
+
+## Firestore indexes (optional)
+
+If Firebase prompts for an index when running profile name search, create it from the console link or add `firestore.indexes.json` and deploy with the Firebase CLI.

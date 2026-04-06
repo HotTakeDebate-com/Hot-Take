@@ -8,6 +8,7 @@ import { existsSync } from 'fs';
 import { ALLOWED_TOPIC_IDS } from '../shared/topics.js';
 import { getRtcConfigForClient } from './rtcConfig.js';
 import { createRateLimiter, getClientIp } from './rateLimit.js';
+import { setupRedisIfConfigured, allowJoinQueueIp, shutdownRedisClients } from './redisOptional.js';
 import admin from 'firebase-admin';
 import { persistChatMessage, persistMatchSession } from './persistence.js';
 import { attachModerationRoutes } from './moderationApi.js';
@@ -24,6 +25,14 @@ const joinQueueLimiter = createRateLimiter({
   windowMs: joinQueueWindowMs,
   max: joinQueueMax,
 });
+
+/** Set true when REDIS_URL connects (Socket.IO adapter + shared join RL). */
+const runtimeFlags = { redis: false };
+let redisJoinClient = null;
+
+async function allowJoinQueueAttempt(ip) {
+  return allowJoinQueueIp(redisJoinClient, ip, joinQueueWindowMs, joinQueueMax, joinQueueLimiter);
+}
 const customLobbyTtlMs = Math.max(
   60_000,
   parseInt(process.env.CUSTOM_LOBBY_TTL_MS || '1800000', 10) || 1_800_000
@@ -39,7 +48,12 @@ const root = join(__dirname, '..');
 const dist = join(root, 'dist');
 
 const app = express();
+/** Trust first proxy hop (Railway, Render, etc.) so rate limits use real client IPs, not the proxy’s. Set TRUST_PROXY=0 if Node is exposed directly without a trusted reverse proxy. */
+if (process.env.TRUST_PROXY !== '0') {
+  app.set('trust proxy', 1);
+}
 const httpServer = createServer(app);
+const serverStartedAt = Date.now();
 
 const io = new Server(httpServer, {
   cors: { origin: true, credentials: true },
@@ -84,6 +98,24 @@ function tryInitFirebaseAdmin() {
 }
 
 tryInitFirebaseAdmin();
+
+/**
+ * When Admin SDK is up, every matchmaking / debate action must have `socket.data.uid` from a verified ID token.
+ * Stops the “optional verification” hole where bad/missing tokens still connected.
+ */
+function rejectIfSocketUnverified(socket) {
+  if (!firebaseAdminReady) return false;
+  if (socket.data.uid) return false;
+  metrics.queueErrors += 1;
+  if (!socket.data.uidRejectNotified) {
+    socket.data.uidRejectNotified = true;
+    socket.emit('queue-error', {
+      code: 'auth_required',
+      message: 'Could not verify your account. Refresh the page and sign in again.',
+    });
+  }
+  return true;
+}
 
 if (REQUIRE_FIREBASE_TOKEN && !firebaseAdminReady) {
   console.error(
@@ -201,7 +233,15 @@ function removeFromQueue(socketId, topicId, side) {
 }
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true });
+  const socketAuth = REQUIRE_FIREBASE_TOKEN ? 'enforced' : firebaseAdminReady ? 'optional' : 'off';
+  res.json({
+    ok: true,
+    ts: new Date().toISOString(),
+    uptimeSec: Math.floor((Date.now() - serverStartedAt) / 1000),
+    socketAuth,
+    firebaseAdmin: firebaseAdminReady,
+    redis: runtimeFlags.redis,
+  });
 });
 
 app.get('/api/rtc-config', (_req, res) => {
@@ -340,9 +380,6 @@ if (!metricsLogTimer) {
   metricsLogTimer.unref?.();
 }
 
-process.on('SIGINT', () => logMetricsOnShutdown('SIGINT'));
-process.on('SIGTERM', () => logMetricsOnShutdown('SIGTERM'));
-
 io.on('connection', (socket) => {
   const hasConcurrentSessionForUid = () => {
     const uid = socket.data.uid;
@@ -404,6 +441,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-queue', async ({ topicId, side }) => {
     metrics.quickJoinAttempts += 1;
+    if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
@@ -415,7 +453,7 @@ io.on('connection', (socket) => {
     }
 
     const ip = getClientIp(socket);
-    if (!joinQueueLimiter(ip)) {
+    if (!(await allowJoinQueueAttempt(ip))) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
         code: 'rate_limited',
@@ -493,8 +531,9 @@ io.on('connection', (socket) => {
     socket.emit('queued', { topicId, side });
   });
 
-  socket.on('create-custom-game', ({ statement, joinMode }) => {
+  socket.on('create-custom-game', async ({ statement, joinMode }) => {
     metrics.customCreateAttempts += 1;
+    if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
@@ -506,7 +545,7 @@ io.on('connection', (socket) => {
     }
 
     const ip = getClientIp(socket);
-    if (!joinQueueLimiter(ip)) {
+    if (!(await allowJoinQueueAttempt(ip))) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
         code: 'rate_limited',
@@ -562,6 +601,7 @@ io.on('connection', (socket) => {
 
   socket.on('join-custom-room', async ({ side, roomCode }) => {
     metrics.customJoinAttempts += 1;
+    if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
@@ -573,7 +613,7 @@ io.on('connection', (socket) => {
     }
 
     const ip = getClientIp(socket);
-    if (!joinQueueLimiter(ip)) {
+    if (!(await allowJoinQueueAttempt(ip))) {
       metrics.queueErrors += 1;
       socket.emit('queue-error', {
         code: 'rate_limited',
@@ -684,6 +724,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('kick-peer', ({ roomId }) => {
+    if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     if (socket.data.matchType !== 'custom' || !socket.data.customRoomCode) return;
 
@@ -770,11 +811,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('signal', ({ roomId, type, payload }) => {
+    if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     socket.to(roomId).emit('signal', { type, payload, from: socket.id });
   });
 
   socket.on('debate-chat', async ({ roomId, text }) => {
+    if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     const raw = String(text ?? '');
     const trimmed = raw.trim();
@@ -854,10 +897,35 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 
-httpServer.listen(PORT, () => {
-  const authMode = REQUIRE_FIREBASE_TOKEN ? 'enforced' : firebaseAdminReady ? 'optional' : 'off';
-  console.log(
-    `Server http://127.0.0.1:${PORT} (health: /health, rtc: /api/rtc-config, socketAuth: ${authMode})`
-  );
-  console.log(`[metrics] logging every ${Math.round(metricsLogEveryMs / 1000)}s`);
+async function startServer() {
+  let redisClients = null;
+  try {
+    redisClients = await setupRedisIfConfigured(io, runtimeFlags);
+    redisJoinClient = redisClients?.joinClient ?? null;
+  } catch (e) {
+    console.error('[redis] REDIS_URL is set but connection or adapter setup failed:', e?.message ?? e);
+    process.exit(1);
+  }
+
+  httpServer.listen(PORT, () => {
+    const authMode = REQUIRE_FIREBASE_TOKEN ? 'enforced' : firebaseAdminReady ? 'optional' : 'off';
+    const redisNote = runtimeFlags.redis ? ' redis=on' : '';
+    console.log(
+      `Server http://127.0.0.1:${PORT} (health: /health, rtc: /api/rtc-config, socketAuth: ${authMode}${redisNote})`
+    );
+    console.log(`[metrics] logging every ${Math.round(metricsLogEveryMs / 1000)}s`);
+  });
+
+  const onShutdown = async (signal) => {
+    logMetricsOnShutdown(signal);
+    await shutdownRedisClients(redisClients);
+    process.exit(0);
+  };
+  process.on('SIGINT', () => onShutdown('SIGINT'));
+  process.on('SIGTERM', () => onShutdown('SIGTERM'));
+}
+
+startServer().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });

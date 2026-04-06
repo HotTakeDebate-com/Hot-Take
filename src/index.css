@@ -65,3 +65,36 @@ button {
   font-family: inherit;
   cursor: pointer;
 }
+
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.error-boundary-card {
+  max-width: 26rem;
+  padding: 1.75rem 1.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-glass);
+  text-align: center;
+}
+
+.error-boundary-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.error-boundary-text {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+}

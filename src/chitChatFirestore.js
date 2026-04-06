@@ -317,3 +317,29 @@ export async function fetchPostsForFeed({ feedMode, followingEmails = [], maxPos
   }
   return rows;
 }
+
+/**
+ * Prefix match on publicProfiles.displayName (case-sensitive). Requires displayName field on docs.
+ */
+export async function searchPublicProfilesByDisplayPrefix(prefix, maxResults = 25) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) return [];
+  const p = String(prefix ?? '').trim();
+  if (p.length < 2) return [];
+  const cap = Math.min(50, Math.max(1, maxResults));
+  const qy = query(
+    collection(db, 'publicProfiles'),
+    where('displayName', '>=', p),
+    where('displayName', '<=', `${p}\uf8ff`),
+    limit(cap)
+  );
+  const snap = await getDocs(qy);
+  return snap.docs.map((d) => {
+    const x = d.data();
+    return {
+      email: d.id,
+      displayName: typeof x.displayName === 'string' ? x.displayName : '',
+      bio: typeof x.bio === 'string' ? x.bio : '',
+      updatedAt: x.updatedAt ?? null,
+    };
+  });
+}
