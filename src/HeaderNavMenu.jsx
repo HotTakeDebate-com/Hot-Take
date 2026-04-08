@@ -50,7 +50,7 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSuppor
     <div className="header-nav" ref={rootRef}>
       <button
         type="button"
-        className="btn btn-ghost header-nav-trigger"
+        className="btn btn-ghost header-nav-trigger header-chip"
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuId}
