@@ -80,6 +80,16 @@ export const TOPIC_CATEGORIES = [
       },
     ],
   },
+  {
+    id: 'religion',
+    label: 'Religion',
+    topics: [
+      {
+        id: 'jesus-is-god',
+        label: 'Jesus is God.',
+      },
+    ],
+  },
 ];
 
 export const TOPICS = TOPIC_CATEGORIES.flatMap((c) => c.topics);
