@@ -848,39 +848,13 @@ export default function App() {
               <div className="app-header-main">
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
-                  Live video debates: pick a side, get matched, argue face to face. Use Feed, Profile, and
-                  Search in the corner when you want to connect off the debate floor.
+                  Live video debates: pick a side, get matched, argue face to face. Use Profile in the corner
+                  when you want to connect off the debate floor.
                 </p>
               </div>
               <div className="header-actions">
-                <span
-                  className={`header-chip header-rt-status header-rt-status--${realtimeStatus}`}
-                  role="status"
-                  aria-live="polite"
-                  title={
-                    realtimeStatus === 'connected'
-                      ? 'Connected to debate servers'
-                      : realtimeStatus === 'reconnecting'
-                        ? 'Reconnecting to debate servers…'
-                        : realtimeStatus === 'connecting'
-                          ? 'Connecting to debate servers…'
-                          : 'Offline — refresh the page if this does not clear'
-                  }
-                >
-                  {realtimeStatus === 'connecting' && 'Connecting…'}
-                  {realtimeStatus === 'connected' && 'Live'}
-                  {realtimeStatus === 'reconnecting' && 'Reconnecting…'}
-                  {realtimeStatus === 'disconnected' && 'Offline'}
-                </span>
                 {showHeaderSocialTabs && (
-                  <nav className="header-social-tabs" aria-label="Feed and profiles">
-                    <button
-                      type="button"
-                      className={`header-chip header-social-tab ${step === 'feed' ? 'header-social-tab--active' : ''}`}
-                      onClick={() => setStep('feed')}
-                    >
-                      Feed
-                    </button>
+                  <nav className="header-social-tabs" aria-label="Profile">
                     <button
                       type="button"
                       className={`header-chip header-social-tab ${step === 'profile' && socialProfileEmail == null ? 'header-social-tab--active' : ''}`}
@@ -891,13 +865,6 @@ export default function App() {
                       }}
                     >
                       Profile
-                    </button>
-                    <button
-                      type="button"
-                      className={`header-chip header-social-tab ${step === 'search' ? 'header-social-tab--active' : ''}`}
-                      onClick={() => setStep('search')}
-                    >
-                      Search
                     </button>
                   </nav>
                 )}
