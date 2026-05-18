@@ -69,14 +69,13 @@
 .auth-screen-logo-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 1rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 1.25rem;
+  padding: 0;
+  background: transparent;
 }
 
 .auth-screen-logo-wrap .brand-logo {
-  max-width: 220px;
+  max-width: min(320px, 100%);
 }
 
 .auth-screen-title {
