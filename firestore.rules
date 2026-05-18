@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Hot Take — signed-in Firebase Auth user with verified email (email/password; no Anonymous).
+// Hot Take — signed-in Firebase Auth user (email/password; no Anonymous). Email verification is optional in-app.
 // users/{email} — document id = lowercase email. Subcollections: debates (+ chat_messages from server), legacy text_chat.
 // Paste into Firebase Console → Firestore → Rules, or: firebase deploy --only firestore:rules
 
@@ -8,7 +8,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isSignedIn() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null;
     }
 
     // Profile doc id must match the signed-in user's email claim (use lowercase in app + Console paths).
@@ -96,7 +96,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Public profile card (safe fields only). Readable by any signed-in verified user.
+    // Public profile card (safe fields only). Readable by any signed-in user.
     match /publicProfiles/{profileKey} {
       allow read: if isSignedIn();
       allow create, update: if isOwnUserEmailDoc(profileKey)

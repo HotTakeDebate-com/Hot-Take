@@ -9,7 +9,6 @@ import { fetchRecentDebates, logDebateSessionEnd, syncUserPresence } from './chi
 import ReportIssue from './ReportIssue.jsx';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
 import AuthScreen from './AuthScreen.jsx';
-import VerifyEmailScreen from './VerifyEmailScreen.jsx';
 import BrandLogo from './BrandLogo.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 import LegalViewer from './legal/LegalViewer.jsx';
@@ -51,9 +50,6 @@ const LEGAL_OVERLAY_IDS = new Set(['terms', 'privacy', 'community', 'recording']
 function formatSocketConnectError(err) {
   const raw = String(err?.message ?? '');
   const msg = raw.toLowerCase();
-  if (msg.includes('verify your email')) {
-    return 'Please verify your email (check your inbox), then try again.';
-  }
   if (
     msg.includes('missing firebase') ||
     msg.includes('invalid firebase') ||
@@ -81,7 +77,6 @@ export default function App() {
   const [connState, setConnState] = useState(null);
   const [firebaseUserId, setFirebaseUserId] = useState(null);
   /** Must be true to use the app, Socket.IO, and Firestore (email/password users verify via link). */
-  const [firebaseEmailVerified, setFirebaseEmailVerified] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [videoDeviceId, setVideoDeviceId] = useState('');
   const [audioDeviceId, setAudioDeviceId] = useState('');
@@ -214,8 +209,7 @@ export default function App() {
     }
     const unsub = onIdTokenChanged(auth, (user) => {
       setFirebaseUserId(user?.uid ?? null);
-      setFirebaseEmailVerified(Boolean(user?.emailVerified));
-      if (user?.emailVerified) syncUserPresence();
+      if (user) syncUserPresence();
       setAuthReady(true);
     });
     return () => unsub();
@@ -238,7 +232,7 @@ export default function App() {
   }, [authReady, firebaseUserId, cleanupMedia]);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !firebaseUserId || !firebaseEmailVerified) return;
+    if (!isFirebaseConfigured || !firebaseUserId) return;
 
     const user = auth.currentUser;
     if (!user || user.uid !== firebaseUserId) return;
@@ -616,7 +610,7 @@ export default function App() {
     };
     // Socket auth callback fetches a fresh ID token on each connect/reconnect. Effect deps stay on
     // firebaseUserId (not token) so we don’t reconnect every hour; the callback still sends a new token.
-  }, [cleanupMedia, flushDebateLog, firebaseUserId, firebaseEmailVerified]);
+  }, [cleanupMedia, flushDebateLog, firebaseUserId]);
 
   const pickTopic = (id) => {
     setTopicId(id);
@@ -822,10 +816,7 @@ export default function App() {
   }, [camOn]);
 
   const showAuthScreen = authReady && isFirebaseConfigured && !firebaseUserId;
-  const showVerifyEmail =
-    authReady && isFirebaseConfigured && !!firebaseUserId && !firebaseEmailVerified;
-  const showMainApp =
-    authReady && isFirebaseConfigured && !!firebaseUserId && firebaseEmailVerified;
+  const showMainApp = authReady && isFirebaseConfigured && !!firebaseUserId;
 
   return (
     <>
@@ -885,7 +876,7 @@ export default function App() {
       <div
         className={[
           'app',
-          showAuthScreen || showVerifyEmail ? 'app--auth-only' : '',
+          showAuthScreen ? 'app--auth-only' : '',
           showMainApp ? 'app--with-global-header' : '',
         ]
           .filter(Boolean)
@@ -908,7 +899,6 @@ export default function App() {
       )}
 
       {showAuthScreen && <AuthScreen />}
-      {showVerifyEmail && <VerifyEmailScreen />}
 
       {showMainApp && (
         <>

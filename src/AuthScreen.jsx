@@ -262,13 +262,12 @@ export default function AuthScreen() {
           <p className="auth-screen-lead">
             {mode === 'signin' ? (
               <>
-                Welcome back. Use the email and password for your Hot Take account. You&apos;ll need a
-                verified email before matchmaking.
+                Welcome back. Use the email and password for your Hot Take account.
               </>
             ) : (
               <>
-                Set up your account in a minute. We&apos;ll email you a link to verify your address—then
-                you can debate live. Use a real inbox you can open on this device.
+                Set up your account in a minute, then debate live. You can verify your email anytime from
+                Profile. Use a real inbox you can open on this device.
               </>
             )}
           </p>

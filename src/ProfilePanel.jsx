@@ -8,6 +8,7 @@ import {
   userProfileDocId,
 } from './chitChatFirestore.js';
 import { auth } from './firebase.js';
+import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 
 /**
  * @param {string | null} targetEmail — null = signed-in user’s profile (edit). Otherwise view that user.
@@ -117,7 +118,9 @@ export default function ProfilePanel({ targetEmail, onBack }) {
           <p className="social-loading">Loading profile…</p>
         </div>
       ) : own ? (
-        <form className="social-profile-form" onSubmit={onSave}>
+        <>
+          <ProfileEmailVerification />
+          <form className="social-profile-form" onSubmit={onSave}>
           <label className="auth-label" htmlFor="prof-display">
             Display name
           </label>
@@ -146,6 +149,7 @@ export default function ProfilePanel({ targetEmail, onBack }) {
             {saving ? 'Saving…' : 'Save profile'}
           </button>
         </form>
+        </>
       ) : (
         <div className="social-profile-readonly">
           <h3 className="social-profile-display">{displayName || '(No display name)'}</h3>
