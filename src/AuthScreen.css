@@ -10,9 +10,9 @@
   inset: 0;
   z-index: 3000;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 1.25rem;
+  padding: 1.5rem;
   box-sizing: border-box;
   background: rgba(0, 0, 0, 0.72);
   overflow-y: auto;
@@ -20,9 +20,21 @@
 
 .auth-modal-dialog {
   position: relative;
-  width: 100%;
-  max-width: 440px;
+  width: min(900px, 96vw);
+  max-width: 900px;
   margin: auto;
+}
+
+.auth-screen--modal .auth-screen-inner {
+  max-width: none;
+}
+
+.auth-screen--modal .auth-screen-card {
+  padding: 1.75rem 2rem 1.5rem;
+}
+
+.auth-screen--modal .auth-screen-card--legal-gate {
+  max-width: none;
 }
 
 .auth-modal-close {
@@ -353,7 +365,11 @@
 }
 
 .auth-screen-card--legal-gate {
-  max-width: min(520px, 100%);
+  max-width: min(900px, 100%);
+}
+
+.auth-screen--modal .signup-legal-review__scroll {
+  max-height: min(52vh, 400px);
 }
 
 .auth-legal-gate-back {
@@ -430,8 +446,8 @@
 }
 
 .signup-legal-review__scroll {
-  max-height: min(62vh, 480px);
-  min-height: 220px;
+  max-height: min(58vh, 440px);
+  min-height: 200px;
   overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;

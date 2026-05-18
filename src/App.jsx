@@ -1032,7 +1032,7 @@ export default function App() {
 
           {!isSignedIn && (
             <p className="guest-footer-cta">
-              Ready to argue live?{' '}
+              Ready to debate live?{' '}
               <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signup')}>
                 Create an account
               </button>{' '}
