@@ -34,8 +34,8 @@ function mapAuthError(code) {
   }
 }
 
-export default function AuthScreen() {
-  const [mode, setMode] = useState('signin');
+export default function AuthScreen({ variant = 'page', initialMode = 'signin', onClose = null }) {
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -71,6 +71,14 @@ export default function AuthScreen() {
     setDisplayName('');
     resetLegal();
   };
+
+  useEffect(() => {
+    setMode(initialMode);
+    setError(null);
+    if (initialMode === 'signin') {
+      resetLegal();
+    }
+  }, [initialMode]);
 
   useEffect(() => {
     return () => {
@@ -174,8 +182,8 @@ export default function AuthScreen() {
   const signupLegalGate = mode === 'signup' && signupPhase === 'legal';
   const signupReady = signupPhase === 'account' && agreeAge18 && agreePolicies;
 
-  return (
-    <div className="auth-screen">
+  const screen = (
+    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal'].filter(Boolean).join(' ')}>
       <div className="auth-screen-inner">
         <div
           className={['auth-screen-card', signupLegalGate && 'auth-screen-card--legal-gate']
@@ -507,4 +515,25 @@ export default function AuthScreen() {
       )}
     </div>
   );
+
+  if (variant === 'modal' && onClose) {
+    return (
+      <div
+        className="auth-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label={initialMode === 'signup' ? 'Create account' : 'Sign in'}
+        onMouseDown={onClose}
+      >
+        <div className="auth-modal-dialog" onMouseDown={(e) => e.stopPropagation()}>
+          <button type="button" className="auth-modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+          {screen}
+        </div>
+      </div>
+    );
+  }
+
+  return screen;
 }

@@ -111,8 +111,26 @@ export default function App() {
   const [socialProfileEmail, setSocialProfileEmail] = useState(null);
   /** Where ProfilePanel "Back" returns: welcome, feed, or search. */
   const [socialReturnStep, setSocialReturnStep] = useState('welcome');
+  /** Guest auth overlay: signin or signup modal. */
+  const [authModal, setAuthModal] = useState(null);
 
-  const showHeaderSocialTabs = ['welcome', 'feed', 'profile', 'search', 'history'].includes(step);
+  const isSignedIn = Boolean(firebaseUserId);
+  const showHeaderSocialTabs =
+    isSignedIn && ['welcome', 'feed', 'profile', 'search', 'history'].includes(step);
+
+  const openAuth = useCallback((mode = 'signin') => {
+    setAuthModal(mode === 'signup' ? 'signup' : 'signin');
+    setError(null);
+  }, []);
+
+  const requireAuth = useCallback(
+    (mode = 'signin') => {
+      if (firebaseUserId) return true;
+      openAuth(mode);
+      return false;
+    },
+    [firebaseUserId, openAuth]
+  );
 
   const rtcConfigRef = useRef(FALLBACK_RTC);
   const socketRef = useRef(null);
@@ -155,6 +173,7 @@ export default function App() {
   }, [firebaseUserId]);
 
   const openHistory = () => {
+    if (!requireAuth('signin')) return;
     setStep('history');
     loadHistory();
   };
@@ -230,6 +249,23 @@ export default function App() {
     setSocialProfileEmail(null);
     setSocialReturnStep('welcome');
   }, [authReady, firebaseUserId, cleanupMedia]);
+
+  useEffect(() => {
+    if (firebaseUserId && authModal) setAuthModal(null);
+  }, [firebaseUserId, authModal]);
+
+  useEffect(() => {
+    if (!authReady || firebaseUserId) return;
+    if (step !== 'welcome') {
+      setStep('welcome');
+      setWaiting(false);
+      setMatchMode(null);
+      setTopicId(null);
+      setSide(null);
+      setDebateInfo(null);
+      setSocialProfileEmail(null);
+    }
+  }, [authReady, firebaseUserId, step]);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !firebaseUserId) return;
@@ -644,6 +680,7 @@ export default function App() {
   };
 
   const startQuickMatch = () => {
+    if (!requireAuth('signin')) return;
     setError(null);
     setMatchMode('quick');
     setTopicId(null);
@@ -653,6 +690,7 @@ export default function App() {
   };
 
   const startCustomMatch = () => {
+    if (!requireAuth('signin')) return;
     setError(null);
     setMatchMode('custom');
     setTopicId(null);
@@ -815,12 +853,11 @@ export default function App() {
     });
   }, [camOn]);
 
-  const showAuthScreen = authReady && isFirebaseConfigured && !firebaseUserId;
-  const showMainApp = authReady && isFirebaseConfigured && !!firebaseUserId;
+  const showAppShell = authReady && isFirebaseConfigured;
 
   return (
     <>
-      {showMainApp && (
+      {showAppShell && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -839,8 +876,9 @@ export default function App() {
               <div className="app-header-main">
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
-                  Live video debates: pick a side, get matched, argue face to face. Use Profile in the corner
-                  when you want to connect off the debate floor.
+                  {isSignedIn
+                    ? 'Live video debates: pick a side, get matched, argue face to face. Use Profile in the corner when you want to connect off the debate floor.'
+                    : 'Browse topics and see how Hot Take works. Sign in to join live video debates.'}
                 </p>
               </div>
               <div className="header-actions">
@@ -850,6 +888,7 @@ export default function App() {
                       type="button"
                       className={`header-chip header-social-tab ${step === 'profile' && socialProfileEmail == null ? 'header-social-tab--active' : ''}`}
                       onClick={() => {
+                        if (!requireAuth('signin')) return;
                         setSocialProfileEmail(null);
                         setSocialReturnStep('welcome');
                         setStep('profile');
@@ -864,9 +903,24 @@ export default function App() {
                   onPickMission={() => setHeaderOverlay('mission')}
                   onPickSupport={() => setHeaderOverlay('support')}
                 />
-                <button type="button" className="btn btn-ghost header-chip header-sign-out" onClick={handleSignOut}>
-                  Sign out
-                </button>
+                {isSignedIn ? (
+                  <button type="button" className="btn btn-ghost header-chip header-sign-out" onClick={handleSignOut}>
+                    Sign out
+                  </button>
+                ) : (
+                  <>
+                    <button type="button" className="btn btn-ghost header-chip" onClick={() => openAuth('signin')}>
+                      Sign in
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary header-chip header-chip--cta"
+                      onClick={() => openAuth('signup')}
+                    >
+                      Create account
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </header>
@@ -874,11 +928,7 @@ export default function App() {
       )}
 
       <div
-        className={[
-          'app',
-          showAuthScreen ? 'app--auth-only' : '',
-          showMainApp ? 'app--with-global-header' : '',
-        ]
+        className={['app', showAppShell && 'app--with-global-header', !isSignedIn && showAppShell && 'app--guest']
           .filter(Boolean)
           .join(' ')}
       >
@@ -898,9 +948,7 @@ export default function App() {
         </div>
       )}
 
-      {showAuthScreen && <AuthScreen />}
-
-      {showMainApp && (
+      {showAppShell && (
         <>
       {step !== 'debate' && step !== 'history' && step !== 'feed' && step !== 'profile' && step !== 'search' && (
         <details className="device-details" open>
@@ -921,12 +969,36 @@ export default function App() {
 
       {step === 'welcome' && (
         <div className="panel welcome-actions">
+          {!isSignedIn && (
+            <section className="guest-home-banner" aria-labelledby="guest-home-banner-title">
+              <h3 id="guest-home-banner-title" className="guest-home-banner__title">
+                You&apos;re browsing as a guest
+              </h3>
+              <p className="guest-home-banner__text">
+                Explore how Hot Take works below. Sign in or create a free account to join live video
+                debates, save your profile, and match with opponents.
+              </p>
+              <div className="guest-home-banner__actions">
+                <button type="button" className="btn btn-primary" onClick={() => openAuth('signin')}>
+                  Sign in
+                </button>
+                <button type="button" className="btn btn-outline" onClick={() => openAuth('signup')}>
+                  Create account
+                </button>
+              </div>
+            </section>
+          )}
+
           <p className="welcome-hero-lead">
-            Choose a topic or statement, then meet someone on the other side over video. Allow your camera
-            and mic above before you join a match.
+            {isSignedIn
+              ? 'Choose a topic or statement, then meet someone on the other side over video. Allow your camera and mic above before you join a match.'
+              : 'Preview the debate flow below. Every live feature requires an account.'}
           </p>
 
-          <section className="welcome-block welcome-block--debate" aria-labelledby="welcome-debate-title">
+          <section
+            className={`welcome-block welcome-block--debate${!isSignedIn ? ' welcome-block--guest-locked' : ''}`}
+            aria-labelledby="welcome-debate-title"
+          >
             <h3 id="welcome-debate-title" className="welcome-block-title">
               Live debates
             </h3>
@@ -934,22 +1006,47 @@ export default function App() {
               Quick match uses curated statements; custom room is your own statement and optional room
               code. In-debate text chat stays available during the call.
             </p>
+            {!isSignedIn && (
+              <p className="guest-feature-hint">
+                <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signin')}>
+                  Sign in
+                </button>{' '}
+                to start a debate.
+              </p>
+            )}
             <div className="welcome-actions-row welcome-debate-actions">
               <button type="button" className="btn btn-primary" onClick={startQuickMatch}>
                 Quick match
+                {!isSignedIn && <span className="guest-btn-sub"> · Sign in required</span>}
               </button>
               <button type="button" className="btn btn-primary" onClick={startCustomMatch}>
                 Custom room
+                {!isSignedIn && <span className="guest-btn-sub"> · Sign in required</span>}
               </button>
               <button type="button" className="btn" onClick={openHistory}>
                 Past sessions
+                {!isSignedIn && <span className="guest-btn-sub"> · Sign in required</span>}
               </button>
             </div>
           </section>
+
+          {!isSignedIn && (
+            <p className="guest-footer-cta">
+              Ready to argue live?{' '}
+              <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signup')}>
+                Create an account
+              </button>{' '}
+              or{' '}
+              <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signin')}>
+                sign in
+              </button>
+              .
+            </p>
+          )}
         </div>
       )}
 
-      {step === 'feed' && (
+      {isSignedIn && step === 'feed' && (
         <SocialFeed
           onBack={() => setStep('welcome')}
           onOpenProfile={(email) => {
@@ -960,7 +1057,7 @@ export default function App() {
         />
       )}
 
-      {step === 'profile' && (
+      {isSignedIn && step === 'profile' && (
         <ProfilePanel
           targetEmail={socialProfileEmail}
           onBack={() => {
@@ -970,7 +1067,7 @@ export default function App() {
         />
       )}
 
-      {step === 'search' && (
+      {isSignedIn && step === 'search' && (
         <UserSearchPanel
           onBack={() => setStep('welcome')}
           onOpenProfile={(email) => {
@@ -981,7 +1078,7 @@ export default function App() {
         />
       )}
 
-      {step === 'custom' && (
+      {isSignedIn && step === 'custom' && (
         <div className="panel custom-browser">
           <h2>Custom debates</h2>
           <p style={{ color: 'var(--muted)', marginTop: '-0.5rem' }}>
@@ -1185,7 +1282,7 @@ export default function App() {
         </div>
       )}
 
-      {step === 'history' && (
+      {isSignedIn && step === 'history' && (
         <DebateHistory
           rows={historyRows}
           loading={historyLoading}
@@ -1195,7 +1292,7 @@ export default function App() {
         />
       )}
 
-      {step === 'topic' && (
+      {isSignedIn && step === 'topic' && (
         <div className="panel">
           {!quickCategoryId ? (
             <>
@@ -1260,7 +1357,7 @@ export default function App() {
         </div>
       )}
 
-      {step === 'side' && topicId && (
+      {isSignedIn && step === 'side' && topicId && (
         <div className="panel">
           <h2>{topicLabel(topicId)}</h2>
           <p style={{ color: 'var(--muted)', marginTop: '-0.5rem' }}>
@@ -1300,7 +1397,7 @@ export default function App() {
         </div>
       )}
 
-      {step === 'debate' && debateInfo && (
+      {isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
           <div className="debate-header">
             <div className="debate-meta">
@@ -1423,14 +1520,27 @@ export default function App() {
         </div>
       )}
 
-          {LEGAL_OVERLAY_IDS.has(headerOverlay) && (
-            <LegalViewer documentId={headerOverlay} onBack={() => setHeaderOverlay(null)} />
-          )}
-          {headerOverlay === 'mission' && <MissionPage onBack={() => setHeaderOverlay(null)} />}
-          {headerOverlay === 'support' && <SupportPage onBack={() => setHeaderOverlay(null)} />}
         </>
       )}
       </div>
+
+      {authModal && (
+        <AuthScreen
+          variant="modal"
+          initialMode={authModal}
+          onClose={() => setAuthModal(null)}
+        />
+      )}
+
+      {showAppShell && LEGAL_OVERLAY_IDS.has(headerOverlay) && (
+        <LegalViewer documentId={headerOverlay} onBack={() => setHeaderOverlay(null)} />
+      )}
+      {showAppShell && headerOverlay === 'mission' && (
+        <MissionPage onBack={() => setHeaderOverlay(null)} />
+      )}
+      {showAppShell && headerOverlay === 'support' && (
+        <SupportPage onBack={() => setHeaderOverlay(null)} />
+      )}
     </>
   );
 }
