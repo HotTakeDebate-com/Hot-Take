@@ -5,10 +5,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase.js';
-import {
-  sendHotTakeEmailVerification,
-  sendHotTakePasswordResetEmail,
-} from './firebaseEmailVerification.js';
+import { sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
 import BrandLogo from './BrandLogo.jsx';
 import LegalViewer from './legal/LegalViewer.jsx';
 import SignupLegalReview from './SignupLegalReview.jsx';
@@ -139,11 +136,6 @@ export default function AuthScreen() {
           } catch {
             /* profile update is optional; account still exists */
           }
-        }
-        try {
-          await sendHotTakeEmailVerification(cred.user);
-        } catch {
-          /* user can use Resend on the verify screen */
         }
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -321,7 +313,7 @@ export default function AuthScreen() {
               required
             />
             {mode === 'signup' && (
-              <p className="auth-field-hint">This is your sign-in email and where we send verification.</p>
+              <p className="auth-field-hint">This is your sign-in email. Verify it later from Profile if you like.</p>
             )}
 
             {mode === 'signup' && (

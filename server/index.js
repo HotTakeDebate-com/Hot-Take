@@ -247,11 +247,20 @@ app.use(express.json({ limit: '64kb' }));
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {
-  app.use(express.static(dist));
+  app.use(
+    express.static(dist, {
+      setHeaders(res, filePath) {
+        if (filePath.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+      },
+    })
+  );
   app.get('*', (req, res, next) => {
     // Let Socket.IO HTTP transport and other /api routes bypass SPA fallback.
     if (req.path.startsWith('/socket.io')) return next();
     if (req.path.startsWith('/api/')) return next();
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(join(dist, 'index.html'));
   });
 }
