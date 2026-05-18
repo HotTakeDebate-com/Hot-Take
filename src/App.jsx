@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { TOPICS, TOPIC_CATEGORIES } from './topics.js';
+import { TOPICS } from './topics.js';
 import DebateHistory from './DebateHistory.jsx';
 import ProfilePanel from './ProfilePanel.jsx';
 import SocialFeed from './SocialFeed.jsx';
@@ -94,12 +94,6 @@ export default function App() {
   const [customJoinMode, setCustomJoinMode] = useState('open');
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [customHostWaiting, setCustomHostWaiting] = useState(false);
-  /** Quick match: category picked first; then topics in that category. */
-  const [quickCategoryId, setQuickCategoryId] = useState(null);
-  const quickCategoryTopics = useMemo(() => {
-    if (!quickCategoryId) return [];
-    return TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.topics ?? [];
-  }, [quickCategoryId]);
   /** Socket.IO id for labeling own chat messages. */
   const [socketId, setSocketId] = useState(null);
   /** In-debate text chat (cleared when match ends or opponent leaves). */
@@ -672,10 +666,6 @@ export default function App() {
     socketRef.current?.emit('leave-queue');
     setWaiting(false);
     setSide(null);
-    if (matchMode === 'quick' && topicId) {
-      const cat = TOPIC_CATEGORIES.find((c) => c.topics.some((t) => t.id === topicId));
-      setQuickCategoryId(cat?.id ?? null);
-    }
     setStep(matchMode === 'custom' ? 'custom' : 'topic');
   };
 
@@ -685,7 +675,6 @@ export default function App() {
     setMatchMode('quick');
     setTopicId(null);
     setSide(null);
-    setQuickCategoryId(null);
     setStep('topic');
   };
 
@@ -1294,66 +1283,25 @@ export default function App() {
 
       {isSignedIn && step === 'topic' && (
         <div className="panel">
-          {!quickCategoryId ? (
-            <>
-              <h2>Choose a category</h2>
-              <p className="topic-picker-lead">
-                Pick a category first. You&apos;ll choose a specific statement next, then Agree or
-                Disagree.
-              </p>
-              <div className="topic-grid topic-category-picker-grid">
-                {TOPIC_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    className="topic-card topic-category-card"
-                    onClick={() => setQuickCategoryId(cat.id)}
-                  >
-                    <strong className="topic-card-statement">{cat.label}</strong>
-                  </button>
-                ))}
-              </div>
-              <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
-                Back
-              </button>
-            </>
-          ) : (
-            <>
-              <h2>Select a statement</h2>
-              <p className="topic-picker-lead">
-                Category:{' '}
-                <strong>{TOPIC_CATEGORIES.find((c) => c.id === quickCategoryId)?.label ?? ''}</strong>
-              </p>
-              {quickCategoryTopics.length === 0 ? (
-                <p className="topic-picker-lead" style={{ marginBottom: '1rem' }}>
-                  No statements in this category yet. Check back soon or pick another category.
-                </p>
-              ) : (
-                <div className="topic-grid">
-                  {quickCategoryTopics.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className="topic-card"
-                      onClick={() => pickTopic(t.id)}
-                    >
-                      <strong className="topic-card-statement">{t.label}</strong>
-                    </button>
-                  ))}
-                </div>
-              )}
+          <h2>Choose a statement</h2>
+          <p className="topic-picker-lead">
+            Pick a statement, then choose Agree or Disagree to join the queue.
+          </p>
+          <div className="topic-grid">
+            {TOPICS.map((t) => (
               <button
+                key={t.id}
                 type="button"
-                className="back-btn"
-                onClick={() => {
-                  setQuickCategoryId(null);
-                  setTopicId(null);
-                }}
+                className="topic-card"
+                onClick={() => pickTopic(t.id)}
               >
-                Back to categories
+                <strong className="topic-card-statement">{t.label}</strong>
               </button>
-            </>
-          )}
+            ))}
+          </div>
+          <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
+            Back
+          </button>
         </div>
       )}
 
@@ -1385,11 +1333,7 @@ export default function App() {
             <button
               type="button"
               className="back-btn"
-              onClick={() => {
-                const cat = TOPIC_CATEGORIES.find((c) => c.topics.some((t) => t.id === topicId));
-                setQuickCategoryId(cat?.id ?? null);
-                setStep('topic');
-              }}
+              onClick={() => setStep('topic')}
             >
               Back to topics
             </button>
