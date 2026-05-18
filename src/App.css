@@ -663,11 +663,11 @@
 }
 
 .side-btn.agree {
-  border-color: rgba(125, 211, 252, 0.35);
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
 .side-btn.agree:hover {
-  background: rgba(125, 211, 252, 0.1);
+  background: rgba(239, 68, 68, 0.12);
   border-color: var(--pro);
 }
 
@@ -757,7 +757,7 @@
 
 .conn-connecting,
 .conn-new {
-  border-color: rgba(125, 211, 252, 0.35);
+  border-color: rgba(248, 113, 113, 0.35);
   color: var(--pro);
 }
 
@@ -885,27 +885,27 @@
   box-sizing: border-box;
 }
 
-/* You = cyan / sky (matches app accent), right */
+/* You = red accent, right */
 .debate-chat-msg--self {
   align-self: flex-end;
   background: linear-gradient(
     145deg,
-    rgba(56, 189, 248, 0.22) 0%,
-    rgba(14, 165, 233, 0.12) 100%
+    rgba(239, 68, 68, 0.28) 0%,
+    rgba(127, 29, 29, 0.18) 100%
   );
-  border-color: rgba(56, 189, 248, 0.45);
+  border-color: rgba(248, 113, 113, 0.45);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Opponent = violet / purple, left */
+/* Opponent = dark surface with red edge, left */
 .debate-chat-msg--peer {
   align-self: flex-start;
   background: linear-gradient(
     145deg,
-    rgba(167, 139, 250, 0.2) 0%,
-    rgba(139, 92, 246, 0.1) 100%
+    rgba(38, 38, 38, 0.95) 0%,
+    rgba(23, 23, 23, 0.9) 100%
   );
-  border-color: rgba(167, 139, 250, 0.42);
+  border-color: rgba(255, 255, 255, 0.14);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -919,12 +919,12 @@
 }
 
 .debate-chat-msg--self .debate-chat-msg-label {
-  color: #7dd3fc;
+  color: var(--pro);
   text-align: right;
 }
 
 .debate-chat-msg--peer .debate-chat-msg-label {
-  color: #d8b4fe;
+  color: var(--muted);
   text-align: left;
 }
 
@@ -939,11 +939,11 @@
 }
 
 .debate-chat-msg--self .debate-chat-link {
-  color: #e0f2fe;
+  color: var(--accent-strong);
 }
 
 .debate-chat-msg--peer .debate-chat-link {
-  color: #ddd6fe;
+  color: #fca5a5;
 }
 
 .debate-chat-msg--self .debate-chat-link:hover {
@@ -956,13 +956,13 @@
 
 /* Default link style when not in a bubble (shouldn’t happen) */
 .debate-chat-link {
-  color: #7dd3fc;
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .debate-chat-link:hover {
-  color: #bae6fd;
+  color: var(--accent-strong);
 }
 
 .debate-chat-compose {
@@ -993,7 +993,7 @@
 }
 
 .debate-chat-input:focus {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
@@ -1285,7 +1285,7 @@
 }
 
 .custom-statement-ready {
-  color: #86efac;
+  color: var(--accent-strong);
   font-weight: 600;
 }
 
@@ -1339,7 +1339,7 @@
 }
 
 .custom-table tbody tr:hover {
-  background: rgba(125, 211, 252, 0.1);
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .custom-join-btn {
@@ -1369,15 +1369,15 @@
 }
 
 .lobby-status-pill.waiting {
-  background: rgba(125, 211, 252, 0.12);
-  color: #bae6fd;
-  border-color: rgba(125, 211, 252, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-strong);
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
 .lobby-status-pill.active {
-  background: rgba(52, 211, 153, 0.14);
-  color: #86efac;
-  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(220, 38, 38, 0.2);
+  color: var(--pro);
+  border-color: rgba(248, 113, 113, 0.45);
 }
 
 @media (max-width: 700px) {
@@ -1678,7 +1678,7 @@
   width: 100%;
   transform: scaleX(0);
   transform-origin: left center;
-  background: linear-gradient(90deg, #0ea5e9, #7dd3fc);
+  background: linear-gradient(90deg, #b91c1c, #ef4444);
   border-radius: 999px;
   will-change: transform;
 }

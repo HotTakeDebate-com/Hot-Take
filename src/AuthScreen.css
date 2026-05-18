@@ -190,7 +190,7 @@
 .auth-screen .auth-input:focus {
   outline: none;
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.45);
 }
 
 .auth-screen-certify {

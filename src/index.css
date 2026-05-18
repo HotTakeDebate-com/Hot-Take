@@ -5,38 +5,38 @@
 }
 
 :root {
-  /* Hot Take — vibrant sky blue */
-  --bg: #0c4a6e;
-  --bg-elevated: rgba(14, 165, 233, 0.38);
-  --surface-glass: rgba(2, 132, 199, 0.48);
-  --border: rgba(255, 255, 255, 0.2);
-  --text: #f0f9ff;
-  --muted: rgba(224, 242, 254, 0.85);
-  --accent: #38bdf8;
-  --accent-dim: rgba(56, 189, 248, 0.28);
-  --accent-strong: #e0f2fe;
-  --accent-border: rgba(125, 211, 252, 0.7);
-  --accent-hover-bg: rgba(56, 189, 248, 0.35);
-  --btn-primary-bg: #f0f9ff;
-  --btn-primary-fg: #0c4a6e;
-  --btn-primary-hover-fg: #082f49;
-  --pro: #7dd3fc;
-  --con: #fca5a5;
+  /* Hot Take — black & red */
+  --bg: #0a0a0a;
+  --bg-elevated: rgba(220, 38, 38, 0.2);
+  --surface-glass: rgba(23, 23, 23, 0.9);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #fafafa;
+  --muted: rgba(250, 250, 250, 0.72);
+  --accent: #ef4444;
+  --accent-dim: rgba(239, 68, 68, 0.22);
+  --accent-strong: #fecaca;
+  --accent-border: rgba(248, 113, 113, 0.55);
+  --accent-hover-bg: rgba(239, 68, 68, 0.32);
+  --btn-primary-bg: #dc2626;
+  --btn-primary-fg: #ffffff;
+  --btn-primary-hover-fg: #0a0a0a;
+  --pro: #f87171;
+  --con: #991b1b;
   --radius: 14px;
   --font: 'DM Sans', system-ui, sans-serif;
   --display: 'Fraunces', Georgia, serif;
-  --video-chrome: #082f49;
+  --video-chrome: #0a0a0a;
   --page-bg-image:
-    radial-gradient(ellipse 130% 90% at 50% -35%, rgba(56, 189, 248, 0.5), transparent 52%),
-    radial-gradient(circle at 10% 40%, rgba(186, 230, 253, 0.22) 0%, transparent 48%),
-    radial-gradient(circle at 90% 50%, rgba(14, 165, 233, 0.4) 0%, transparent 48%),
-    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.1) 0%, transparent 52%),
+    radial-gradient(ellipse 130% 90% at 50% -35%, rgba(220, 38, 38, 0.4), transparent 52%),
+    radial-gradient(circle at 10% 40%, rgba(127, 29, 29, 0.28) 0%, transparent 48%),
+    radial-gradient(circle at 90% 50%, rgba(185, 28, 28, 0.32) 0%, transparent 48%),
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 52%),
     repeating-linear-gradient(
       -12deg,
       transparent,
       transparent 48px,
-      rgba(255, 255, 255, 0.04) 48px,
-      rgba(255, 255, 255, 0.04) 49px
+      rgba(255, 255, 255, 0.03) 48px,
+      rgba(255, 255, 255, 0.03) 49px
     );
 }
 
