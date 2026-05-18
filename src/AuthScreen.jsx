@@ -48,16 +48,31 @@ export default function AuthScreen() {
   const [busy, setBusy] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [legalDoc, setLegalDoc] = useState(null);
-  const [signupLegalDone, setSignupLegalDone] = useState(false);
+  /** Signup only: must complete full legal review before account fields appear. */
+  const [signupPhase, setSignupPhase] = useState('legal');
   const [agreeAge18, setAgreeAge18] = useState(false);
   const [agreePolicies, setAgreePolicies] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
   const avatarInputRef = useRef(null);
 
   const resetLegal = () => {
-    setSignupLegalDone(false);
+    setSignupPhase('legal');
     setAgreeAge18(false);
     setAgreePolicies(false);
+  };
+
+  const goToSignIn = () => {
+    setMode('signin');
+    setError(null);
+    setDisplayName('');
+    resetLegal();
+  };
+
+  const goToSignUp = () => {
+    setMode('signup');
+    setError(null);
+    setDisplayName('');
+    resetLegal();
   };
 
   useEffect(() => {
@@ -97,8 +112,8 @@ export default function AuthScreen() {
       return;
     }
     if (mode === 'signup') {
-      if (!signupLegalDone) {
-        setError('Please read all policy documents (scroll to the end of each) before creating an account.');
+      if (signupPhase !== 'account') {
+        setError('Please read all four policy documents before creating an account.');
         return;
       }
       if (!agreeAge18 || !agreePolicies) {
@@ -160,20 +175,39 @@ export default function AuthScreen() {
   };
 
   const flipMode = () => {
-    setMode((m) => (m === 'signin' ? 'signup' : 'signin'));
-    setError(null);
-    setDisplayName('');
-    resetLegal();
+    if (mode === 'signin') goToSignUp();
+    else goToSignIn();
   };
 
-  const signupReady = signupLegalDone && agreeAge18 && agreePolicies;
-  const showSignupForm = mode !== 'signup' || signupLegalDone;
+  const signupLegalGate = mode === 'signup' && signupPhase === 'legal';
+  const signupReady = signupPhase === 'account' && agreeAge18 && agreePolicies;
 
   return (
     <div className="auth-screen">
       <div className="auth-screen-inner">
-        <div className="auth-screen-card">
-          {mode === 'signup' && showSignupForm && (
+        <div
+          className={['auth-screen-card', signupLegalGate && 'auth-screen-card--legal-gate']
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {signupLegalGate ? (
+            <>
+              <div className="auth-screen-logo-wrap">
+                <BrandLogo />
+              </div>
+              <h2 className="auth-screen-title">Review policies</h2>
+              <p className="auth-screen-lead">
+                Creating a Hot Take account requires reading all four policies in full. You cannot
+                skip this step.
+              </p>
+              <SignupLegalReview onComplete={() => setSignupPhase('account')} />
+              <button type="button" className="auth-linkish auth-legal-gate-back" onClick={goToSignIn}>
+                Sign in instead
+              </button>
+            </>
+          ) : (
+            <>
+          {mode === 'signup' && signupPhase === 'account' && (
             <>
               <button
                 type="button"
@@ -231,41 +265,40 @@ export default function AuthScreen() {
                 Welcome back. Use the email and password for your Hot Take account. You&apos;ll need a
                 verified email before matchmaking.
               </>
-            ) : signupLegalDone ? (
+            ) : (
               <>
                 Set up your account in a minute. We&apos;ll email you a link to verify your address—then
                 you can debate live. Use a real inbox you can open on this device.
               </>
-            ) : (
-              <>
-                Before you create an account, read each policy document in full. You must scroll to the
-                end of every document to continue.
-              </>
             )}
           </p>
+
+          {mode === 'signup' && signupPhase === 'account' && (
+            <button
+              type="button"
+              className="auth-linkish auth-review-policies-again"
+              onClick={() => {
+                setSignupPhase('legal');
+                setAgreeAge18(false);
+                setAgreePolicies(false);
+              }}
+            >
+              Review policies again
+            </button>
+          )}
 
           <div className="auth-tabs">
             <button
               type="button"
               className={`auth-tab ${mode === 'signin' ? 'auth-tab--active' : ''}`}
-              onClick={() => {
-                setMode('signin');
-                setError(null);
-                setDisplayName('');
-                resetLegal();
-              }}
+              onClick={goToSignIn}
             >
               Sign in
             </button>
             <button
               type="button"
               className={`auth-tab ${mode === 'signup' ? 'auth-tab--active' : ''}`}
-              onClick={() => {
-                setMode('signup');
-                setError(null);
-                setDisplayName('');
-                resetLegal();
-              }}
+              onClick={goToSignUp}
             >
               Create account
             </button>
@@ -275,11 +308,6 @@ export default function AuthScreen() {
             {mode === 'signup' ? 'More sign-in options' : 'Create an account'}
           </button>
 
-          {mode === 'signup' && !signupLegalDone && (
-            <SignupLegalReview onComplete={() => setSignupLegalDone(true)} />
-          )}
-
-          {showSignupForm && (
           <form className="auth-form" onSubmit={onSubmit}>
             <label className="auth-label" htmlFor="auth-email">
               Email
@@ -453,7 +481,6 @@ export default function AuthScreen() {
               {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>
           </form>
-          )}
 
           {mode === 'signin' && (
             <button type="button" className="auth-linkish" onClick={onForgotPassword} disabled={busy}>
@@ -479,10 +506,14 @@ export default function AuthScreen() {
               Recording
             </button>
           </p>
+            </>
+          )}
         </div>
       </div>
 
-      {legalDoc && <LegalViewer documentId={legalDoc} onBack={() => setLegalDoc(null)} />}
+      {legalDoc && !signupLegalGate && (
+        <LegalViewer documentId={legalDoc} onBack={() => setLegalDoc(null)} />
+      )}
     </div>
   );
 }
