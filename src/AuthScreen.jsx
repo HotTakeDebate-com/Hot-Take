@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase.js';
+import {
+  sendHotTakeEmailVerification,
+  sendHotTakePasswordResetEmail,
+} from './firebaseEmailVerification.js';
 import BrandLogo from './BrandLogo.jsx';
 import LegalViewer from './legal/LegalViewer.jsx';
+import SignupLegalReview from './SignupLegalReview.jsx';
 import './AuthScreen.css';
 
 function mapAuthError(code) {
@@ -45,12 +48,14 @@ export default function AuthScreen() {
   const [busy, setBusy] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [legalDoc, setLegalDoc] = useState(null);
+  const [signupLegalDone, setSignupLegalDone] = useState(false);
   const [agreeAge18, setAgreeAge18] = useState(false);
   const [agreePolicies, setAgreePolicies] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
   const avatarInputRef = useRef(null);
 
   const resetLegal = () => {
+    setSignupLegalDone(false);
     setAgreeAge18(false);
     setAgreePolicies(false);
   };
@@ -92,6 +97,10 @@ export default function AuthScreen() {
       return;
     }
     if (mode === 'signup') {
+      if (!signupLegalDone) {
+        setError('Please read all policy documents (scroll to the end of each) before creating an account.');
+        return;
+      }
       if (!agreeAge18 || !agreePolicies) {
         setError(
           'Please confirm you are at least 18 and accept the Terms of Service, Privacy Policy, Community Guidelines, and Recording Agreement.'
@@ -117,7 +126,7 @@ export default function AuthScreen() {
           }
         }
         try {
-          await sendEmailVerification(cred.user);
+          await sendHotTakeEmailVerification(cred.user);
         } catch {
           /* user can use Resend on the verify screen */
         }
@@ -141,7 +150,7 @@ export default function AuthScreen() {
     if (!auth) return;
     setBusy(true);
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await sendHotTakePasswordResetEmail(email.trim());
       setResetSent(true);
     } catch (err) {
       setError(mapAuthError(err?.code));
@@ -157,13 +166,14 @@ export default function AuthScreen() {
     resetLegal();
   };
 
-  const signupReady = agreeAge18 && agreePolicies;
+  const signupReady = signupLegalDone && agreeAge18 && agreePolicies;
+  const showSignupForm = mode !== 'signup' || signupLegalDone;
 
   return (
     <div className="auth-screen">
       <div className="auth-screen-inner">
         <div className="auth-screen-card">
-          {mode === 'signup' && (
+          {mode === 'signup' && showSignupForm && (
             <>
               <button
                 type="button"
@@ -221,10 +231,15 @@ export default function AuthScreen() {
                 Welcome back. Use the email and password for your Hot Take account. You&apos;ll need a
                 verified email before matchmaking.
               </>
-            ) : (
+            ) : signupLegalDone ? (
               <>
                 Set up your account in a minute. We&apos;ll email you a link to verify your address—then
                 you can debate live. Use a real inbox you can open on this device.
+              </>
+            ) : (
+              <>
+                Before you create an account, read each policy document in full. You must scroll to the
+                end of every document to continue.
               </>
             )}
           </p>
@@ -260,6 +275,11 @@ export default function AuthScreen() {
             {mode === 'signup' ? 'More sign-in options' : 'Create an account'}
           </button>
 
+          {mode === 'signup' && !signupLegalDone && (
+            <SignupLegalReview onComplete={() => setSignupLegalDone(true)} />
+          )}
+
+          {showSignupForm && (
           <form className="auth-form" onSubmit={onSubmit}>
             <label className="auth-label" htmlFor="auth-email">
               Email
@@ -433,6 +453,7 @@ export default function AuthScreen() {
               {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>
           </form>
+          )}
 
           {mode === 'signin' && (
             <button type="button" className="auth-linkish" onClick={onForgotPassword} disabled={busy}>

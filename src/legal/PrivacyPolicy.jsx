@@ -14,12 +14,13 @@ function ContactEmail() {
   return <span className="legal-contact-placeholder">{label}</span>;
 }
 
-export default function PrivacyPolicy({ onBack }) {
+export default function PrivacyPolicy({ onBack, embedded = false }) {
   return (
     <LegalDocumentShell
       title="Hot Take – Privacy Policy"
       effectiveDate="March 22, 2026"
       onBack={onBack}
+      embedded={embedded}
     >
       <section className="legal-section">
         <h2>1. Introduction</h2>

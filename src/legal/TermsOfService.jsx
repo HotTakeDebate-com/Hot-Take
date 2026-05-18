@@ -1,11 +1,12 @@
 import LegalDocumentShell from './LegalDocumentShell.jsx';
 
-export default function TermsOfService({ onBack }) {
+export default function TermsOfService({ onBack, embedded = false }) {
   return (
     <LegalDocumentShell
       title="Hot Take – Terms of Service"
       effectiveDate="March 22, 2026"
       onBack={onBack}
+      embedded={embedded}
     >
       <section className="legal-section">
         <h2>1. Acceptance of Terms</h2>

@@ -1,11 +1,12 @@
 import LegalDocumentShell from './LegalDocumentShell.jsx';
 
-export default function CommunityGuidelines({ onBack }) {
+export default function CommunityGuidelines({ onBack, embedded = false }) {
   return (
     <LegalDocumentShell
       title="Hot Take – Community Guidelines"
       effectiveDate="March 22, 2026"
       onBack={onBack}
+      embedded={embedded}
     >
       <section className="legal-section">
         <h2>1. Purpose of Hot Take</h2>

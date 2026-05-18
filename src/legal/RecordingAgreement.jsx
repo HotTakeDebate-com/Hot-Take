@@ -14,12 +14,13 @@ function ContactEmail() {
   return <span className="legal-contact-placeholder">{label}</span>;
 }
 
-export default function RecordingAgreement({ onBack }) {
+export default function RecordingAgreement({ onBack, embedded = false }) {
   return (
     <LegalDocumentShell
       title="Hot Take – Recording & Streaming Consent Agreement"
       effectiveDate="March 22, 2026"
       onBack={onBack}
+      embedded={embedded}
     >
       <section className="legal-section">
         <h2>1. Overview</h2>

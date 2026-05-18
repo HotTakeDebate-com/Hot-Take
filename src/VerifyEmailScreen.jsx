@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { reload, sendEmailVerification, signOut } from 'firebase/auth';
+import { reload, signOut } from 'firebase/auth';
 import { auth } from './firebase.js';
+import { sendHotTakeEmailVerification } from './firebaseEmailVerification.js';
 import BrandLogo from './BrandLogo.jsx';
 import './AuthScreen.css';
 
@@ -40,7 +41,7 @@ export default function VerifyEmailScreen() {
     setInfo(null);
     setBusy(true);
     try {
-      await sendEmailVerification(user);
+      await sendHotTakeEmailVerification(user);
       setInfo(`We sent another link to ${user.email ?? 'your email'}.`);
       setCooldown(RESEND_COOLDOWN_SEC);
     } catch (err) {
@@ -89,8 +90,9 @@ export default function VerifyEmailScreen() {
           </div>
           <h2 className="auth-screen-title">Verify your email</h2>
           <p className="auth-screen-lead">
-            Your account is created. We sent a message to <strong>{email || 'your inbox'}</strong>. Open the
-            link in that email to confirm it&apos;s really you, then tap continue below.
+            Your Hot Take account is created. We sent a verification link to{' '}
+            <strong>{email || 'your inbox'}</strong>. Open that email and follow the link, then tap continue
+            below.
           </p>
 
           {error && (
