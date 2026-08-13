@@ -38,7 +38,7 @@ function NextStep({ number, icon, title, children }) {
   return <div className="qm-next-step"><div className="qm-next-icon">{icon}</div><span className="qm-next-number">{number}</span><div><h3>{title}</h3><p>{children}</p></div></div>;
 }
 
-function WaitingPanel({ onCancel }) {
+function WaitingPanel({ onCancel, topic, topicIndex, side }) {
   return (
     <section className="qm-waiting-panel" aria-live="polite">
       <p className="qm-eyebrow">Quick match</p>
@@ -52,9 +52,10 @@ function WaitingPanel({ onCancel }) {
         <strong>Searching for opponent</strong>
         <div className="qm-search-dots" aria-hidden="true"><i /><i /><i /></div>
       </div>
-      <div className="qm-waiting-tip">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 21c-2-2-4-5-4-8a10 10 0 0 1 20 0c0 3-2 6-4 8-1 1-1 2-1 3H11c0-1 0-2-1-3Z" /><path d="M12 28h8M13 24v4M19 24v4M16 1v-1M4 5 2 3M28 5l2-2" /><path d="m13 13 2 2 4-5" /></svg>
-        <p><strong>Tip:</strong> Great debates happen when you listen<br />as much as you speak.</p>
+      <div className="qm-waiting-selection">
+        <span className="qm-waiting-topic-icon"><TopicIcon index={topicIndex} /></span>
+        <div><small>Your topic</small><p>{topic?.label}</p></div>
+        <strong className={`qm-waiting-side qm-waiting-side--${side}`}>{side === 'agree' ? 'Agree' : 'Disagree'}</strong>
       </div>
       <button type="button" className="qm-waiting-cancel" onClick={onCancel}><span aria-hidden="true">?</span> Cancel matchmaking</button>
     </section>
@@ -80,7 +81,7 @@ export default function QuickMatchPage({
       </header>
 
       <main className={`qm-main ${waiting ? 'qm-main--waiting' : ''}`}>
-        {waiting ? <WaitingPanel onCancel={onCancel} /> : <section className="qm-picker">
+        {waiting ? <WaitingPanel onCancel={onCancel} topic={selected} topicIndex={topics.findIndex((topic) => topic.id === selected?.id)} side={selectedSide} /> : <section className="qm-picker">
           <button type="button" className="qm-back" onClick={onBack}><ArrowIcon direction="left" /> Back</button>
           <p className="qm-eyebrow">Quick match</p><h1>Choose a topic<span>.</span></h1>
           <p className="qm-lead">Pick a topic you want to debate. We?ll match<br className="qm-desktop-break" /> you with someone who has the opposite take.</p>
