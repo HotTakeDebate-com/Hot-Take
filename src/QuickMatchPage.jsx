@@ -38,6 +38,29 @@ function NextStep({ number, icon, title, children }) {
   return <div className="qm-next-step"><div className="qm-next-icon">{icon}</div><span className="qm-next-number">{number}</span><div><h3>{title}</h3><p>{children}</p></div></div>;
 }
 
+function WaitingPanel({ onCancel }) {
+  return (
+    <section className="qm-waiting-panel" aria-live="polite">
+      <p className="qm-eyebrow">Quick match</p>
+      <h1>Finding your debater<span>...</span></h1>
+      <p className="qm-waiting-lead">We're matching you with someone who has<br />an opposing take.</p>
+      <div className="qm-search-orb">
+        <svg className="qm-search-people" viewBox="0 0 110 70" aria-hidden="true">
+          <circle cx="37" cy="19" r="14" /><path d="M13 64c0-18 10-30 24-30s24 12 24 30H13Z" />
+          <circle cx="78" cy="20" r="13" /><path d="M62 64h39c0-18-9-29-23-29-7 0-13 3-17 8" />
+        </svg>
+        <strong>Searching for opponent</strong>
+        <div className="qm-search-dots" aria-hidden="true"><i /><i /><i /></div>
+      </div>
+      <div className="qm-waiting-tip">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 21c-2-2-4-5-4-8a10 10 0 0 1 20 0c0 3-2 6-4 8-1 1-1 2-1 3H11c0-1 0-2-1-3Z" /><path d="M12 28h8M13 24v4M19 24v4M16 1v-1M4 5 2 3M28 5l2-2" /><path d="m13 13 2 2 4-5" /></svg>
+        <p><strong>Tip:</strong> Great debates happen when you listen<br />as much as you speak.</p>
+      </div>
+      <button type="button" className="qm-waiting-cancel" onClick={onCancel}><span aria-hidden="true">?</span> Cancel matchmaking</button>
+    </section>
+  );
+}
+
 export default function QuickMatchPage({
   topics, selectedTopicId, selectedSide, waiting, error, onSelectTopic,
   onSelectSide, onFindMatch, onCancel, onBack, onSignOut, onProfile,
@@ -56,8 +79,8 @@ export default function QuickMatchPage({
         <div className="qm-nav-actions"><button type="button" className="qm-pill qm-pill--ghost" onClick={onSignOut}>Sign out</button><button type="button" className="qm-pill qm-pill--red" onClick={onProfile}>Profile</button></div>
       </header>
 
-      <main className="qm-main">
-        <section className="qm-picker">
+      <main className={`qm-main ${waiting ? 'qm-main--waiting' : ''}`}>
+        {waiting ? <WaitingPanel onCancel={onCancel} /> : <section className="qm-picker">
           <button type="button" className="qm-back" onClick={onBack}><ArrowIcon direction="left" /> Back</button>
           <p className="qm-eyebrow">Quick match</p><h1>Choose a topic<span>.</span></h1>
           <p className="qm-lead">Pick a topic you want to debate. We?ll match<br className="qm-desktop-break" /> you with someone who has the opposite take.</p>
@@ -82,9 +105,8 @@ export default function QuickMatchPage({
           </div>
 
           {error && <div className="qm-error">{error}</div>}
-          <button type="button" className="qm-submit" disabled={!selectedSide} onClick={() => onFindMatch(selectedSide)}><span>{waiting ? 'Looking for your match?' : 'Find my match'}</span><span>{!waiting && <ArrowIcon />}</span></button>
-          {waiting && <button type="button" className="qm-cancel" onClick={onCancel}>Cancel search</button>}
-        </section>
+          <button type="button" className="qm-submit" disabled={!selectedSide} onClick={() => onFindMatch(selectedSide)}><span>Find my match</span><span><ArrowIcon /></span></button>
+        </section>}
 
         <aside className="qm-next"><h2>What happens next?</h2>
           <NextStep number="1" icon={<IconUser />} title="Get matched">We?ll find someone who chooses the opposite take.</NextStep>

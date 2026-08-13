@@ -256,6 +256,7 @@ Copy `.env.example` to `.env` locally if needed (`.env` is gitignored). For Fire
 
 Short bullets for the **latest** context; keep recent history; trim only when noisy.
 
+- **2026-08-13:** **Quick Match queue screen** ? While `waiting` is true, Quick Match now swaps the topic picker for the approved ?Finding your debater? screen with an animated search ring, opponent graphic, rotating activity dots, listening tip, cancel-matchmaking control, steps sidebar, and shared 2026 footer. It uses the existing `join-queue` and `leave-queue` state/actions.
 - **2026-08-13:** **Quick Match icon/initial-state fix** ? Quick Match now enters with no topic or side selected. Replaced character/emoji controls (check, chevron, arrows, thumbs) with inline SVG and refreshed all five topic SVGs so unsupported glyphs cannot render as question marks.
 - **2026-08-13:** **Quick Match page redesign** ? Added a dedicated full-width `QuickMatchPage` matching the approved desktop mockup: landing-style navigation/logo, five stacked topic rows, inline Agree/Disagree selection, queue CTA, ?What happens next?? sidebar, and compact branded footer. Existing `join-queue`/cancel/error behavior remains in `App.jsx`; the first topic and Agree side seed the initial reference state. Mobile collapses navigation and hides the explanatory sidebar.
 
