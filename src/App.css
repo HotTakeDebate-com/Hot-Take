@@ -26,6 +26,8 @@
   min-height: 100vh;
 }
 
+.app.app--debate-room{max-width:none;margin:0;padding:0;min-height:100vh}
+
 /* Logged-in header lives outside `.app` so it spans the real viewport width (not max-width: 1100px) */
 .app-top-bar {
   width: 100%;

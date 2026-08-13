@@ -21,9 +21,11 @@ import DebateChatPanel from './DebateChatPanel.jsx';
 import { getMediaErrorMessage, getUserMediaWithFallback } from './mediaUtils.js';
 import HomePage from './HomePage.jsx';
 import QuickMatchPage from './QuickMatchPage.jsx';
+import DebateRoomPage from './DebateRoomPage.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
+import './DebateRoomPage.css';
 
 const FALLBACK_RTC = {
   iceServers: [
@@ -897,7 +899,7 @@ export default function App() {
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && step !== 'topic' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -973,6 +975,7 @@ export default function App() {
           showAppShell && step !== 'welcome' && 'app--with-global-header',
           step === 'welcome' && 'app--landing',
           step === 'topic' && 'app--quick-match',
+          step === 'debate' && 'app--debate-room',
           !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
         ]
           .filter(Boolean)
@@ -1358,7 +1361,9 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && (
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={endDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+
+      {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
           <div className="debate-header">
             <div className="debate-meta">
