@@ -14,10 +14,11 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 - Preserved the existing authentication, mission/support/legal navigation, Quick Match, Custom Room, profile, and sign-out callbacks.
 - Added responsive tablet and mobile layouts without changing matchmaking, Firebase, Socket.IO, or Railway configuration.
 - Follow-up precision pass uses the supplied 1536?1024 reference artwork directly for the desktop hero and locks the copyright year to the approved composition.
+- Replaced the rectangular screenshot crop with the original hero artwork, feathered its edges into the page, and extended the red/gray floor glow behind the image to eliminate the visible black seam.
 
 ### Files
 
-- `src/HomePage.jsx`, `public/homepage-reference.png`
+- `src/HomePage.jsx`, `public/homepage-reference.png`, `public/hero-debate-artwork.png`
 - `src/HomePage.css`
 - `src/LandingAssets.jsx`
 - `docs/PROJECT_MEMORY.md`, `docs/DEV_LOG.md`

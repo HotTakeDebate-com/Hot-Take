@@ -26,7 +26,15 @@ export function HotTakeWordmark({ variant = 'nav' }) {
 }
 
 export function HeroBubblesVisual() {
-  return <div className="landing-hero-reference" aria-hidden="true" />;
+  return (
+    <img
+      src="/hero-debate-artwork.png"
+      alt=""
+      aria-hidden="true"
+      className="landing-hero-reference"
+      draggable={false}
+    />
+  );
 }
 
 export function IconUser() {

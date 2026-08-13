@@ -53,6 +53,21 @@
 .landing-hero {
   min-height: 340px;
   display: grid; grid-template-columns: 1.03fr .97fr; align-items: center; gap: 48px;
+  position: relative;
+  isolation: isolate;
+}
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 42%;
+  right: -2%;
+  bottom: -5px;
+  height: 150px;
+  background:
+    radial-gradient(ellipse at 35% 68%, rgba(225, 0, 10, .32), rgba(126, 0, 6, .1) 38%, transparent 70%),
+    radial-gradient(ellipse at 79% 72%, rgba(205, 208, 217, .12), transparent 58%);
+  filter: blur(14px);
 }
 .landing-hero-copy { align-self: start; padding-top: 10px; position: relative; z-index: 2; }
 .landing-eyebrow {
@@ -69,15 +84,17 @@
 .landing-features li { display: inline-flex; align-items: center; gap: 13px; color: #eeeef0; font-size: 15px; }
 .landing-features svg { width: 28px; height: 28px; color: var(--landing-red); stroke: currentColor; }
 
-.landing-hero-visual { min-height: 340px; display: grid; place-items: center; position: relative; overflow: visible; }
+.landing-hero-visual { min-height: 340px; display: grid; place-items: center; position: relative; overflow: visible; background: transparent !important; }
 .landing-hero-reference {
+  display: block;
   width: 620px;
   height: 350px;
   max-width: 100%;
-  background-image: url('/homepage-reference.png');
-  background-repeat: no-repeat;
-  background-size: 1536px 1024px;
-  background-position: -790px -104px;
+  object-fit: cover;
+  object-position: center;
+  filter: drop-shadow(0 20px 24px rgba(0, 0, 0, .58));
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.25) 7%, #000 20%, #000 91%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.25) 7%, #000 20%, #000 91%, transparent 100%);
 }
 
 .landing-cta-row {
@@ -159,9 +176,9 @@
   .landing-hero-reference {
     width: 604px;
     height: 457px;
-    background-image: url('/hottake-logo-stacked.png');
-    background-size: contain;
-    background-position: center;
+    object-fit: contain;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
   }
   .landing-cta-row { grid-template-columns: 1fr; gap: 20px; }
   .landing-cta-or { top: 50%; }
