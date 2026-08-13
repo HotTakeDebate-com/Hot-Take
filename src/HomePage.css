@@ -28,10 +28,12 @@
 }
 
 .landing-logo-img--nav {
-  height: 44px;
+  display: block;
+  height: 57px;
   width: auto;
-  max-width: min(280px, 55vw);
+  aspect-ratio: 1406 / 340;
   object-fit: contain;
+  object-position: left center;
 }
 
 .landing-logo-img--footer {
