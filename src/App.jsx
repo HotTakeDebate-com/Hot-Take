@@ -859,7 +859,7 @@ export default function App() {
                     goHome();
                   }}
                 >
-                  HotTake.com
+                  HotTakeDebate.com
                 </a>
               </div>
               <div className="app-header-main">
