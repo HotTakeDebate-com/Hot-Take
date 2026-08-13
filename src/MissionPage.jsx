@@ -1,5 +1,5 @@
 import {
-  HotTakeWordmark, IconInstagram, IconTikTok, IconX, IconYouTube,
+  HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube,
 } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 import './MissionPage.css';
@@ -40,6 +40,6 @@ export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, on
       <blockquote><span>&ldquo;</span><div>Different views. Real people. No echo chambers.<strong>That&apos;s the Hot Take mission.</strong></div></blockquote>
     </main>
 
-    <footer className="mission-footer"><HotTakeWordmark variant="footer" /><p>&copy; 2026 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX /></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram /></a><a href="https://tiktok.com" aria-label="TikTok"><IconTikTok /></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube /></a></div></footer>
+    <footer className="mission-footer"><HotTakeWordmark variant="footer" /><p>&copy; 2026 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX /></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram /></a><a href="https://reddit.com" aria-label="Reddit"><IconReddit /></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube /></a></div></footer>
   </div>;
 }

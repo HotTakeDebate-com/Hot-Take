@@ -4,7 +4,7 @@ import {
   IconInstagram,
   IconLightning,
   IconShield,
-  IconTikTok,
+  IconReddit,
   IconUser,
   IconUserPlus,
   IconVideo,
@@ -237,8 +237,8 @@ export default function HomePage({
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
               <IconInstagram />
             </a>
-            <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-              <IconTikTok />
+            <a href="https://reddit.com" target="_blank" rel="noopener noreferrer" aria-label="Reddit">
+              <IconReddit />
             </a>
             <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
               <IconYouTube />

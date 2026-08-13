@@ -142,10 +142,15 @@ export function IconInstagram() {
   );
 }
 
-export function IconTikTok() {
+export function IconReddit() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="13" r="7.2" />
+      <circle cx="8.8" cy="12.3" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15.2" cy="12.3" r="1" fill="currentColor" stroke="none" />
+      <path d="M8.7 15.4c1.8 1.2 4.8 1.2 6.6 0M11.2 5.9l1-3.2 4.1.9" />
+      <circle cx="18.2" cy="4" r="1.8" />
+      <path d="M5.2 10.2C2.7 8.3 1 10.1 2.2 12M18.8 10.2c2.5-1.9 4.2-.1 3 1.8" />
     </svg>
   );
 }
