@@ -861,7 +861,6 @@ export default function App() {
     setCustomHostWaiting(false);
     setTopicId(null);
     setSide(null);
-    setQuickCategoryId(null);
     setCustomRoomCode('');
     setCustomStatement('');
     setCustomTab('join');
