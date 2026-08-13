@@ -6,6 +6,29 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ---
 
+## Session: 2026-08-13 (production homepage redesign)
+
+### Summary
+
+- Rebuilt the existing welcome route to closely match the approved Hot Take homepage mockup: desktop navigation, two-column hero, branded debate visual, horizontal Quick Match / Custom Room cards, three-step explainer, and compact footer.
+- Preserved the existing authentication, mission/support/legal navigation, Quick Match, Custom Room, profile, and sign-out callbacks.
+- Added responsive tablet and mobile layouts without changing matchmaking, Firebase, Socket.IO, or Railway configuration.
+
+### Files
+
+- `src/HomePage.jsx`
+- `src/HomePage.css`
+- `src/LandingAssets.jsx`
+- `docs/PROJECT_MEMORY.md`, `docs/DEV_LOG.md`
+
+### Validation
+
+- Production Vite build completed successfully using the runner config loader. The existing large-bundle warning remains unchanged.
+
+### Follow-ups
+
+- Smoke-test sign-in, account creation, Quick Match, and Custom Room after the Railway deployment completes.
+
 ## Session: 2026-04-04 (rebrand: Hot Take)
 
 ### Summary
@@ -33,7 +56,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 - Updated Quick Match categories and statements in **`shared/topics.js`**:
-  - Renamed **Health and Wellness** → **Diet and Nutrition** (`diet-nutrition`) and added early diet statements.
+  - Renamed **Health and Wellness** ? **Diet and Nutrition** (`diet-nutrition`) and added early diet statements.
   - Added **Money and Career** (`money-career`) statements.
   - Added **Love and Relationships** (`love-relationships`) statements.
 - Verified the site builds via `npm run build`, then redeployed by pushing updated code to `main` (Railway GitHub auto-deploy).
@@ -55,7 +78,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 ### Summary
 
 - **Signup:** After **`createUserWithEmailAndPassword`**, the app calls **`sendEmailVerification`** (best-effort; user can **Resend** from the gate screen if it fails).
-- **Gate:** **`VerifyEmailScreen`** when `user` exists and **`!user.emailVerified`**. Actions: **I’ve verified** (**`reload`** + **`getIdToken(true)`** so **`onIdTokenChanged`** updates), **Resend** (60s cooldown), **Sign out**. Main app + Socket.IO + **`syncUserPresence`** only run when **`emailVerified`**.
+- **Gate:** **`VerifyEmailScreen`** when `user` exists and **`!user.emailVerified`**. Actions: **I?ve verified** (**`reload`** + **`getIdToken(true)`** so **`onIdTokenChanged`** updates), **Resend** (60s cooldown), **Sign out**. Main app + Socket.IO + **`syncUserPresence`** only run when **`emailVerified`**.
 - **Firestore:** **`isSignedIn()`** now requires **`request.auth.token.email_verified == true`**; legacy **`debates`** and **`reports`** rules use **`isSignedIn()`** where appropriate.
 - **Server:** After **`verifyIdToken`**, Socket.IO rejects connections when **`email_verified !== true`** (clear error message).
 - **Copy:** Auth lead text notes confirmation link for new accounts.
@@ -66,11 +89,11 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Deploy
 
-- Publish **`firestore.rules`**. Redeploy the Node server. In Firebase Console, review **Authentication → Templates → Email address verification** (action URL / branding).
+- Publish **`firestore.rules`**. Redeploy the Node server. In Firebase Console, review **Authentication ? Templates ? Email address verification** (action URL / branding).
 
 ### Follow-ups
 
-- Optional: **Authentication → Settings → Authorized domains** if links should open on a custom domain.
+- Optional: **Authentication ? Settings ? Authorized domains** if links should open on a custom domain.
 
 ---
 
@@ -79,9 +102,9 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 ### Summary
 
 - **Canonical path:** New match metadata and in-debate text chat live under **`users/{lowercaseEmail}/debates/{roomId}`**, where **`roomId`** is the Socket.IO room id from **`matched`**. Session rows include **`sessionKind: 'match'`**, **`proUid`**, **`conUid`**, topic/custom fields, and timestamps.
-- **`chat_messages`** subcollection: each **`debate-chat`** line is appended under **both** participants’ debate docs (Admin SDK). Removed **`text_chat`** mirroring and **stopped writing** top-level **`match_sessions`** (legacy docs unchanged; moderation API still reads them as fallback).
+- **`chat_messages`** subcollection: each **`debate-chat`** line is appended under **both** participants? debate docs (Admin SDK). Removed **`text_chat`** mirroring and **stopped writing** top-level **`match_sessions`** (legacy docs unchanged; moderation API still reads them as fallback).
 - **Server:** **`await persistMatchSession`** before **`matched`**; **`getRoomProConUids`** supplies pro/con UIDs for **`persistChatMessage`**.
-- **Rules:** nested **`chat_messages`** under **`debates`** — own-doc read only; Admin writes only.
+- **Rules:** nested **`chat_messages`** under **`debates`** ? own-doc read only; Admin writes only.
 - **Moderation:** **`GET /api/mod/match/:roomId`** uses **`collectionGroup('debates')`** with **`sessionKind`** + **`roomId`**; legacy **`match_sessions`** fallback. **`GET /api/mod/user/:uid/sessions`** prefers nested **`sessionKind`** rows + merges legacy.
 
 ### Files
@@ -120,7 +143,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 ### Summary
 
 - **`moderation_actions`** Firestore collection (Admin-only; rules deny clients) stores operator decisions and notes.
-- **`server/moderationApi.js`**: HTTP **`/api/mod/*`** protected by **`CHITCHAT_MODERATION_SECRET`** — list reports, fetch match + chat by **`roomId`**, list user **`debates`** / **`match_sessions`**, append **`moderation_actions`**, **disable/enable** Auth users with audit rows.
+- **`server/moderationApi.js`**: HTTP **`/api/mod/*`** protected by **`CHITCHAT_MODERATION_SECRET`** ? list reports, fetch match + chat by **`roomId`**, list user **`debates`** / **`match_sessions`**, append **`moderation_actions`**, **disable/enable** Auth users with audit rows.
 - SPA fallback skips **`/api/*`** so JSON routes are not replaced by **`index.html`**.
 - **`docs/MODERATION.md`**, **`.env.example`**, **`firestore.rules`**, **`PROJECT_MEMORY`**.
 
@@ -128,7 +151,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 - Set secret + Admin credentials on Railway; paste updated **`firestore.rules`** if not already.
 
-## Session: 2026-03-23 (feature: debate data storage — sessions, chat, history)
+## Session: 2026-03-23 (feature: debate data storage ? sessions, chat, history)
 
 ### Summary
 
@@ -149,7 +172,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
-- **Bug:** Socket.IO connected as soon as `firebaseUserId` was set, often **before** a Firebase ID token was available—handshake used `auth: {}` and failed when `REQUIRE_FIREBASE_TOKEN=true` (Railway/production), so **both accounts** failed custom lobby / matchmaking.
+- **Bug:** Socket.IO connected as soon as `firebaseUserId` was set, often **before** a Firebase ID token was available?handshake used `auth: {}` and failed when `REQUIRE_FIREBASE_TOKEN=true` (Railway/production), so **both accounts** failed custom lobby / matchmaking.
 - **Fix:** Bootstrap the client with **`await auth.currentUser.getIdToken()`** inside the socket `useEffect` (async IIFE), then connect with `auth: { token }`. Effect deps remain **`firebaseUserId` only** so token refresh does not reconnect the socket. Removed unused `firebaseIdToken` React state.
 
 ### Files
@@ -158,13 +181,13 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Commands
 
-- `npm run build` — verified after change.
+- `npm run build` ? verified after change.
 
 ## Session: 2026-03-24 (fix: Quick Match waiting + stable Socket.IO)
 
 ### Summary
 
-- Restored **optimistic `setWaiting(true)`** when emitting `join-queue` / `join-custom-room` so the UI shows “searching” immediately (not only after `queued`).
+- Restored **optimistic `setWaiting(true)`** when emitting `join-queue` / `join-custom-room` so the UI shows ?searching? immediately (not only after `queued`).
 - Removed **`firebaseIdToken` from the Socket.IO `useEffect` dependency list** so Firebase ID token refresh no longer disconnects/reconnects the socket (avoids races where Pro/Con appeared to do nothing).
 
 ### Files
@@ -176,8 +199,8 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 ### Summary
 
 - Added **text chat during debates** so participants can share links or short notes alongside video.
-- Server: Socket.IO **`debate-chat`** — validates `roomId` matches the active debate, trims message, enforces max length (default 2000 chars) and rolling per-minute rate limit (default 30/min); broadcasts `{ text, from, sentAtMs }` to everyone in the Socket.IO room.
-- Client: **`DebateChatPanel.jsx`** — scrollable message list, textarea + Send, **Enter** sends / **Shift+Enter** newline; `https?://` URLs rendered as external links.
+- Server: Socket.IO **`debate-chat`** ? validates `roomId` matches the active debate, trims message, enforces max length (default 2000 chars) and rolling per-minute rate limit (default 30/min); broadcasts `{ text, from, sentAtMs }` to everyone in the Socket.IO room.
+- Client: **`DebateChatPanel.jsx`** ? scrollable message list, textarea + Send, **Enter** sends / **Shift+Enter** newline; `https?://` URLs rendered as external links.
 - Chat history clears when the match ends, opponent leaves, kick, or host returns to solo waiting (custom).
 
 ### Files
@@ -188,7 +211,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 - Persist/export chat is out of scope for MVP; server-side moderation could log abusive chat later.
 
-## Session: 2026-03-24 (production QA — cross-machine WebRTC)
+## Session: 2026-03-24 (production QA ? cross-machine WebRTC)
 
 ### Summary
 
@@ -197,7 +220,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Files
 
-- _(none — QA validation only)_
+- _(none ? QA validation only)_
 
 ### Follow-ups (planned next)
 
@@ -211,7 +234,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 - Continued production debugging after Railway go-live where Quick Match sometimes showed connecting/waiting but did not produce a pair.
 - Added a server safeguard so SPA fallback routing does not intercept Socket.IO transport paths (`/socket.io`), preventing HTTP polling conflicts in production.
 - Improved client socket resilience: clearer `connect_error` detail text, explicit reconnect attempts before emits, and removed forced double-click behavior.
-- Adjusted waiting-state UX so queue spinner appears only after server `queued` acknowledgement (prevents false “searching” state when queue entry was not confirmed).
+- Adjusted waiting-state UX so queue spinner appears only after server `queued` acknowledgement (prevents false ?searching? state when queue entry was not confirmed).
 - Live endpoint checks validated `/health` and `/socket.io` handshake reachability from production.
 
 ### Files
@@ -310,7 +333,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
-- Added a **server-side periodic sweep** for custom lobbies so the Join servers list doesn’t accumulate stale “orphaned” or expired rooms.
+- Added a **server-side periodic sweep** for custom lobbies so the Join servers list doesn?t accumulate stale ?orphaned? or expired rooms.
 - Cleanup rules:
   - Remove lobbies whose creator socket is disconnected.
   - Expire open lobbies after a configurable TTL (`CUSTOM_LOBBY_TTL_MS`, default 30 minutes).
@@ -333,9 +356,9 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
-- **Custom mode redesign:** Reworked custom matchmaking into two tabs — **Join servers** and **Create server**. Join tab supports **live lobby list** plus **Join by code**. Create tab supports statement publishing with selectable visibility: **Open lobby** (listed) or **Code-only** (hidden from list).
+- **Custom mode redesign:** Reworked custom matchmaking into two tabs ? **Join servers** and **Create server**. Join tab supports **live lobby list** plus **Join by code**. Create tab supports statement publishing with selectable visibility: **Open lobby** (listed) or **Code-only** (hidden from list).
 - **Host persistence fix:** Creating a custom lobby now places the creator directly into a waiting debate view (camera/mic ready). If a challenger joins and later leaves, the creator is **not forced out**; the lobby returns to waiting and accepts the next challenger until the creator ends the session.
-- **Copy confirmation UX:** Room code copy now shows a short **"✓ Copied"** confirmation state.
+- **Copy confirmation UX:** Room code copy now shows a short **"? Copied"** confirmation state.
 - **Firestore compatibility:** Custom debate logging now consistently uses `topicId: "custom"` client-side; `firestore.rules` updated to allow optional custom metadata on `debates` writes (`matchMode`, `roomCode`, `statement`) while keeping owner-only create/read and no update/delete.
 - **Security hardening (Socket.IO):** Added optional Firebase ID token verification for Socket.IO connections via Firebase Admin SDK. Client now sends an ID token during the Socket.IO handshake; server verifies it when Admin credentials are configured.
 
@@ -358,11 +381,11 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ---
 
-## Session: 2026-03-22 (documentation — PROJECT_MEMORY + DEV_LOG)
+## Session: 2026-03-22 (documentation ? PROJECT_MEMORY + DEV_LOG)
 
 ### Summary
 
-- **Continuity refresh:** Re-read the codebase and updated **`PROJECT_MEMORY.md`** so **§2 What works** and **§7 Repository layout** explicitly include **in-app reporting** (**`ReportIssue.jsx`**, Firestore **`reports`**, **`submitReport`** in **`chitChatFirestore.js`**) and the **90-second client cooldown** after a successful report (**`localStorage`** key **`chitchat:lastReportAt`**). **Last updated** / **Session notes** adjusted to reflect this pass.
+- **Continuity refresh:** Re-read the codebase and updated **`PROJECT_MEMORY.md`** so **?2 What works** and **?7 Repository layout** explicitly include **in-app reporting** (**`ReportIssue.jsx`**, Firestore **`reports`**, **`submitReport`** in **`chitChatFirestore.js`**) and the **90-second client cooldown** after a successful report (**`localStorage`** key **`chitchat:lastReportAt`**). **Last updated** / **Session notes** adjusted to reflect this pass.
 - **DEV_LOG:** This entry records the documentation maintenance session (no application code changes).
 
 ### Files
@@ -375,9 +398,9 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
-- **Signed-in header menu:** **`HeaderNavMenu.jsx`** — “Menu” dropdown next to **Sign out** with **Legal** subsection (Terms, Privacy, Community Guidelines, Recording & streaming consent), **Our Mission**, and **Support**. Chooses full-screen overlays via **`headerOverlay`** in **`App.jsx`**; legal reuses **`LegalViewer`**, mission/support use **`MissionPage.jsx`** / **`SupportPage.jsx`** with **`LegalDocumentShell`**.
+- **Signed-in header menu:** **`HeaderNavMenu.jsx`** ? ?Menu? dropdown next to **Sign out** with **Legal** subsection (Terms, Privacy, Community Guidelines, Recording & streaming consent), **Our Mission**, and **Support**. Chooses full-screen overlays via **`headerOverlay`** in **`App.jsx`**; legal reuses **`LegalViewer`**, mission/support use **`MissionPage.jsx`** / **`SupportPage.jsx`** with **`LegalDocumentShell`**.
 - **Our Mission copy:** Replaced placeholder with user-provided mission statement (three paragraphs); shell title **Our Mission**; menu label aligned.
-- **Layout (important):** Menu/Sign out must align to the **viewport** right edge, and the logo/tagline must center on the **full screen** — not inside the **`max-width: 1100px`** `.app` column. Earlier attempts (`100vw` negative margins on a child of `.app`, CSS grid `1fr auto 1fr`, `position: absolute` inside the column) failed or regressed because the positioning context stayed the narrow column. **Fix:** Render the logged-in header as a **sibling** of `.app` in **`#root`**: wrapper **`app-top-bar`** (full width, horizontal safe-area padding). Main content stays in **`.app`**; when logged in, **`.app--with-global-header`** sets **`padding-top: 0`** so top spacing isn’t doubled. **`header-actions`** remains **`position: absolute; top: 0; right: 0`** relative to **`app-header-row`**. **`#root`** uses **`overflow-x: clip`** to avoid horizontal scroll from older bleed experiments (kept as harmless guard).
+- **Layout (important):** Menu/Sign out must align to the **viewport** right edge, and the logo/tagline must center on the **full screen** ? not inside the **`max-width: 1100px`** `.app` column. Earlier attempts (`100vw` negative margins on a child of `.app`, CSS grid `1fr auto 1fr`, `position: absolute` inside the column) failed or regressed because the positioning context stayed the narrow column. **Fix:** Render the logged-in header as a **sibling** of `.app` in **`#root`**: wrapper **`app-top-bar`** (full width, horizontal safe-area padding). Main content stays in **`.app`**; when logged in, **`.app--with-global-header`** sets **`padding-top: 0`** so top spacing isn?t doubled. **`header-actions`** remains **`position: absolute; top: 0; right: 0`** relative to **`app-header-row`**. **`#root`** uses **`overflow-x: clip`** to avoid horizontal scroll from older bleed experiments (kept as harmless guard).
 - **Dropdown visibility:** Ensured **`HeaderNavMenu`** is actually mounted in the header JSX (it had been imported but omitted briefly). Dropdown panel uses a solid-enough background and z-index so it reads on the page gradient.
 
 ### Files
@@ -411,8 +434,8 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
-- **Moderation intake:** Users can **Report issue** during a debate — modal (**`ReportIssue.jsx`**) with category (harassment / spam / other) + details. **`submitReport`** in **`chitChatFirestore.js`** writes **`reports`** with `reporterUid`, `topicId`, `roomId`, `yourSide`, `category`, `details`, `createdAt`.
-- **Firestore rules:** `reports` — create when authenticated and `reporterUid == uid`; read own reports only; no updates. **Deploy updated `firestore.rules`** to Firebase Console.
+- **Moderation intake:** Users can **Report issue** during a debate ? modal (**`ReportIssue.jsx`**) with category (harassment / spam / other) + details. **`submitReport`** in **`chitChatFirestore.js`** writes **`reports`** with `reporterUid`, `topicId`, `roomId`, `yourSide`, `category`, `details`, `createdAt`.
+- **Firestore rules:** `reports` ? create when authenticated and `reporterUid == uid`; read own reports only; no updates. **Deploy updated `firestore.rules`** to Firebase Console.
 - **UX:** Modal closes when leaving debate or opponent disconnects.
 
 ### Files
@@ -430,7 +453,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 ### Summary
 
 - **Abuse resistance:** In-memory **fixed-window** rate limit on **`join-queue`** per client IP (`server/rateLimit.js`). Uses **`x-forwarded-for`** when present (reverse proxy). On exceed, server emits **`queue-error`** with **`code: 'rate_limited'`** and copy; client shows it in the existing error banner.
-- **Config:** **`RATE_LIMIT_JOIN_QUEUE_MAX`** (default 40), **`RATE_LIMIT_JOIN_QUEUE_WINDOW_MS`** (default 60000) — documented in **`.env.example`**.
+- **Config:** **`RATE_LIMIT_JOIN_QUEUE_MAX`** (default 40), **`RATE_LIMIT_JOIN_QUEUE_WINDOW_MS`** (default 60000) ? documented in **`.env.example`**.
 
 ### Files
 
@@ -446,10 +469,10 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
-- **In-app legal:** Added **`src/legal/`** — **`TermsOfService`**, **`PrivacyPolicy`**, **`CommunityGuidelines`**, **`RecordingAgreement`**, **`LegalDocumentShell`**, **`LegalViewer`**, **`contactEmail.js`** (`VITE_CONTACT_EMAIL` for Privacy + Recording contact lines). Removed placeholder-only **`LegalPlaceholder`** once Recording text existed.
+- **In-app legal:** Added **`src/legal/`** ? **`TermsOfService`**, **`PrivacyPolicy`**, **`CommunityGuidelines`**, **`RecordingAgreement`**, **`LegalDocumentShell`**, **`LegalViewer`**, **`contactEmail.js`** (`VITE_CONTACT_EMAIL` for Privacy + Recording contact lines). Removed placeholder-only **`LegalPlaceholder`** once Recording text existed.
 - **Signup UX:** **18+** checkbox plus one combined acceptance line with links to all four documents; **`AuthScreen`** footer links to each policy. **`App`** uses **`app--auth-only`** for full-bleed auth layout.
 - **Branding:** **`public/chitchat-logo.png`**, **`BrandLogo.jsx`**, favicon in **`index.html`**.
-- **Auth styling:** **`AuthScreen.css`** (card, tabs, primary CTA, certification block). Iterated global **theme** in **`index.css`** + **`App.css`** so signed-in UI matches auth: palette moved from dark → earthy green → vibrant grass → **sky blue** (current); shared **`--page-bg-image`**, glass panels, primary buttons, audio meter gradient, legal overlay background.
+- **Auth styling:** **`AuthScreen.css`** (card, tabs, primary CTA, certification block). Iterated global **theme** in **`index.css`** + **`App.css`** so signed-in UI matches auth: palette moved from dark ? earthy green ? vibrant grass ? **sky blue** (current); shared **`--page-bg-image`**, glass panels, primary buttons, audio meter gradient, legal overlay background.
 - **Community Guidelines:** User-provided copy; **emojis removed** from subsection titles in **`CommunityGuidelines.jsx`**.
 
 ### Files (representative)
@@ -462,7 +485,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ---
 
-## Session: 2026-03-22 (auth docs — email/password only)
+## Session: 2026-03-22 (auth docs ? email/password only)
 
 ### Summary
 
@@ -490,7 +513,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### User (Firebase Console)
 
-- Enable **Email/Password** under Authentication → Sign-in method; optionally **disable Anonymous**.
+- Enable **Email/Password** under Authentication ? Sign-in method; optionally **disable Anonymous**.
 
 ---
 
@@ -511,7 +534,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 ### Summary
 
 - **Firestore:** `syncUserPresence()` writes **`users/{uid}`** (`app`, `lastSeenAt`). **`logDebateSessionEnd()`** adds **`debates`** docs on **Leave** (`reason: leave`) or **peer-left** (`peer_left`) with topic, side, room, duration, WebRTC `connectionState`. Wired in `App.jsx` via `debateSessionRef` + `flushDebateLog`.
-- **Rules:** `firestore.rules` — users own-doc; debates create/read only when `uid` matches auth (immutable after create).
+- **Rules:** `firestore.rules` ? users own-doc; debates create/read only when `uid` matches auth (immutable after create).
 - **Deploy:** `Dockerfile` (multi-stage build + `npm start`), `.dockerignore`, **`docs/DEPLOY.md`** (VITE build-time vars, `PORT`, Docker).
 
 ### Files
@@ -558,7 +581,7 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 - **Implemented:** `firebase` npm package; `src/firebase.js` initializes **Auth** + **Firestore** when `VITE_FIREBASE_*` variables are present; **`ensureAnonymousUser()`** for stable UID without email signup.
 - **Superseded:** Email/password gate (`AuthScreen`) replaced anonymous sign-in; **`ensureAnonymousUser`** removed from `firebase.js` (see session *email/password gate* above).
 - **UI:** Welcome screen copy updates when Firebase is active; dev-only hint if keys missing; error if Email/Password sign-in is disabled in Console (`auth/operation-not-allowed`).
-- **Rules:** `firestore.rules` — `users/{userId}` read/write for owner UID only; extend with new collections as needed.
+- **Rules:** `firestore.rules` ? `users/{userId}` read/write for owner UID only; extend with new collections as needed.
 - **Docs:** `.env.example` extended; `PROJECT_MEMORY` / `DEV_LOG` updated.
 
 ### Files touched
@@ -585,8 +608,8 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Files touched
 
-- `docs/PROJECT_MEMORY.md` — major expansion / continuity handoff.
-- `docs/DEV_LOG.md` — this entry + structure clarification.
+- `docs/PROJECT_MEMORY.md` ? major expansion / continuity handoff.
+- `docs/DEV_LOG.md` ? this entry + structure clarification.
 
 ### Follow-ups
 
@@ -601,15 +624,15 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 - **Scaffolded** full-stack debate MVP: React + Vite client; Express + Socket.IO server; WebRTC peer video/audio.
 - **Matchmaking:** Per-topic queues for `pro` and `con`; first waiter on opposite side pairs with incoming joiner; room id encodes topic + socket ids; offerer flag for SDP.
 - **Server:** `GET /health`, `GET /api/rtc-config` (ICE from `server/rtcConfig.js` + optional `ICE_SERVERS_JSON`); topic allowlist via `shared/topics.js`; `leave-debate` notifies peer; `queue-error` on bad input; static `dist` + SPA fallback in production.
-- **Client:** Steps welcome → topic → side → waiting/matched → debate; fetches RTC config; buffers signaling until PC ready; connection-state pill; `leave-debate` on Leave button; mic/camera toggles.
+- **Client:** Steps welcome ? topic ? side ? waiting/matched ? debate; fetches RTC config; buffers signaling until PC ready; connection-state pill; `leave-debate` on Leave button; mic/camera toggles.
 - **Repo:** `dotenv`, `.env.example`, `.gitignore`; `shared/topics.js` + `src/topics.js` re-export.
 - **Vite:** Proxies `/socket.io`, `/api`, `/health` to port **3001**.
 
 ### Environment / user support
 
 - Cursor/agent environment initially had **no Node on PATH**; **`winget install OpenJS.NodeJS.LTS`** installed Node on the user machine.
-- Ran **`npm install`** (181 packages) and **`npm run dev`** — Vite **5173**, server **3001**.
-- User saw **`ERR_CONNECTION_REFUSED`** on localhost:5173 before the dev server was running — resolved by installing Node and starting `npm run dev`.
+- Ran **`npm install`** (181 packages) and **`npm run dev`** ? Vite **5173**, server **3001**.
+- User saw **`ERR_CONNECTION_REFUSED`** on localhost:5173 before the dev server was running ? resolved by installing Node and starting `npm run dev`.
 
 ### Files / areas (high level)
 

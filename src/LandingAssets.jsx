@@ -8,7 +8,7 @@ export function HotTakeWordmark({ variant = 'nav' }) {
     return (
       <img
         src="/hottake-logo-horizontal.png"
-        alt="Hot Take — Discuss. Debate. Diverge."
+        alt="Hot Take ? Discuss. Debate. Diverge."
         className="landing-logo-img landing-logo-img--nav"
         draggable={false}
       />
@@ -17,8 +17,8 @@ export function HotTakeWordmark({ variant = 'nav' }) {
 
   return (
     <img
-      src="/hottake-logo-stacked.png"
-      alt="Hot Take — Discuss. Debate. Diverge."
+      src="/hottake-logo-horizontal.png"
+      alt="Hot Take ? Discuss. Debate. Diverge."
       className="landing-logo-img landing-logo-img--footer"
       draggable={false}
     />
@@ -27,13 +27,9 @@ export function HotTakeWordmark({ variant = 'nav' }) {
 
 export function HeroBubblesVisual() {
   return (
-    <img
-      src="/hottake-logo-stacked.png"
-      alt=""
-      aria-hidden="true"
-      className="landing-hero-logo"
-      draggable={false}
-    />
+    <div className="landing-hero-logo-crop" aria-hidden="true">
+      <img src="/hottake-logo-stacked.png" alt="" className="landing-hero-logo" draggable={false} />
+    </div>
   );
 }
 
