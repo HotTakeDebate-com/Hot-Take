@@ -20,24 +20,38 @@
   box-sizing: border-box;
 }
 
-/* ── Logo SVGs ── */
-.landing-logo-svg {
+/* ── Logo images (official brand PNGs) ── */
+.landing-logo-img {
   display: block;
+  height: auto;
+  image-rendering: auto;
+}
+
+.landing-logo-img--nav {
+  height: 44px;
+  width: auto;
+  max-width: min(280px, 55vw);
+  object-fit: contain;
+}
+
+.landing-logo-img--footer {
+  width: 130px;
   height: auto;
 }
 
-.landing-logo-svg--nav {
-  width: min(210px, 38vw);
-}
-
-.landing-logo-svg--footer {
-  width: 120px;
+.landing-hero-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000000;
 }
 
 .landing-hero-logo {
-  width: min(320px, 85%);
-  height: auto;
   display: block;
+  width: min(320px, 100%);
+  height: auto;
+  object-fit: contain;
+  background: #000000;
 }
 
 /* ── Nav ── */
@@ -218,12 +232,6 @@
 .landing-features li svg {
   color: var(--landing-white);
   flex-shrink: 0;
-}
-
-.landing-hero-visual {
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 /* ── CTA cards ── */
@@ -508,8 +516,8 @@
   background: #000000 !important;
 }
 
-.app--landing body,
-body:has(.app--landing) {
-  background: #000000 !important;
-  background-image: none !important;
+.app--landing,
+.app--landing .landing,
+.app--landing .landing-hero-visual {
+  background: #000000;
 }

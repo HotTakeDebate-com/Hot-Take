@@ -81,6 +81,12 @@ body:has(.app--landing) {
   background-image: none;
 }
 
+html:has(.app--landing),
+#root:has(.app--landing) {
+  background-color: #000000;
+  background-image: none;
+}
+
 ::selection {
   background: rgba(255, 59, 48, 0.35);
   color: #fff;

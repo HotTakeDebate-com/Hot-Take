@@ -2,153 +2,29 @@
 
 const RED = '#FF1E1E';
 const WHITE = '#FFFFFF';
-const GREY = '#A0A0A0';
-
-/** Shared speech-bubble icon (matches brand mark). */
-function LogoIcon() {
-  return (
-    <g aria-hidden="true">
-      <path
-        d="M2 3C2 1.34 3.34 0 5 0H29C30.66 0 32 1.34 32 3V19C32 20.66 30.66 22 29 22H17L11 28V22H5C3.34 22 2 20.66 2 19V3Z"
-        fill={RED}
-      />
-      <path
-        d="M14 1C14 0.45 14.45 0 15 0H39C40.55 0 42 1.45 42 3V19C42 20.55 40.55 22 39 22H27L21 28V22H15C13.45 22 12 20.55 12 19V3C12 1.45 13.45 0 15 0Z"
-        fill={WHITE}
-      />
-      <circle cx="12" cy="11" r="1.6" fill="#000" />
-      <circle cx="17" cy="11" r="1.6" fill="#000" />
-      <circle cx="22" cy="11" r="1.6" fill="#000" />
-      <circle cx="27" cy="11" r="1.6" fill="#000" />
-      <circle cx="32" cy="11" r="1.6" fill="#000" />
-    </g>
-  );
-}
 
 export function HotTakeWordmark({ variant = 'nav' }) {
-  if (variant === 'nav') {
-    return (
-      <svg
-        className="landing-logo-svg landing-logo-svg--nav"
-        viewBox="0 0 260 44"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label="Hot Take — Discuss. Debate. Diverge."
-      >
-        <g transform="translate(0, 6) scale(0.95)">
-          <LogoIcon />
-        </g>
-        <text
-          x="48"
-          y="22"
-          fill={RED}
-          fontFamily="Inter, system-ui, sans-serif"
-          fontSize="18"
-          fontWeight="700"
-        >
-          hot
-        </text>
-        <text
-          x="82"
-          y="22"
-          fill={WHITE}
-          fontFamily="Inter, system-ui, sans-serif"
-          fontSize="18"
-          fontWeight="700"
-        >
-          take
-        </text>
-        <text
-          x="48"
-          y="36"
-          fill={GREY}
-          fontFamily="Inter, system-ui, sans-serif"
-          fontSize="6.5"
-          fontWeight="500"
-          letterSpacing="1.8"
-        >
-          DISCUSS. DEBATE. DIVERGE.
-        </text>
-      </svg>
-    );
-  }
+  const src = variant === 'nav' ? '/hottake-logo-horizontal.png' : '/hottake-logo-stacked.png';
 
   return (
-    <svg
-      className="landing-logo-svg landing-logo-svg--footer"
-      viewBox="0 0 140 110"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      role="img"
-      aria-label="Hot Take — Discuss. Debate. Diverge."
-    >
-      <g transform="translate(38, 0) scale(1.5)">
-        <LogoIcon />
-      </g>
-      <text
-        x="70"
-        y="78"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontSize="16"
-        fontWeight="700"
-      >
-        <tspan fill={RED}>hot</tspan>
-        <tspan fill={WHITE}>take</tspan>
-      </text>
-      <text
-        x="70"
-        y="96"
-        textAnchor="middle"
-        fill={GREY}
-        fontFamily="Inter, system-ui, sans-serif"
-        fontSize="5.5"
-        fontWeight="500"
-        letterSpacing="1.4"
-      >
-        DISCUSS. DEBATE. DIVERGE.
-      </text>
-    </svg>
+    <img
+      src={src}
+      alt="Hot Take — Discuss. Debate. Diverge."
+      className={`landing-logo-img landing-logo-img--${variant}`}
+      draggable={false}
+    />
   );
 }
 
 export function HeroBubblesVisual() {
   return (
-    <svg
-      className="landing-hero-logo"
-      viewBox="0 0 280 200"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <img
+      src="/hottake-logo-stacked.png"
+      alt=""
       aria-hidden="true"
-    >
-      <g transform="translate(70, 0) scale(3.2)">
-        <LogoIcon />
-      </g>
-      <text
-        x="140"
-        y="148"
-        textAnchor="middle"
-        fontFamily="Inter, system-ui, sans-serif"
-        fontSize="28"
-        fontWeight="700"
-      >
-        <tspan fill={RED}>hot</tspan>
-        <tspan fill={WHITE}>take</tspan>
-      </text>
-      <text
-        x="140"
-        y="178"
-        textAnchor="middle"
-        fill={GREY}
-        fontFamily="Inter, system-ui, sans-serif"
-        fontSize="9"
-        fontWeight="500"
-        letterSpacing="2.8"
-      >
-        DISCUSS. DEBATE. DIVERGE.
-      </text>
-    </svg>
+      className="landing-hero-logo"
+      draggable={false}
+    />
   );
 }
 
