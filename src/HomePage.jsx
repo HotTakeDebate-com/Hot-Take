@@ -1,17 +1,22 @@
-import BrandLogo from './BrandLogo.jsx';
-import { TOPICS } from './topics.js';
+import {
+  HeroBubblesVisual,
+  HotTakeWordmark,
+  IconInstagram,
+  IconLightning,
+  IconShield,
+  IconTikTok,
+  IconUser,
+  IconUserPlus,
+  IconVideo,
+  IconX,
+  IconYouTube,
+  StepIconChat,
+  StepIconDebate,
+  StepIconMatch,
+} from './LandingAssets.jsx';
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function StepIcon({ children, step }) {
-  return (
-    <div className="landing-step-icon" aria-hidden="true">
-      {children}
-      <span className="landing-step-badge">{step}</span>
-    </div>
-  );
 }
 
 export default function HomePage({
@@ -40,14 +45,14 @@ export default function HomePage({
     <div className="landing">
       <header className="landing-nav">
         <a href="/" className="landing-nav-brand" onClick={(e) => e.preventDefault()}>
-          <BrandLogo className="brand-logo--landing-nav" />
+          <HotTakeWordmark variant="nav" />
         </a>
 
         <nav className="landing-nav-links" aria-label="Primary">
           <button type="button" className="landing-nav-link" onClick={() => scrollToId('how-it-works')}>
             How it works
           </button>
-          <button type="button" className="landing-nav-link" onClick={() => scrollToId('about')}>
+          <button type="button" className="landing-nav-link" onClick={onPickMission}>
             About
           </button>
           <button type="button" className="landing-nav-link" onClick={() => scrollToId('topics')}>
@@ -61,15 +66,15 @@ export default function HomePage({
         <div className="landing-nav-actions">
           {navExtras}
           {isSignedIn ? (
-            <button type="button" className="btn btn-ghost landing-nav-btn" onClick={onSignOut}>
+            <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignOut}>
               Sign out
             </button>
           ) : (
             <>
-              <button type="button" className="btn btn-ghost landing-nav-btn" onClick={onSignIn}>
+              <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>
                 Sign in
               </button>
-              <button type="button" className="btn btn-primary landing-nav-btn" onClick={onSignUp}>
+              <button type="button" className="landing-btn landing-btn--primary" onClick={onSignUp}>
                 Create account
               </button>
             </>
@@ -81,32 +86,41 @@ export default function HomePage({
         <div className="landing-hero-copy">
           <p className="landing-eyebrow">Live 1-on-1 debates</p>
           <h1 className="landing-headline">
-            Have a take? Put it to the <em>test.</em>
+            Have a take? Put it to <span className="landing-headline-accent">the test.</span>
           </h1>
           <p className="landing-subhead">
             Join a live 1-on-1 video debate with someone who sees things differently.
           </p>
-          <ul className="landing-pills">
-            <li>Real people</li>
-            <li>No filters</li>
-            <li>Just debate</li>
+          <ul className="landing-features">
+            <li>
+              <IconUser />
+              Real people
+            </li>
+            <li>
+              <IconShield />
+              No filters
+            </li>
+            <li>
+              <IconVideo />
+              Just debate
+            </li>
           </ul>
         </div>
-        <div className="landing-hero-visual" aria-hidden="true">
-          <BrandLogo className="brand-logo--landing-hero" />
+        <div className="landing-hero-visual">
+          <HeroBubblesVisual />
         </div>
       </section>
 
       <section className="landing-cta-row" aria-label="Get started">
         <article className="landing-cta-card landing-cta-card--primary">
-          <div className="landing-cta-icon landing-cta-icon--bolt" aria-hidden="true">
-            ⚡
+          <div className="landing-cta-icon landing-cta-icon--red" aria-hidden="true">
+            <IconLightning />
           </div>
           <h2 className="landing-cta-title">Quick match</h2>
           <p className="landing-cta-desc">
             Get matched instantly with someone who has an opposing take.
           </p>
-          <button type="button" className="btn btn-primary landing-cta-btn" onClick={handleQuick}>
+          <button type="button" className="landing-btn landing-btn--primary landing-cta-btn" onClick={handleQuick}>
             Start quick match
           </button>
           <p className="landing-cta-foot">Perfect for jumping in and debating now.</p>
@@ -118,93 +132,47 @@ export default function HomePage({
 
         <article className="landing-cta-card">
           <div className="landing-cta-icon" aria-hidden="true">
-            +
+            <IconUserPlus />
           </div>
           <h2 className="landing-cta-title">Custom room</h2>
           <p className="landing-cta-desc">
             Create your own debate room, set the topic, and invite others.
           </p>
-          <button type="button" className="btn btn-outline landing-cta-btn" onClick={handleCustom}>
+          <button type="button" className="landing-btn landing-btn--outline landing-cta-btn" onClick={handleCustom}>
             Create room
           </button>
           <p className="landing-cta-foot">Perfect for friends, communities, or events.</p>
         </article>
       </section>
 
-      <section id="how-it-works" className="landing-section landing-how">
-        <h2 className="landing-section-title">How it works</h2>
+      <section id="how-it-works" className="landing-how">
+        <h2 className="landing-how-title">How it works</h2>
         <div className="landing-steps">
           <article className="landing-step">
-            <StepIcon step="1">👤</StepIcon>
+            <StepIconMatch step="1" />
             <h3>Get matched</h3>
             <p>We pair you with someone who disagrees with you.</p>
           </article>
           <article className="landing-step">
-            <StepIcon step="2">📹</StepIcon>
+            <StepIconDebate step="2" />
             <h3>Debate live</h3>
             <p>Hop on a 1-on-1 video call and make your case.</p>
           </article>
           <article className="landing-step">
-            <StepIcon step="3">💬</StepIcon>
+            <StepIconChat step="3" />
             <h3>Keep talking</h3>
             <p>Continue the conversation or debate someone new.</p>
           </article>
         </div>
       </section>
 
-      <section id="about" className="landing-section landing-about">
-        <h2 className="landing-section-title">About Hot Take</h2>
-        <p className="landing-about-text">
-          Hot Take is a live debate platform for real conversations and different perspectives.
-          We believe open dialogue — when structured with respect and clarity — has the power to
-          challenge ideas and bring people closer to truth.
-        </p>
-        <button type="button" className="landing-text-link" onClick={onPickMission}>
-          Read our mission →
-        </button>
-      </section>
-
-      <section id="topics" className="landing-section landing-topics">
-        <h2 className="landing-section-title">Debate topics</h2>
-        <p className="landing-section-lead">
-          Quick match pairs you on curated statements like these — pick a side and meet your opponent.
-        </p>
-        <ul className="landing-topic-list">
-          {TOPICS.map((t) => (
-            <li key={t.id} className="landing-topic-item">
-              {t.label}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section id="faq" className="landing-section landing-faq">
-        <h2 className="landing-section-title">FAQ</h2>
-        <dl className="landing-faq-list">
-          <div className="landing-faq-item">
-            <dt>Do I need an account?</dt>
-            <dd>Yes. Create a free account to join live debates, save your profile, and match with opponents.</dd>
-          </div>
-          <div className="landing-faq-item">
-            <dt>What if I don&apos;t have a camera?</dt>
-            <dd>
-              You can still join with audio only. You&apos;ll hear your opponent and see their video if they
-              have a camera.
-            </dd>
-          </div>
-          <div className="landing-faq-item">
-            <dt>How do I report someone?</dt>
-            <dd>
-              Use <strong>Report issue</strong> during a live debate. You can also email us from the Support
-              page in the menu.
-            </dd>
-          </div>
-        </dl>
-      </section>
+      {/* Hidden anchor targets for nav links */}
+      <div id="topics" className="landing-anchor" aria-hidden="true" />
+      <div id="faq" className="landing-anchor" aria-hidden="true" />
 
       <footer className="landing-footer">
         <div className="landing-footer-brand">
-          <BrandLogo className="brand-logo--landing-footer" />
+          <HotTakeWordmark variant="footer" />
           <p>Hot Take is a live debate platform for real conversations and different perspectives.</p>
         </div>
 
@@ -212,7 +180,7 @@ export default function HomePage({
           <h3>Company</h3>
           <ul>
             <li>
-              <button type="button" onClick={() => scrollToId('about')}>
+              <button type="button" onClick={onPickMission}>
                 About
               </button>
             </li>
@@ -222,7 +190,7 @@ export default function HomePage({
               </button>
             </li>
             <li>
-              <button type="button" onClick={() => scrollToId('faq')}>
+              <button type="button" onClick={onPickSupport}>
                 FAQ
               </button>
             </li>
@@ -264,22 +232,22 @@ export default function HomePage({
           <h3>Follow us</h3>
           <div className="landing-social-row">
             <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X">
-              X
+              <IconX />
             </a>
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              IG
+              <IconInstagram />
             </a>
             <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-              TT
+              <IconTikTok />
             </a>
             <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-              YT
+              <IconYouTube />
             </a>
           </div>
         </div>
-      </footer>
 
-      <p className="landing-copyright">© {new Date().getFullYear()} Hot Take Debate. All rights reserved.</p>
+        <p className="landing-copyright">© {new Date().getFullYear()} Hot Take Debate. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
