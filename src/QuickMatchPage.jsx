@@ -57,7 +57,7 @@ function WaitingPanel({ onCancel, topic, topicIndex, side }) {
         <div><small>Your topic</small><p>{topic?.label}</p></div>
         <strong className={`qm-waiting-side qm-waiting-side--${side}`}>{side === 'agree' ? 'Agree' : 'Disagree'}</strong>
       </div>
-      <button type="button" className="qm-waiting-cancel" onClick={onCancel}><span aria-hidden="true">?</span> Cancel matchmaking</button>
+      <button type="button" className="qm-waiting-cancel" onClick={onCancel}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg> Cancel matchmaking</button>
     </section>
   );
 }
