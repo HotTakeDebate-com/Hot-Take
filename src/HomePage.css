@@ -20,25 +20,24 @@
   box-sizing: border-box;
 }
 
-/* ── Logo images ── */
-.landing-logo-img {
+/* ── Logo SVGs ── */
+.landing-logo-svg {
   display: block;
   height: auto;
 }
 
-.landing-logo-img--nav {
-  width: min(240px, 42vw);
-  height: auto;
+.landing-logo-svg--nav {
+  width: min(210px, 38vw);
 }
 
-.landing-logo-img--footer {
-  width: 140px;
+.landing-logo-svg--footer {
+  width: 120px;
 }
 
 .landing-hero-logo {
-  width: min(400px, 100%);
+  width: min(320px, 85%);
   height: auto;
-  filter: drop-shadow(0 20px 60px rgba(255, 30, 30, 0.22));
+  display: block;
 }
 
 /* ── Nav ── */
