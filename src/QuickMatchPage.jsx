@@ -94,7 +94,7 @@ export default function QuickMatchPage({
         </aside>
       </main>
 
-      <footer className="qm-footer"><HotTakeWordmark variant="footer" /><p>? 2025 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX /></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram /></a><a href="https://tiktok.com" aria-label="TikTok"><IconTikTok /></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube /></a></div></footer>
+      <footer className="qm-footer"><HotTakeWordmark variant="footer" /><p>&copy; 2026 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX /></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram /></a><a href="https://tiktok.com" aria-label="TikTok"><IconTikTok /></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube /></a></div></footer>
     </div>
   );
 }
