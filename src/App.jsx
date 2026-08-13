@@ -28,6 +28,19 @@ const FALLBACK_RTC = {
   ],
 };
 
+/** Attach local mic/camera tracks; recvonly transceivers when a device has no camera or mic. */
+function addLocalTracksToPeerConnection(pc, stream) {
+  const hasVideo = stream.getVideoTracks().length > 0;
+  const hasAudio = stream.getAudioTracks().length > 0;
+  stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+  if (!hasVideo) {
+    pc.addTransceiver('video', { direction: 'recvonly' });
+  }
+  if (!hasAudio) {
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+  }
+}
+
 function connectionLabel(state) {
   if (!state) return '';
   const map = {
@@ -130,6 +143,7 @@ export default function App() {
   const socketRef = useRef(null);
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
   const roomIdRef = useRef(null);
@@ -199,12 +213,43 @@ export default function App() {
       pcRef.current.close();
       pcRef.current = null;
     }
+    remoteStreamRef.current = null;
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     roomIdRef.current = null;
     setConnState(null);
     setLocalStream(null);
   }, []);
+
+  const attachRemoteVideo = useCallback(() => {
+    const el = remoteVideoRef.current;
+    const stream = remoteStreamRef.current;
+    if (!el || !stream) return;
+    if (el.srcObject !== stream) {
+      el.srcObject = stream;
+    }
+    void el.play?.().catch(() => {});
+  }, []);
+
+  const handleRemoteTrack = useCallback(
+    (ev) => {
+      const track = ev.track;
+      if (!track) return;
+
+      let stream = remoteStreamRef.current;
+      if (ev.streams?.[0]) {
+        stream = ev.streams[0];
+      } else {
+        if (!stream) stream = new MediaStream();
+        if (!stream.getTracks().some((t) => t.id === track.id)) {
+          stream.addTrack(track);
+        }
+      }
+      remoteStreamRef.current = stream;
+      attachRemoteVideo();
+    },
+    [attachRemoteVideo]
+  );
 
   useEffect(() => {
     fetch('/api/rtc-config')
@@ -377,6 +422,7 @@ export default function App() {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = null;
       }
+      remoteStreamRef.current = null;
       roomIdRef.current = payload.roomId;
       setDebateInfo({
         roomId: payload.roomId,
@@ -416,17 +462,13 @@ export default function App() {
         pcRef.current = pc;
         setConnState(pc.connectionState);
 
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        addLocalTracksToPeerConnection(pc, stream);
 
         pc.onconnectionstatechange = () => {
           setConnState(pc.connectionState);
         };
 
-        pc.ontrack = (ev) => {
-          if (remoteVideoRef.current && ev.streams[0]) {
-            remoteVideoRef.current.srcObject = ev.streams[0];
-          }
-        };
+        pc.ontrack = handleRemoteTrack;
 
         pc.onicecandidate = (ev) => {
           if (ev.candidate && roomIdRef.current) {
@@ -532,6 +574,7 @@ export default function App() {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = null;
       }
+      remoteStreamRef.current = null;
       setConnState(null);
       setError('Opponent left. Waiting for next challenger...');
     });
@@ -607,6 +650,7 @@ export default function App() {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = null;
         }
+        remoteStreamRef.current = null;
         setConnState(null);
         setError('Opponent left. Waiting for next challenger...');
         return;
@@ -640,7 +684,7 @@ export default function App() {
     };
     // Socket auth callback fetches a fresh ID token on each connect/reconnect. Effect deps stay on
     // firebaseUserId (not token) so we don’t reconnect every hour; the callback still sends a new token.
-  }, [cleanupMedia, flushDebateLog, firebaseUserId]);
+  }, [cleanupMedia, flushDebateLog, firebaseUserId, handleRemoteTrack]);
 
   const pickTopic = (id) => {
     setTopicId(id);
@@ -841,6 +885,10 @@ export default function App() {
       t.enabled = camOn;
     });
   }, [camOn]);
+
+  useEffect(() => {
+    if (step === 'debate') attachRemoteVideo();
+  }, [step, debateInfo?.roomId, attachRemoteVideo]);
 
   const showAppShell = authReady && isFirebaseConfigured;
 
