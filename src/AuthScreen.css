@@ -194,7 +194,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--info);
   font-size: 0.95rem;
   font-weight: 500;
   text-align: center;
@@ -267,7 +267,7 @@
 .auth-screen .auth-input:focus {
   outline: none;
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.45);
 }
 
 .auth-screen-certify {
@@ -309,21 +309,21 @@
 }
 
 .auth-screen .auth-legal-link {
-  color: #fff;
+  color: var(--info-bright);
   text-decoration: underline;
   text-underline-offset: 3px;
   font-weight: 500;
 }
 
 .auth-screen .auth-legal-link:hover {
-  color: var(--accent-strong);
+  color: var(--info);
 }
 
 .auth-screen .error-banner {
   margin-top: 0.75rem;
-  background: rgba(127, 29, 29, 0.45);
-  border-color: rgba(252, 165, 165, 0.4);
-  color: #fecaca;
+  background: rgba(255, 59, 48, 0.16);
+  border-color: var(--accent-border);
+  color: var(--accent-strong);
 }
 
 .auth-screen .auth-success {
@@ -339,13 +339,13 @@
   background: var(--btn-primary-bg);
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: var(--btn-primary-fg);
-  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.28);
+  box-shadow: 0 4px 20px rgba(255, 59, 48, 0.28);
 }
 
 .auth-screen .btn-primary.auth-submit:hover:not(:disabled) {
   background: var(--btn-primary-hover-bg);
   color: var(--btn-primary-hover-fg);
-  box-shadow: 0 8px 28px rgba(220, 38, 38, 0.38);
+  box-shadow: 0 8px 28px rgba(255, 59, 48, 0.38);
 }
 
 .auth-screen .btn-primary.auth-submit:disabled {
