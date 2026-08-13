@@ -1,6 +1,7 @@
 /** SVG assets for the landing page mockup */
 
 const RED = '#FF1E1E';
+const WHITE = '#FFFFFF';
 
 export function HotTakeWordmark({ variant = 'nav' }) {
   return (
