@@ -29,11 +29,8 @@
 
 .landing-logo-img--nav {
   display: block;
-  height: 57px;
+  height: 64px;
   width: auto;
-  aspect-ratio: 1406 / 340;
-  object-fit: contain;
-  object-position: left center;
 }
 
 .landing-logo-img--footer {
