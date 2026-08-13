@@ -9,6 +9,7 @@ import { sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
 import BrandLogo from './BrandLogo.jsx';
 import LegalViewer from './legal/LegalViewer.jsx';
 import SignupLegalReview from './SignupLegalReview.jsx';
+import { HotTakeWordmark, IconLightning, IconShield, IconUser } from './LandingAssets.jsx';
 import './AuthScreen.css';
 
 function mapAuthError(code) {
@@ -28,7 +29,7 @@ function mapAuthError(code) {
     case 'auth/too-many-requests':
       return 'Too many attempts. Try again in a few minutes.';
     case 'auth/operation-not-allowed':
-      return 'Email/password sign-in is not enabled in Firebase Console (Authentication → Sign-in method).';
+      return 'Email/password sign-in is not enabled in Firebase Console (Authentication ? Sign-in method).';
     default:
       return 'Something went wrong. Try again.';
   }
@@ -183,7 +184,9 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const signupReady = signupPhase === 'account' && agreeAge18 && agreePolicies;
 
   const screen = (
-    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal'].filter(Boolean).join(' ')}>
+    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal', mode === 'signup' && 'auth-screen--signup', mode === 'signup' && signupPhase === 'account' && 'auth-screen--signup-account'].filter(Boolean).join(' ')}>
+      {mode === 'signup' && signupPhase === 'account' && <header className="signup-new-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
+      {mode === 'signup' && signupPhase === 'account' && <aside className="signup-new-story"><h1>Real debates.<strong>Real people.</strong></h1><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul><div className="signup-new-art"><span className="red">???</span><i /><span>???</span></div></aside>}
       <div className="auth-screen-inner">
         <div
           className={['auth-screen-card', signupLegalGate && 'auth-screen-card--legal-gate']
@@ -255,10 +258,10 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               />
             </>
           )}
-          <div className="auth-screen-logo-wrap">
+          <div className="auth-screen-logo-wrap auth-screen-logo-wrap--form">
             <BrandLogo />
           </div>
-          <h2 className="auth-screen-title">{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
+          <h2 className="auth-screen-title">{mode === 'signin' ? 'Sign in' : 'Create your account'}</h2>
           <p className="auth-screen-lead">
             {mode === 'signin' ? (
               <>
@@ -266,8 +269,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               </>
             ) : (
               <>
-                Set up your account in a minute, then debate live. You can verify your email anytime from
-                Profile. Use a real inbox you can open on this device.
+                Set up your account in a minute and start debating.
               </>
             )}
           </p>
@@ -286,7 +288,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             </button>
           )}
 
-          <div className="auth-tabs">
+          <div className="auth-tabs auth-tabs--form">
             <button
               type="button"
               className={`auth-tab ${mode === 'signin' ? 'auth-tab--active' : ''}`}
@@ -303,7 +305,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             </button>
           </div>
 
-          <button type="button" className="auth-screen-alt-link" onClick={flipMode}>
+          <button type="button" className="auth-screen-alt-link auth-screen-alt-link--form" onClick={flipMode}>
             {mode === 'signup' ? 'More sign-in options' : 'Create an account'}
           </button>
 
@@ -319,6 +321,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              placeholder="you@example.com"
             />
             {mode === 'signup' && (
               <p className="auth-field-hint">This is your sign-in email. Verify it later from Profile if you like.</p>
@@ -364,6 +367,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              placeholder="Enter a password"
             />
             {mode === 'signup' && (
               <p className="auth-field-hint">At least 6 characters (pick something you don&apos;t reuse elsewhere).</p>
@@ -383,11 +387,12 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
                   onChange={(e) => setConfirm(e.target.value)}
                   required
                   minLength={6}
+                  placeholder="Confirm your password"
                 />
 
                 <div className="auth-screen-certify">
                   <p className="auth-screen-certify-intro">
-                    By creating account or logging in, you certify that
+                    By creating an account, you agree that:
                   </p>
                   <div className="auth-legal-block" role="group" aria-label="Certification">
                     <label className="auth-legal-row">
@@ -477,7 +482,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               className="btn btn-primary auth-submit"
               disabled={busy || (mode === 'signup' && !signupReady)}
             >
-              {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+              {busy ? 'Please wait?' : mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>
           </form>
 
@@ -487,20 +492,20 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             </button>
           )}
 
-          <p className="auth-screen-footer-hint">
+          <p className="auth-screen-footer-hint auth-screen-footer-hint--form">
             Policies:{' '}
             <button type="button" onClick={() => setLegalDoc('terms')}>
               Terms
             </button>
-            <span aria-hidden> · </span>
+            <span aria-hidden> ? </span>
             <button type="button" onClick={() => setLegalDoc('privacy')}>
               Privacy
             </button>
-            <span aria-hidden> · </span>
+            <span aria-hidden> ? </span>
             <button type="button" onClick={() => setLegalDoc('community')}>
               Guidelines
             </button>
-            <span aria-hidden> · </span>
+            <span aria-hidden> ? </span>
             <button type="button" onClick={() => setLegalDoc('recording')}>
               Recording
             </button>
@@ -527,7 +532,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
       >
         <div className="auth-modal-dialog" onMouseDown={(e) => e.stopPropagation()}>
           <button type="button" className="auth-modal-close" onClick={onClose} aria-label="Close">
-            ×
+            ?
           </button>
           {screen}
         </div>
