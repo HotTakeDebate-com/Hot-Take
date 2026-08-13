@@ -4,13 +4,24 @@ const RED = '#FF1E1E';
 const WHITE = '#FFFFFF';
 
 export function HotTakeWordmark({ variant = 'nav' }) {
-  const src = variant === 'nav' ? '/hottake-logo-horizontal.png' : '/hottake-logo-stacked.png';
+  if (variant === 'nav') {
+    return (
+      <img
+        src="/hottake-logo-horizontal.png"
+        alt="Hot Take — Discuss. Debate. Diverge."
+        className="landing-logo-img landing-logo-img--nav"
+        width={1406}
+        height={340}
+        draggable={false}
+      />
+    );
+  }
 
   return (
     <img
-      src={src}
+      src="/hottake-logo-stacked.png"
       alt="Hot Take — Discuss. Debate. Diverge."
-      className={`landing-logo-img landing-logo-img--${variant}`}
+      className="landing-logo-img landing-logo-img--footer"
       draggable={false}
     />
   );
