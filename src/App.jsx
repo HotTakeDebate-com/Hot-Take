@@ -1031,7 +1031,7 @@ export default function App() {
               <>
                 <button
                   type="button"
-                  className="btn btn-ghost landing-nav-btn"
+                  className="landing-btn landing-btn--ghost"
                   onClick={() => {
                     if (!requireAuth('signin')) return;
                     setSocialProfileEmail(null);
@@ -1042,6 +1042,7 @@ export default function App() {
                   Profile
                 </button>
                 <HeaderNavMenu
+                  variant="landing"
                   onPickLegal={(id) => setHeaderOverlay(id)}
                   onPickMission={() => setHeaderOverlay('mission')}
                   onPickSupport={() => setHeaderOverlay('support')}
