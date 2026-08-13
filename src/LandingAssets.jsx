@@ -4,9 +4,11 @@ const RED = '#FF1E1E';
 const WHITE = '#FFFFFF';
 
 export function HotTakeWordmark({ variant = 'nav' }) {
+  const src = variant === 'nav' ? '/hottake-logo-horizontal.png' : '/hottake-logo.png';
+
   return (
     <img
-      src="/hottake-logo.png"
+      src={src}
       alt="Hot Take — Discuss. Debate. Diverge."
       className={`landing-logo-img landing-logo-img--${variant}`}
     />
@@ -15,53 +17,12 @@ export function HotTakeWordmark({ variant = 'nav' }) {
 
 export function HeroBubblesVisual() {
   return (
-    <svg
-      className="landing-hero-bubbles"
-      viewBox="0 0 520 420"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <img
+      src="/hottake-logo.png"
+      alt=""
       aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id="redBubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FF4D4D" />
-          <stop offset="100%" stopColor="#CC0000" />
-        </linearGradient>
-        <linearGradient id="whiteBubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#D8D8D8" />
-        </linearGradient>
-        <filter id="bubbleShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="12" stdDeviation="18" floodColor="#FF1E1E" floodOpacity="0.25" />
-        </filter>
-      </defs>
-
-      <g filter="url(#bubbleShadow)">
-        <path
-          d="M60 80C60 50.86 83.86 27 113 27H280C309.14 27 333 50.86 333 80V240C333 269.14 309.14 293 280 293H170L100 360V293H113C83.86 293 60 269.14 60 240V80Z"
-          fill="url(#redBubbleGrad)"
-        />
-        <circle cx="140" cy="155" r="14" fill="#000" opacity="0.85" />
-        <circle cx="185" cy="155" r="14" fill="#000" opacity="0.85" />
-        <circle cx="230" cy="155" r="14" fill="#000" opacity="0.85" />
-      </g>
-
-      <g filter="url(#bubbleShadow)">
-        <path
-          d="M187 60C187 30.86 210.86 7 240 7H407C436.14 7 460 30.86 460 60V220C460 249.14 436.14 273 407 273H297L227 340V273H240C210.86 273 187 249.14 187 220V60Z"
-          fill="url(#whiteBubbleGrad)"
-        />
-        <circle cx="267" cy="135" r="14" fill="#000" opacity="0.85" />
-        <circle cx="312" cy="135" r="14" fill="#000" opacity="0.85" />
-        <circle cx="357" cy="135" r="14" fill="#000" opacity="0.85" />
-      </g>
-
-      <path
-        d="M230 120C230 95 250 80 275 85C295 89 305 110 300 135C295 160 270 175 250 170C235 166 230 145 230 120Z"
-        fill="#000"
-        opacity="0.9"
-      />
-    </svg>
+      className="landing-hero-logo"
+    />
   );
 }
 
