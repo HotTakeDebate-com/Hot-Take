@@ -10,7 +10,7 @@ const LEGAL_ITEMS = [
 /**
  * Header “more” menu: legal docs, mission, support — easy to extend with more entries later.
  */
-export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSupport }) {
+export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSupport, variant = 'default' }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const menuId = useId();
@@ -46,11 +46,16 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSuppor
     close();
   };
 
+  const triggerClass =
+    variant === 'landing'
+      ? 'landing-btn landing-btn--ghost landing-nav-menu-trigger'
+      : 'btn btn-ghost header-nav-trigger header-chip';
+
   return (
-    <div className="header-nav" ref={rootRef}>
+    <div className={`header-nav ${variant === 'landing' ? 'header-nav--landing' : ''}`} ref={rootRef}>
       <button
         type="button"
-        className="btn btn-ghost header-nav-trigger header-chip"
+        className={triggerClass}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuId}

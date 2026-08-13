@@ -39,8 +39,12 @@
   height: auto;
   object-fit: contain;
   object-position: top center;
-  clip-path: inset(0 0 52% 0);
-  margin-bottom: -52%;
+  filter: drop-shadow(0 20px 60px rgba(255, 30, 30, 0.22));
+}
+
+.landing-hero-bubbles {
+  width: min(460px, 100%);
+  height: auto;
   filter: drop-shadow(0 20px 60px rgba(255, 30, 30, 0.22));
 }
 
@@ -92,6 +96,21 @@
   align-items: center;
   gap: 10px;
   justify-self: end;
+}
+
+.landing-nav-actions .landing-btn,
+.landing-nav-actions .landing-nav-menu-trigger {
+  flex-shrink: 0;
+}
+
+.landing-nav-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-nav--landing {
+  position: relative;
 }
 
 /* ── Buttons ── */
@@ -212,7 +231,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
 }
 
 /* ── CTA cards ── */
