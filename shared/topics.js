@@ -4,8 +4,8 @@
  */
 export const TOPICS = [
   {
-    id: 'feeding-children-junk-food-abusive',
-    label: 'Feeding children junk food is abusive.',
+    id: 'abortion-morally-wrong-not-allowed',
+    label: 'Abortion is morally wrong and should not be allowed.',
   },
   {
     id: 'eating-meat-unnecessary-cruelty-pleasure',
@@ -17,8 +17,8 @@ export const TOPICS = [
     label: 'Free speech should include all forms of hate speech.',
   },
   {
-    id: 'jesus-is-god',
-    label: 'Jesus is God.',
+    id: 'god-is-real',
+    label: 'God is real.',
   },
   {
     id: 'past-sexual-experiences-not-define-value',
