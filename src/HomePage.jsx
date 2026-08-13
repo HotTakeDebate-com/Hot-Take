@@ -86,7 +86,7 @@ export default function HomePage({
         <div className="landing-hero-copy">
           <p className="landing-eyebrow">Live 1-on-1 debates</p>
           <h1 className="landing-headline">
-            Have a take? Put it to <span className="landing-headline-accent">the test.</span>
+            Have a take?<br />Put it to <span className="landing-headline-accent">the test.</span>
           </h1>
           <p className="landing-subhead">
             Join a live 1-on-1 video debate with someone who sees things differently.
@@ -246,7 +246,7 @@ export default function HomePage({
           </div>
         </div>
 
-        <p className="landing-copyright">© {new Date().getFullYear()} Hot Take Debate. All rights reserved.</p>
+        <p className="landing-copyright">? {new Date().getFullYear()} Hot Take Debate. All rights reserved.</p>
       </footer>
     </div>
   );
