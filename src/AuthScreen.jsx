@@ -187,6 +187,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
     <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal', mode === 'signup' && 'auth-screen--signup', mode === 'signup' && signupPhase === 'account' && 'auth-screen--signup-account'].filter(Boolean).join(' ')}>
       {mode === 'signup' && signupPhase === 'account' && <header className="signup-new-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
       {mode === 'signup' && signupPhase === 'account' && <aside className="signup-new-story"><h1>Real debates.<strong>Real people.</strong></h1><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul></aside>}
+      {signupLegalGate && <header className="signup-new-header signup-policy-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
       <div className="auth-screen-inner">
         <div
           className={['auth-screen-card', signupLegalGate && 'auth-screen-card--legal-gate']
@@ -195,16 +196,16 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         >
           {signupLegalGate ? (
             <>
-              <div className="auth-screen-logo-wrap">
+              <div className="auth-screen-logo-wrap auth-policy-legacy-heading">
                 <BrandLogo />
               </div>
-              <h2 className="auth-screen-title">Review policies</h2>
-              <p className="auth-screen-lead">
+              <h2 className="auth-screen-title auth-policy-legacy-heading">Review policies</h2>
+              <p className="auth-screen-lead auth-policy-legacy-heading">
                 Creating a Hot Take account requires reading all four policies in full. You cannot
                 skip this step.
               </p>
               <SignupLegalReview onComplete={() => setSignupPhase('account')} />
-              <button type="button" className="auth-linkish auth-legal-gate-back" onClick={goToSignIn}>
+              <button type="button" className="auth-linkish auth-legal-gate-back auth-policy-legacy-heading" onClick={goToSignIn}>
                 Sign in instead
               </button>
             </>
