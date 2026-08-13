@@ -13,8 +13,9 @@ export const TOPICS = [
       'Eating meat is unnecessary cruelty — you are choosing to kill animals for pleasure.',
   },
   {
-    id: 'free-speech-includes-hate-speech',
-    label: 'Free speech should include all forms of hate speech.',
+    id: 'children-no-gender-reassignment-regardless-parent-consent',
+    label:
+      'Children should not be able to get gender reassignment surgery, hormones, or drugs regardless of whether their parents consent to it.',
   },
   {
     id: 'god-is-real',
