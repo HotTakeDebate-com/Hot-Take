@@ -721,8 +721,8 @@ export default function App() {
     if (!requireAuth('signin')) return;
     setError(null);
     setMatchMode('quick');
-    setTopicId(TOPICS[0]?.id ?? null);
-    setSide('agree');
+    setTopicId(null);
+    setSide(null);
     setStep('topic');
   };
 
