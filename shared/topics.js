@@ -21,9 +21,9 @@ export const TOPICS = [
     label: 'God is real.',
   },
   {
-    id: 'past-sexual-experiences-not-define-value',
+    id: 'second-amendment-protected-at-all-costs',
     label:
-      "A person's past sexual experiences should not define their value or relationship potential.",
+      'The Second Amendment should be protected at all costs; people have the right to bear arms.',
   },
 ];
 
