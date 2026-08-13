@@ -20,8 +20,10 @@ import DeviceSettings from './DeviceSettings.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
 import { getMediaErrorMessage, getUserMediaWithFallback } from './mediaUtils.js';
 import HomePage from './HomePage.jsx';
+import QuickMatchPage from './QuickMatchPage.jsx';
 import './App.css';
 import './HomePage.css';
+import './QuickMatchPage.css';
 
 const FALLBACK_RTC = {
   iceServers: [
@@ -46,8 +48,8 @@ function addLocalTracksToPeerConnection(pc, stream) {
 function connectionLabel(state) {
   if (!state) return '';
   const map = {
-    new: 'Starting…',
-    connecting: 'Connecting…',
+    new: 'Starting?',
+    connecting: 'Connecting?',
     connected: 'Connected',
     disconnected: 'Disconnected',
     failed: 'Connection failed',
@@ -95,7 +97,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [videoDeviceId, setVideoDeviceId] = useState('');
   const [audioDeviceId, setAudioDeviceId] = useState('');
-  /** Same tracks as localStreamRef — kept in state for `<AudioLevelMeter />`. */
+  /** Same tracks as localStreamRef ? kept in state for `<AudioLevelMeter />`. */
   const [localStream, setLocalStream] = useState(null);
   const [historyRows, setHistoryRows] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -685,7 +687,7 @@ export default function App() {
       }
     };
     // Socket auth callback fetches a fresh ID token on each connect/reconnect. Effect deps stay on
-    // firebaseUserId (not token) so we don’t reconnect every hour; the callback still sends a new token.
+    // firebaseUserId (not token) so we don?t reconnect every hour; the callback still sends a new token.
   }, [cleanupMedia, flushDebateLog, firebaseUserId, handleRemoteTrack]);
 
   const pickTopic = (id) => {
@@ -719,8 +721,8 @@ export default function App() {
     if (!requireAuth('signin')) return;
     setError(null);
     setMatchMode('quick');
-    setTopicId(null);
-    setSide(null);
+    setTopicId(TOPICS[0]?.id ?? null);
+    setSide('agree');
     setStep('topic');
   };
 
@@ -895,7 +897,7 @@ export default function App() {
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -970,6 +972,7 @@ export default function App() {
           'app',
           showAppShell && step !== 'welcome' && 'app--with-global-header',
           step === 'welcome' && 'app--landing',
+          step === 'topic' && 'app--quick-match',
           !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
         ]
           .filter(Boolean)
@@ -977,7 +980,7 @@ export default function App() {
       >
       {!authReady && (
         <div className="panel auth-initializing">
-          <p className="auth-initializing-text">Loading…</p>
+          <p className="auth-initializing-text">Loading?</p>
         </div>
       )}
 
@@ -994,6 +997,7 @@ export default function App() {
       {showAppShell && (
         <>
       {step !== 'welcome' &&
+        step !== 'topic' &&
         step !== 'debate' &&
         step !== 'history' &&
         step !== 'feed' &&
@@ -1002,7 +1006,7 @@ export default function App() {
         <details className="device-details" open>
           <summary className="device-details-summary">
             Camera &amp; microphone
-            <span className="device-details-summary-hint"> — for Quick match &amp; custom debates</span>
+            <span className="device-details-summary-hint"> ? for Quick match &amp; custom debates</span>
           </summary>
           <div className="panel device-details-panel">
             <DeviceSettings
@@ -1166,7 +1170,7 @@ export default function App() {
                     <strong>
                       {customStatement.trim().length}/8
                     </strong>{' '}
-                    characters — add a few more to publish.
+                    characters ? add a few more to publish.
                   </>
                 ) : (
                   <span className="custom-statement-ready">
@@ -1264,7 +1268,7 @@ export default function App() {
             <p className="mode-help-text">
               Current room code: <strong>{customRoomCode}</strong>{' '}
               <button type="button" className="auth-legal-link copy-code-btn" onClick={copyRoomCode}>
-                {copyConfirmed ? '✓ Copied' : 'Copy'}
+                {copyConfirmed ? '? Copied' : 'Copy'}
               </button>
             </p>
           )}
@@ -1273,8 +1277,8 @@ export default function App() {
               <div className="spinner" aria-hidden />
               <p>
                 {side === 'agree'
-                  ? 'Your custom game is live. Waiting for someone who disagrees to join…'
-                  : 'Joining debate…'}
+                  ? 'Your custom game is live. Waiting for someone who disagrees to join?'
+                  : 'Joining debate?'}
               </p>
               <button type="button" className="back-btn" onClick={cancelWaiting}>
                 Cancel
@@ -1300,27 +1304,22 @@ export default function App() {
       )}
 
       {isSignedIn && step === 'topic' && (
-        <div className="panel">
-          <h2>Choose a statement</h2>
-          <p className="topic-picker-lead">
-            Pick a statement, then choose Agree or Disagree to join the queue.
-          </p>
-          <div className="topic-grid">
-            {TOPICS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className="topic-card"
-                onClick={() => pickTopic(t.id)}
-              >
-                <strong className="topic-card-statement">{t.label}</strong>
-              </button>
-            ))}
-          </div>
-          <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
-            Back
-          </button>
-        </div>
+        <QuickMatchPage
+          topics={TOPICS}
+          selectedTopicId={topicId}
+          selectedSide={side}
+          waiting={waiting}
+          error={error}
+          onSelectTopic={(id) => { setTopicId(id); setSide(null); setError(null); }}
+          onSelectSide={setSide}
+          onFindMatch={joinQueue}
+          onCancel={cancelWaiting}
+          onBack={goHome}
+          onSignOut={handleSignOut}
+          onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('topic'); setStep('profile'); }}
+          onAbout={() => setHeaderOverlay('mission')}
+          onSupport={() => setHeaderOverlay('support')}
+        />
       )}
 
       {isSignedIn && step === 'side' && topicId && (
@@ -1340,7 +1339,7 @@ export default function App() {
           {waiting && (
             <div className="waiting" style={{ marginTop: '1.5rem' }}>
               <div className="spinner" aria-hidden />
-              <p>Looking for someone on the other side…</p>
+              <p>Looking for someone on the other side?</p>
               <button type="button" className="back-btn" onClick={cancelWaiting}>
                 Cancel
               </button>
@@ -1366,28 +1365,28 @@ export default function App() {
               {debateInfo.matchMode === 'custom' ? (
                 <>
                   Statement: <strong>{debateInfo.statement ?? 'Custom debate'}</strong>
-                  {' · '}
+                  {' ? '}
                   You:{' '}
                   <strong>{debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger'}</strong>
                 </>
               ) : (
                 <>
                   Topic: <strong>{topicLabel(debateInfo.topicId)}</strong>
-                  {' · '}
+                  {' ? '}
                   You:{' '}
                   <strong>{debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree'}</strong>
                 </>
               )}
               {debateInfo.matchMode === 'custom' && debateInfo.roomCode ? (
                 <>
-                  {' · '}
+                  {' ? '}
                   Room: <strong>{debateInfo.roomCode}</strong>{' '}
                   <button
                     type="button"
                     className="auth-legal-link copy-code-btn"
                     onClick={() => copyRoomCode(debateInfo.roomCode)}
                   >
-                    {copyConfirmed ? '✓ Copied' : 'Copy'}
+                    {copyConfirmed ? '? Copied' : 'Copy'}
                   </button>
                 </>
               ) : null}
@@ -1438,7 +1437,7 @@ export default function App() {
             </p>
           )}
           {customHostWaiting && debateInfo.matchMode === 'custom' && (
-            <p className="mode-help-text">Lobby is open. Waiting for someone to join your debate…</p>
+            <p className="mode-help-text">Lobby is open. Waiting for someone to join your debate?</p>
           )}
           {debateInfo.matchMode === 'custom' && (
             <p className="lobby-status">

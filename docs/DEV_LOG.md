@@ -10,6 +10,8 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 
 ### Summary
 
+- **2026-08-13 ? Quick Match redesign:** Replaced the legacy two-screen statement/side picker with a single responsive Quick Match page matching the approved black/red reference. Added `QuickMatchPage.jsx` and `QuickMatchPage.css`, retained the existing Socket.IO queue action, and kept cancellation/error handling. The first topic and Agree side are selected initially; changing topics clears the side choice. Production build passes.
+
 - Rebuilt the existing welcome route to closely match the approved Hot Take homepage mockup: desktop navigation, two-column hero, branded debate visual, horizontal Quick Match / Custom Room cards, three-step explainer, and compact footer.
 - Preserved the existing authentication, mission/support/legal navigation, Quick Match, Custom Room, profile, and sign-out callbacks.
 - Added responsive tablet and mobile layouts without changing matchmaking, Firebase, Socket.IO, or Railway configuration.

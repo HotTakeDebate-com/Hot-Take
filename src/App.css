@@ -19,6 +19,13 @@
   min-height: 100vh;
 }
 
+.app.app--quick-match {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
 /* Logged-in header lives outside `.app` so it spans the real viewport width (not max-width: 1100px) */
 .app-top-bar {
   width: 100%;
@@ -41,7 +48,7 @@
 
 /*
  * Full-width row: logo + tagline centered on the viewport.
- * Menu / Sign out are position:absolute top-right so they never sit in “column 1”
+ * Menu / Sign out are position:absolute top-right so they never sit in ?column 1?
  * if grid placement fails (which was clustering everything on the left).
  */
 .app-header-row {
@@ -980,7 +987,7 @@
   color: #fff;
 }
 
-/* Default link style when not in a bubble (shouldn’t happen) */
+/* Default link style when not in a bubble (shouldn?t happen) */
 .debate-chat-link {
   color: var(--accent);
   text-decoration: underline;
@@ -1640,7 +1647,7 @@
 }
 
 .device-details-summary::before {
-  content: '▸';
+  content: '?';
   display: inline-block;
   margin-right: 0.5rem;
   transition: transform 0.15s;
