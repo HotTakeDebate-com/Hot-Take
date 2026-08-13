@@ -10,8 +10,6 @@ export function HotTakeWordmark({ variant = 'nav' }) {
         src="/hottake-logo-horizontal.png"
         alt="Hot Take — Discuss. Debate. Diverge."
         className="landing-logo-img landing-logo-img--nav"
-        width={1406}
-        height={340}
         draggable={false}
       />
     );
