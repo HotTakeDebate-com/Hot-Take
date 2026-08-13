@@ -26,11 +26,7 @@ export function HotTakeWordmark({ variant = 'nav' }) {
 }
 
 export function HeroBubblesVisual() {
-  return (
-    <div className="landing-hero-logo-crop" aria-hidden="true">
-      <img src="/hottake-logo-stacked.png" alt="" className="landing-hero-logo" draggable={false} />
-    </div>
-  );
+  return <div className="landing-hero-reference" aria-hidden="true" />;
 }
 
 export function IconUser() {

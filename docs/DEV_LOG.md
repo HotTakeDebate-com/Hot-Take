@@ -13,10 +13,11 @@ Chronological record of **what changed** and **why**. **`PROJECT_MEMORY.md`** ho
 - Rebuilt the existing welcome route to closely match the approved Hot Take homepage mockup: desktop navigation, two-column hero, branded debate visual, horizontal Quick Match / Custom Room cards, three-step explainer, and compact footer.
 - Preserved the existing authentication, mission/support/legal navigation, Quick Match, Custom Room, profile, and sign-out callbacks.
 - Added responsive tablet and mobile layouts without changing matchmaking, Firebase, Socket.IO, or Railway configuration.
+- Follow-up precision pass uses the supplied 1536?1024 reference artwork directly for the desktop hero and locks the copyright year to the approved composition.
 
 ### Files
 
-- `src/HomePage.jsx`
+- `src/HomePage.jsx`, `public/homepage-reference.png`
 - `src/HomePage.css`
 - `src/LandingAssets.jsx`
 - `docs/PROJECT_MEMORY.md`, `docs/DEV_LOG.md`

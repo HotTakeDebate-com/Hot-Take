@@ -246,7 +246,7 @@ export default function HomePage({
           </div>
         </div>
 
-        <p className="landing-copyright">? {new Date().getFullYear()} Hot Take Debate. All rights reserved.</p>
+        <p className="landing-copyright">? 2025 Hot Take Debate. All rights reserved.</p>
       </footer>
     </div>
   );
