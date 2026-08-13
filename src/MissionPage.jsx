@@ -1,7 +1,9 @@
 import {
   HotTakeWordmark, IconInstagram, IconTikTok, IconX, IconYouTube,
 } from './LandingAssets.jsx';
+import HeaderNavMenu from './HeaderNavMenu.jsx';
 import './MissionPage.css';
+import './MissionHeaderFix.css';
 
 function MissionIcon({ type }) {
   const shapes = {
@@ -20,12 +22,12 @@ const cards = [
   ['people', 'Stronger Together', 'By engaging with diverse viewpoints and real people, we build understanding across differences.'],
 ];
 
-export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, onSignOut }) {
+export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal, onPickSupport }) {
   return <div className="mission-page">
     <header className="mission-nav">
       <button className="mission-brand" onClick={onBack}><HotTakeWordmark variant="nav" /></button>
       <nav><button onClick={onBack}>How it works</button><button className="active">About</button><button onClick={onBack}>Topics</button><button onClick={onBack}>FAQ</button></nav>
-      <div>{isSignedIn ? <button className="mission-pill mission-pill--red" onClick={onSignOut}>Sign out</button> : <><button className="mission-pill" onClick={onSignIn}>Sign in</button><button className="mission-pill mission-pill--red" onClick={onSignUp}>Create account</button></>}</div>
+      <div>{isSignedIn ? <><button className="mission-pill" onClick={onProfile}>Profile</button><HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={() => {}} onPickSupport={onPickSupport} /><button className="mission-pill" onClick={onSignOut}>Sign out</button></> : <><button className="mission-pill" onClick={onSignIn}>Sign in</button><button className="mission-pill mission-pill--red" onClick={onSignUp}>Create account</button></>}</div>
     </header>
 
     <main className="mission-content">

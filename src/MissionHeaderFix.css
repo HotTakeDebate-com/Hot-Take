@@ -1,0 +1,10 @@
+.mission-page{padding-left:clamp(28px,5.45vw,84px);padding-right:clamp(28px,5.45vw,84px)}
+.mission-nav{height:118px;gap:28px}
+.mission-brand .landing-logo-img--nav{width:282px;max-width:100%}
+.mission-nav nav{gap:clamp(30px,3.1vw,50px)}
+.mission-nav nav button{padding:0;font-size:15px;font-weight:500}
+.mission-nav nav .active:after{bottom:-19px}
+.mission-nav>div{display:flex;align-items:center;gap:16px}
+.mission-pill{min-height:44px;height:44px;padding:0 30px;border-radius:999px;border:1px solid #606169;background:transparent;color:#fff;font-size:15px;font-weight:650}
+.mission-nav .header-nav--landing{position:relative}
+@media(max-width:680px){.mission-page{padding-left:18px;padding-right:18px}.mission-nav{height:88px}.mission-brand .landing-logo-img--nav{width:190px}.mission-nav>div{gap:8px}.mission-nav>div .mission-pill:first-child,.mission-nav .header-nav--landing{display:none}.mission-pill{min-height:40px;height:40px;padding:0 15px;font-size:13px}}
