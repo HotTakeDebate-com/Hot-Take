@@ -27,23 +27,10 @@
   image-rendering: auto;
 }
 
-.landing-nav-logo-frame {
-  display: block;
-  height: 64px;
-  width: 268px;
-  overflow: hidden;
-  position: relative;
-  flex-shrink: 0;
-}
-
 .landing-logo-img--nav {
   display: block;
-  position: absolute;
-  top: -62px;
-  left: -13px;
-  height: 196px;
+  height: 64px;
   width: auto;
-  max-width: none;
 }
 
 .landing-logo-img--footer {
