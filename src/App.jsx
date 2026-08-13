@@ -1502,7 +1502,7 @@ export default function App() {
         <LegalViewer documentId={headerOverlay} onBack={() => setHeaderOverlay(null)} />
       )}
       {showAppShell && headerOverlay === 'mission' && (
-        <MissionPage onBack={() => setHeaderOverlay(null)} />
+        <MissionPage onBack={() => setHeaderOverlay(null)} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} />
       )}
       {showAppShell && headerOverlay === 'support' && (
         <SupportPage onBack={() => setHeaderOverlay(null)} />
