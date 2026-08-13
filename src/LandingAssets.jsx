@@ -6,12 +6,14 @@ const WHITE = '#FFFFFF';
 export function HotTakeWordmark({ variant = 'nav' }) {
   if (variant === 'nav') {
     return (
-      <img
-        src="/hottake-logo-horizontal.png"
-        alt="Hot Take — Discuss. Debate. Diverge."
-        className="landing-logo-img landing-logo-img--nav"
-        draggable={false}
-      />
+      <span className="landing-nav-logo-frame">
+        <img
+          src="/hottake-logo-horizontal.png"
+          alt="Hot Take — Discuss. Debate. Diverge."
+          className="landing-logo-img landing-logo-img--nav"
+          draggable={false}
+        />
+      </span>
     );
   }
 
