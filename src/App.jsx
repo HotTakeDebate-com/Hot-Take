@@ -19,7 +19,9 @@ import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DeviceSettings from './DeviceSettings.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
 import { getMediaErrorMessage, getUserMediaWithFallback } from './mediaUtils.js';
+import HomePage from './HomePage.jsx';
 import './App.css';
+import './HomePage.css';
 
 const FALLBACK_RTC = {
   iceServers: [
@@ -894,7 +896,7 @@ export default function App() {
 
   return (
     <>
-      {showAppShell && (
+      {showAppShell && step !== 'welcome' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -965,7 +967,12 @@ export default function App() {
       )}
 
       <div
-        className={['app', showAppShell && 'app--with-global-header', !isSignedIn && showAppShell && 'app--guest']
+        className={[
+          'app',
+          showAppShell && step !== 'welcome' && 'app--with-global-header',
+          step === 'welcome' && 'app--landing',
+          !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
+        ]
           .filter(Boolean)
           .join(' ')}
       >
@@ -987,7 +994,12 @@ export default function App() {
 
       {showAppShell && (
         <>
-      {step !== 'debate' && step !== 'history' && step !== 'feed' && step !== 'profile' && step !== 'search' && (
+      {step !== 'welcome' &&
+        step !== 'debate' &&
+        step !== 'history' &&
+        step !== 'feed' &&
+        step !== 'profile' &&
+        step !== 'search' && (
         <details className="device-details" open>
           <summary className="device-details-summary">
             Camera &amp; microphone
@@ -1005,82 +1017,40 @@ export default function App() {
       )}
 
       {step === 'welcome' && (
-        <div className="panel welcome-actions">
-          {!isSignedIn && (
-            <section className="guest-home-banner" aria-labelledby="guest-home-banner-title">
-              <h3 id="guest-home-banner-title" className="guest-home-banner__title">
-                You&apos;re browsing as a guest
-              </h3>
-              <p className="guest-home-banner__text">
-                Explore how Hot Take works below. Sign in or create a free account to join live video
-                debates, save your profile, and match with opponents.
-              </p>
-              <div className="guest-home-banner__actions">
-                <button type="button" className="btn btn-primary" onClick={() => openAuth('signin')}>
-                  Sign in
+        <HomePage
+          isSignedIn={isSignedIn}
+          onSignIn={() => openAuth('signin')}
+          onSignUp={() => openAuth('signup')}
+          onSignOut={handleSignOut}
+          onQuickMatch={startQuickMatch}
+          onCustomRoom={startCustomMatch}
+          onPickLegal={(id) => setHeaderOverlay(id)}
+          onPickMission={() => setHeaderOverlay('mission')}
+          onPickSupport={() => setHeaderOverlay('support')}
+          navExtras={
+            isSignedIn ? (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-ghost landing-nav-btn"
+                  onClick={() => {
+                    if (!requireAuth('signin')) return;
+                    setSocialProfileEmail(null);
+                    setSocialReturnStep('welcome');
+                    setStep('profile');
+                  }}
+                >
+                  Profile
                 </button>
-                <button type="button" className="btn btn-outline" onClick={() => openAuth('signup')}>
-                  Create account
-                </button>
-              </div>
-            </section>
-          )}
-
-          <p className="welcome-hero-lead">
-            {isSignedIn
-              ? 'Choose a topic or statement, then meet someone on the other side over video. Allow your camera and mic above before you join a match.'
-              : 'Preview the debate flow below. Every live feature requires an account.'}
-          </p>
-
-          <section
-            className={`welcome-block welcome-block--debate${!isSignedIn ? ' welcome-block--guest-locked' : ''}`}
-            aria-labelledby="welcome-debate-title"
-          >
-            <h3 id="welcome-debate-title" className="welcome-block-title">
-              Live debates
-            </h3>
-            <p className="welcome-block-desc">
-              Quick match uses curated statements; custom room is your own statement and optional room
-              code. In-debate text chat stays available during the call.
-            </p>
-            {!isSignedIn && (
-              <p className="guest-feature-hint">
-                <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signin')}>
-                  Sign in
-                </button>{' '}
-                to start a debate.
-              </p>
-            )}
-            <div className="welcome-actions-row welcome-debate-actions">
-              <button type="button" className="btn btn-primary" onClick={startQuickMatch}>
-                Quick match
-                {!isSignedIn && <span className="guest-btn-sub"> · Sign in required</span>}
-              </button>
-              <button type="button" className="btn btn-primary" onClick={startCustomMatch}>
-                Custom room
-                {!isSignedIn && <span className="guest-btn-sub"> · Sign in required</span>}
-              </button>
-              <button type="button" className="btn" onClick={openHistory}>
-                Past sessions
-                {!isSignedIn && <span className="guest-btn-sub"> · Sign in required</span>}
-              </button>
-            </div>
-          </section>
-
-          {!isSignedIn && (
-            <p className="guest-footer-cta">
-              Ready to debate live?{' '}
-              <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signup')}>
-                Create an account
-              </button>{' '}
-              or{' '}
-              <button type="button" className="guest-feature-hint__link" onClick={() => openAuth('signin')}>
-                sign in
-              </button>
-              .
-            </p>
-          )}
-        </div>
+                <HeaderNavMenu
+                  onPickLegal={(id) => setHeaderOverlay(id)}
+                  onPickMission={() => setHeaderOverlay('mission')}
+                  onPickSupport={() => setHeaderOverlay('support')}
+                />
+              </>
+            ) : null
+          }
+        />
       )}
 
       {isSignedIn && step === 'feed' && (
