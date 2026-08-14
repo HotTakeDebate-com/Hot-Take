@@ -6,5 +6,5 @@ dockerfilePath = "Dockerfile"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
-overlapSeconds = "0"
+overlapSeconds = "1"
 drainingSeconds = "10"
