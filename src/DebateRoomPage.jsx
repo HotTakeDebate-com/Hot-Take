@@ -32,15 +32,12 @@ function LeaveDebateModal({ micOn, camOn, onCancel, onConfirm }) {
         <p>Are you sure you want to end this debate?</p>
         <div className="leave-confirm-statuses" aria-label="Current debate controls">
           <div className="leave-confirm-status leave-confirm-status--mic">
-            <span className="leave-confirm-status-icon"><LineIcon type={micOn ? 'mic' : 'micOff'} /></span>
             <span className="leave-confirm-status-label">{micOn ? 'Mic on' : 'Mic muted'}</span>
           </div>
           <div className="leave-confirm-status leave-confirm-status--camera">
-            <span className="leave-confirm-status-icon"><LineIcon type={camOn ? 'camera' : 'cameraOff'} /></span>
             <span className="leave-confirm-status-label">{camOn ? 'Camera on' : 'Camera off'}</span>
           </div>
           <div className="leave-confirm-status leave-confirm-status--danger">
-            <span className="leave-confirm-status-icon"><LineIcon type="exit" /></span>
             <span className="leave-confirm-status-label">Leave debate</span>
           </div>
         </div>
