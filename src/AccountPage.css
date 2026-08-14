@@ -8,20 +8,21 @@
   font-family: Inter, Arial, sans-serif;
 }
 .account-page *, .account-page *::before, .account-page *::after { box-sizing: border-box; }
-.account-shell { width: min(1380px, calc(100% - 64px)); margin: 0 auto; padding: 52px 0 78px; }
-.account-heading { max-width: 760px; margin-bottom: 34px; }
+.account-shell { width: calc(100% - 96px); margin: 0 48px; padding: 52px 0 78px; }
+.account-heading { max-width: none; margin-bottom: 38px; }
 .account-eyebrow { margin: 0 0 9px; color: #ff242b; font-size: .78rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
 .account-heading h1 { margin: 0; font-size: clamp(2.7rem, 5vw, 4.8rem); line-height: .98; letter-spacing: -.055em; }
 .account-heading h1 span { color: #ff2027; }
 .account-heading > p:last-child { margin: 18px 0 0; color: #a9a9b2; font-size: 1.05rem; line-height: 1.65; }
-.account-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; }
+.account-layout { display: grid; grid-template-columns: 285px minmax(0, 1fr); gap: 38px; align-items: start; }
 .account-nav { position: sticky; top: 24px; display: grid; gap: 7px; padding: 12px; border: 1px solid #292a31; border-radius: 16px; background: linear-gradient(145deg, rgba(21,22,27,.96), rgba(9,10,13,.96)); box-shadow: 0 22px 70px rgba(0,0,0,.25); }
 .account-nav a { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 10px; color: #c3c3ca; font-size: .93rem; font-weight: 650; text-decoration: none; transition: .18s ease; }
 .account-nav a:first-child, .account-nav a:hover { color: #fff; background: rgba(255,32,39,.1); }
 .account-nav a:hover { transform: translateX(2px); }
 .account-nav svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .account-nav .account-nav-danger { margin-top: 8px; border-top: 1px solid #292a31; border-radius: 0 0 10px 10px; color: #ff676c; }
-.account-content { display: grid; gap: 20px; }
+.account-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.account-content > .account-alert, .account-overview, .account-danger, .account-content > .account-card:not([id]) { grid-column: 1 / -1; }
 .account-card { scroll-margin-top: 24px; padding: 28px; border: 1px solid #303139; border-radius: 17px; background: linear-gradient(145deg, rgba(18,19,24,.97), rgba(7,8,11,.97)); box-shadow: 0 22px 70px rgba(0,0,0,.2); }
 .account-overview { display: grid; grid-template-columns: auto 1fr auto; gap: 20px; align-items: center; }
 .account-avatar { display: grid; place-items: center; width: 72px; height: 72px; border: 1px solid #ff262d; border-radius: 50%; color: #fff; background: radial-gradient(circle at 35% 30%, #ff3940, #a50006 70%); box-shadow: 0 0 0 7px rgba(255,32,39,.06), 0 14px 30px rgba(188,0,8,.18); font-size: 1.75rem; font-weight: 850; }
@@ -77,13 +78,19 @@
 .account-alert--success { border: 1px solid rgba(57,207,133,.3); color: #75e6aa; background: rgba(57,207,133,.08); }
 .account-public-shell { min-height: 66vh; }
 .account-back { margin-bottom: 22px; }
-.account-public-card { max-width: 760px; margin: 0 auto; text-align: center; }
-.account-public-card .account-avatar { margin: 20px auto; width: 92px; height: 92px; }
+.account-public-card { max-width: 1040px; margin: 0; text-align: left; }
+.account-public-card .account-avatar { margin-left: 0; }
+.account-public-card .account-secondary-button { align-self: flex-start; }
+.account-public-card .account-avatar { margin: 20px 0; width: 92px; height: 92px; }
 .account-public-card h1 { margin: 0 0 12px; font-size: 2.3rem; }
 .account-public-card > p:not(.account-eyebrow) { color: #aaaab2; line-height: 1.6; }
 .account-public-card .account-secondary-button { margin-top: 18px; }
 .account-empty { display: grid; place-items: center; min-height: 70vh; }
 .account-empty button { border: 1px solid #ef2027; color: #fff; background: #d9151c; }
+@media (max-width: 1280px) {
+  .account-content { grid-template-columns: 1fr; }
+  .account-content > * { grid-column: 1 !important; }
+}
 @media (max-width: 900px) {
   .account-shell { width: min(100% - 36px, 760px); padding-top: 38px; }
   .account-layout { grid-template-columns: 1fr; }
