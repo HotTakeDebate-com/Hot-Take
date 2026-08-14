@@ -19,7 +19,6 @@ export function SiteHeader({ onHome, onAbout, onTopics, onQuickMatch, onFaq, onS
   return <header className="landing-nav">
     <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
     <nav className="landing-nav-links" aria-label="Primary">
-      <button type="button" className="landing-nav-link" onClick={onHome}>How it works</button>
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
       <button type="button" className="landing-nav-link" onClick={goQuickMatch}>Quick match</button>
       <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
