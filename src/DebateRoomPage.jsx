@@ -3,6 +3,7 @@ import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
 import ReportIssue from './ReportIssue.jsx';
 import { fetchRatingSummary } from './chitChatFirestore.js';
+import './debateRatingCapture.js';
 
 function LineIcon({ type }) {
   const paths = {
