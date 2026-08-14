@@ -64,6 +64,8 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     };
   }, [debateInfo?.peerUid, debateInfo?.roomId]);
 
+  const opponentRatingDisplay = opponentRating != null ? opponentRating.toFixed(2) : '—';
+
   const confirmLeave = () => {
     setLeaveConfirmOpen(false);
     const nativeConfirm = window.confirm;
@@ -77,7 +79,9 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
 
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName}`}>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span style={{ marginLeft: '0.55rem', whiteSpace: 'nowrap' }}>★ {opponentRating.toFixed(2)}</span>}</div></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName} rating ${opponentRatingDisplay}`}>
+      Debating: <strong>{opponentName}</strong><span style={{ marginLeft: '0.5rem', whiteSpace: 'nowrap', color: '#ff2b2b', fontWeight: 700 }}>★ {opponentRatingDisplay}</span>
+    </div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video">
         <video ref={localVideoRef} autoPlay playsInline muted />
