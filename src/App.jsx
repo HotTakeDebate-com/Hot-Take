@@ -979,6 +979,7 @@ export default function App() {
           step === 'welcome' && 'app--landing',
           step === 'topic' && 'app--quick-match',
           step === 'debate' && 'app--debate-room',
+          step === 'profile' && 'app--account',
           !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
         ]
           .filter(Boolean)
