@@ -30,10 +30,10 @@ export function SiteFooter({ onHome, onAbout, onFaq, onSupport, onPickLegal }) {
       <li><button type="button" onClick={onAbout}>About</button></li>
       <li><button type="button" onClick={onHome}>How it works</button></li>
       <li><button type="button" onClick={onFaq}>FAQ</button></li>
-      <li><button type="button" onClick={onSupport}>Contact</button></li>
+      <li><button type="button" onClick={onSupport}>Support</button></li>
     </ul></div>
     <div className="landing-footer-col"><h3>Support</h3><ul>
-      <li><button type="button" onClick={onSupport}>Help center</button></li>
+      <li><button type="button" onClick={() => onPickLegal?.('recording')}>Recording &amp; streaming consent</button></li>
       <li><button type="button" onClick={() => onPickLegal?.('community')}>Community guidelines</button></li>
       <li><button type="button" onClick={() => onPickLegal?.('privacy')}>Privacy policy</button></li>
       <li><button type="button" onClick={() => onPickLegal?.('terms')}>Terms of service</button></li>
