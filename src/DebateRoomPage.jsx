@@ -14,13 +14,13 @@ function LineIcon({ type }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[type]}</svg>;
 }
 
-export default function DebateRoomPage({ debateInfo, topic, connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, kickOpponent, canKick }) {
+export default function DebateRoomPage({ debateInfo, topic, displayName = 'You', connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, kickOpponent, canKick }) {
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><button>View topic details <span>?</span></button></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>{displayName}:</em> <b>{side}</b></p><button>View topic details <span>?</span></button></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
-      <div className="live-video"><video ref={localVideoRef} autoPlay playsInline muted /><span className="live-video-label">You <AudioLevelMeter stream={localStream} compact muted={!micOn} /></span></div>
+      <div className="live-video"><video ref={localVideoRef} autoPlay playsInline muted /><span className="live-video-label">{displayName} <AudioLevelMeter stream={localStream} compact muted={!micOn} /></span></div>
       <div className="live-video"><video ref={remoteVideoRef} autoPlay playsInline /><span className="live-video-label">Opponent</span></div>
     </div><div className="live-controls"><button onClick={onToggleMic}><LineIcon type="mic" />{micOn ? 'Mute mic' : 'Unmute mic'}</button><button onClick={onToggleCam}><LineIcon type="camera" />{camOn ? 'Camera off' : 'Camera on'}</button><button onClick={onReport}><LineIcon type="flag" />Report issue</button>{canKick && <button onClick={kickOpponent}>Kick opponent</button>}<button className="live-leave" onClick={onLeave}><LineIcon type="exit" />Leave debate</button></div></section>
       <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} />
