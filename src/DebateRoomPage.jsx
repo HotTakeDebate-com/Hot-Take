@@ -64,9 +64,12 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     let cancelled = false;
     const peerUid = debateInfo?.peerUid;
     if (typeof window !== 'undefined' && peerUid && debateInfo?.roomId) {
+      // Keep the real roomId for the debate itself, but give each completed review
+      // a unique rating key so a second review can never overwrite the first one.
+      const ratingReviewId = `${debateInfo.roomId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
       window.localStorage?.setItem(
         'hottake:ratingContext',
-        JSON.stringify({ peerUid, roomId: debateInfo.roomId })
+        JSON.stringify({ peerUid, roomId: ratingReviewId })
       );
     }
     setOpponentRating(null);
