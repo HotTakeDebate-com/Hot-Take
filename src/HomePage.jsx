@@ -29,6 +29,7 @@ export default function HomePage({
   onPickLegal,
   onPickMission,
   onPickSupport,
+  onPickHelp,
   navExtras,
 }) {
   const handleQuick = () => {
@@ -195,7 +196,7 @@ export default function HomePage({
               </button>
             </li>
             <li>
-              <button type="button" onClick={onPickSupport}>
+              <button type="button" onClick={onPickHelp}>
                 Contact
               </button>
             </li>
@@ -206,7 +207,7 @@ export default function HomePage({
           <h3>Support</h3>
           <ul>
             <li>
-              <button type="button" onClick={onPickSupport}>
+              <button type="button" onClick={onPickHelp}>
                 Help center
               </button>
             </li>

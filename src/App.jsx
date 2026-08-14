@@ -14,6 +14,7 @@ import HeaderNavMenu from './HeaderNavMenu.jsx';
 import LegalViewer from './legal/LegalViewer.jsx';
 import MissionPage from './MissionPage.jsx';
 import SupportPage from './SupportPage.jsx';
+import FaqPage from './FaqPage.jsx';
 import { auth, isFirebaseConfigured } from './firebase.js';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DeviceSettings from './DeviceSettings.jsx';
@@ -50,8 +51,8 @@ function addLocalTracksToPeerConnection(pc, stream) {
 function connectionLabel(state) {
   if (!state) return '';
   const map = {
-    new: 'Starting?',
-    connecting: 'Connecting?',
+    new: 'Starting…',
+    connecting: 'Connecting…',
     connected: 'Connected',
     disconnected: 'Disconnected',
     failed: 'Connection failed',
@@ -99,7 +100,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [videoDeviceId, setVideoDeviceId] = useState('');
   const [audioDeviceId, setAudioDeviceId] = useState('');
-  /** Same tracks as localStreamRef ? kept in state for `<AudioLevelMeter />`. */
+  /** Same tracks as localStreamRef — kept in state for `<AudioLevelMeter />`. */
   const [localStream, setLocalStream] = useState(null);
   const [historyRows, setHistoryRows] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -689,7 +690,7 @@ export default function App() {
       }
     };
     // Socket auth callback fetches a fresh ID token on each connect/reconnect. Effect deps stay on
-    // firebaseUserId (not token) so we don?t reconnect every hour; the callback still sends a new token.
+    // firebaseUserId (not token) so we don’t reconnect every hour; the callback still sends a new token.
   }, [cleanupMedia, flushDebateLog, firebaseUserId, handleRemoteTrack]);
 
   const pickTopic = (id) => {
@@ -983,7 +984,7 @@ export default function App() {
       >
       {!authReady && (
         <div className="panel auth-initializing">
-          <p className="auth-initializing-text">Loading?</p>
+          <p className="auth-initializing-text">Loading…</p>
         </div>
       )}
 
@@ -1009,7 +1010,7 @@ export default function App() {
         <details className="device-details" open>
           <summary className="device-details-summary">
             Camera &amp; microphone
-            <span className="device-details-summary-hint"> ? for Quick match &amp; custom debates</span>
+            <span className="device-details-summary-hint"> — for Quick match &amp; custom debates</span>
           </summary>
           <div className="panel device-details-panel">
             <DeviceSettings
@@ -1032,7 +1033,8 @@ export default function App() {
           onCustomRoom={startCustomMatch}
           onPickLegal={(id) => setHeaderOverlay(id)}
           onPickMission={() => setHeaderOverlay('mission')}
-          onPickSupport={() => setHeaderOverlay('support')}
+          onPickSupport={() => setHeaderOverlay('faq')}
+          onPickHelp={() => setHeaderOverlay('support')}
           navExtras={
             isSignedIn ? (
               <>
@@ -1173,7 +1175,7 @@ export default function App() {
                     <strong>
                       {customStatement.trim().length}/8
                     </strong>{' '}
-                    characters ? add a few more to publish.
+                    characters — add a few more to publish.
                   </>
                 ) : (
                   <span className="custom-statement-ready">
@@ -1271,7 +1273,7 @@ export default function App() {
             <p className="mode-help-text">
               Current room code: <strong>{customRoomCode}</strong>{' '}
               <button type="button" className="auth-legal-link copy-code-btn" onClick={copyRoomCode}>
-                {copyConfirmed ? '? Copied' : 'Copy'}
+                {copyConfirmed ? '✓ Copied' : 'Copy'}
               </button>
             </p>
           )}
@@ -1280,8 +1282,8 @@ export default function App() {
               <div className="spinner" aria-hidden />
               <p>
                 {side === 'agree'
-                  ? 'Your custom game is live. Waiting for someone who disagrees to join?'
-                  : 'Joining debate?'}
+                  ? 'Your custom game is live. Waiting for someone who disagrees to join…'
+                  : 'Joining debate…'}
               </p>
               <button type="button" className="back-btn" onClick={cancelWaiting}>
                 Cancel
@@ -1321,7 +1323,7 @@ export default function App() {
           onSignOut={handleSignOut}
           onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('topic'); setStep('profile'); }}
           onAbout={() => setHeaderOverlay('mission')}
-          onSupport={() => setHeaderOverlay('support')}
+          onSupport={() => setHeaderOverlay('faq')}
         />
       )}
 
@@ -1342,7 +1344,7 @@ export default function App() {
           {waiting && (
             <div className="waiting" style={{ marginTop: '1.5rem' }}>
               <div className="spinner" aria-hidden />
-              <p>Looking for someone on the other side?</p>
+              <p>Looking for someone on the other side…</p>
               <button type="button" className="back-btn" onClick={cancelWaiting}>
                 Cancel
               </button>
@@ -1370,28 +1372,28 @@ export default function App() {
               {debateInfo.matchMode === 'custom' ? (
                 <>
                   Statement: <strong>{debateInfo.statement ?? 'Custom debate'}</strong>
-                  {' ? '}
+                  {' · '}
                   You:{' '}
                   <strong>{debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger'}</strong>
                 </>
               ) : (
                 <>
                   Topic: <strong>{topicLabel(debateInfo.topicId)}</strong>
-                  {' ? '}
+                  {' · '}
                   You:{' '}
                   <strong>{debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree'}</strong>
                 </>
               )}
               {debateInfo.matchMode === 'custom' && debateInfo.roomCode ? (
                 <>
-                  {' ? '}
+                  {' · '}
                   Room: <strong>{debateInfo.roomCode}</strong>{' '}
                   <button
                     type="button"
                     className="auth-legal-link copy-code-btn"
                     onClick={() => copyRoomCode(debateInfo.roomCode)}
                   >
-                    {copyConfirmed ? '? Copied' : 'Copy'}
+                    {copyConfirmed ? '✓ Copied' : 'Copy'}
                   </button>
                 </>
               ) : null}
@@ -1442,7 +1444,7 @@ export default function App() {
             </p>
           )}
           {customHostWaiting && debateInfo.matchMode === 'custom' && (
-            <p className="mode-help-text">Lobby is open. Waiting for someone to join your debate?</p>
+            <p className="mode-help-text">Lobby is open. Waiting for someone to join your debate…</p>
           )}
           {debateInfo.matchMode === 'custom' && (
             <p className="lobby-status">
@@ -1502,10 +1504,13 @@ export default function App() {
         <LegalViewer documentId={headerOverlay} onBack={() => setHeaderOverlay(null)} />
       )}
       {showAppShell && headerOverlay === 'mission' && (
-        <MissionPage onBack={() => setHeaderOverlay(null)} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickSupport={() => setHeaderOverlay('support')} />
+        <MissionPage onBack={() => setHeaderOverlay(null)} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickSupport={() => setHeaderOverlay('faq')} />
       )}
       {showAppShell && headerOverlay === 'support' && (
-        <SupportPage onBack={() => setHeaderOverlay(null)} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickMission={() => setHeaderOverlay('mission')} />
+        <SupportPage onBack={() => setHeaderOverlay(null)} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickMission={() => setHeaderOverlay('mission')} onPickFaq={() => setHeaderOverlay('faq')} />
+      )}
+      {showAppShell && headerOverlay === 'faq' && (
+        <FaqPage onBack={() => setHeaderOverlay(null)} onSupport={() => setHeaderOverlay('support')} />
       )}
     </>
   );
