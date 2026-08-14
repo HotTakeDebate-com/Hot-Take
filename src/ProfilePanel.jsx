@@ -91,6 +91,15 @@ export default function ProfilePanel({
     load();
   }, [load]);
 
+  // A completed debate rating can arrive while this profile remains mounted.
+  useEffect(() => {
+    const refresh = () => {
+      if (own) void load();
+    };
+    window.addEventListener('hot-take:rating-updated', refresh);
+    return () => window.removeEventListener('hot-take:rating-updated', refresh);
+  }, [load, own]);
+
   const onSave = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -233,28 +242,18 @@ export default function ProfilePanel({
 
           <section id="account-overview" className="account-card account-overview">
             <div className="account-avatar">{(displayName || resolvedEmail).slice(0, 1).toUpperCase()}</div>
-            <div>
+            <div className="account-overview-identity">
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'}</h2>
               <p>{resolvedEmail}</p>
             </div>
+            <div className="account-overview-rating" aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
+              <span aria-hidden="true">★</span>
+              <strong>{ratingDisplay}</strong>
+            </div>
             <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
               {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
             </span>
-          </section>
-
-          <section className="account-card" aria-label="Debate rating">
-            <div className="account-card-heading">
-              <span style={{ color: '#ff2b2b', fontSize: '1.35rem', lineHeight: 1 }}>★</span>
-              <div><h2>Debate rating</h2><p>Your average rating from the people you have debated.</p></div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '.4rem' }}>
-              <strong style={{ fontSize: '2.4rem', lineHeight: 1 }}>{ratingDisplay}</strong>
-              <div>
-                <div style={{ color: '#ff2b2b', fontSize: '1.2rem', letterSpacing: '.08em' }}>★★★★★</div>
-                <div style={{ color: 'var(--muted)', fontSize: '.85rem', marginTop: '.15rem' }}>{ratingCountLabel}</div>
-              </div>
-            </div>
           </section>
 
           {loading ? <section className="account-card"><p>Loading your account…</p></section> : <>
