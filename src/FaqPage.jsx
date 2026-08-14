@@ -1,6 +1,7 @@
 import { HotTakeWordmark, IconInstagram, IconReddit, IconShield, IconUser, IconX, IconYouTube } from './LandingAssets.jsx';
 import { contactEmailLabel, contactEmailMailto } from './legal/contactEmail.js';
 import './SupportPage.css';
+import './FaqActiveTabFix.css';
 
 function FaqIcon({ type }) {
   const shapes = {

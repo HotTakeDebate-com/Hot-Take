@@ -1,0 +1,7 @@
+.faq-nav nav .active {
+  color: #ff2025;
+}
+
+.faq-nav nav .active::after {
+  display: none;
+}
