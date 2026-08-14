@@ -2,6 +2,7 @@ import {
   HotTakeWordmark, IconInstagram, IconShield, IconReddit, IconUser,
   IconVideo, IconX, IconYouTube,
 } from './LandingAssets.jsx';
+import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 
 function TopicIcon({ index }) {
   const icons = [
@@ -65,26 +66,19 @@ function WaitingPanel({ onCancel, topic, topicIndex, side }) {
 export default function QuickMatchPage({
   topics, selectedTopicId, selectedSide, waiting, error, onSelectTopic,
   onSelectSide, onFindMatch, onCancel, onBack, onSignOut, onProfile,
-  onAbout, onSupport,
+  onAbout, onSupport, onHelp, onPickLegal,
 }) {
   const selected = topics.find((topic) => topic.id === selectedTopicId) ?? null;
 
   return (
     <div className="qm-page">
-      <header className="qm-nav">
-        <button type="button" className="qm-logo-button" onClick={onBack}><HotTakeWordmark variant="nav" /></button>
-        <nav aria-label="Primary">
-          <button type="button" onClick={onBack}>How it works</button><button type="button" onClick={onAbout}>About</button>
-          <button type="button" className="active">Topics</button><button type="button" onClick={onSupport}>FAQ</button>
-        </nav>
-        <div className="qm-nav-actions"><button type="button" className="qm-pill qm-pill--ghost" onClick={onSignOut}>Sign out</button><button type="button" className="qm-pill qm-pill--red" onClick={onProfile}>Profile</button></div>
-      </header>
+      <SiteHeader onHome={onBack} onAbout={onAbout} onTopics={() => {}} onFaq={onSupport} onSupport={onHelp} isSignedIn onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
 
       <main className={`qm-main ${waiting ? 'qm-main--waiting' : ''}`}>
         {waiting ? <WaitingPanel onCancel={onCancel} topic={selected} topicIndex={topics.findIndex((topic) => topic.id === selected?.id)} side={selectedSide} /> : <section className="qm-picker">
           <button type="button" className="qm-back" onClick={onBack}><ArrowIcon direction="left" /> Back</button>
           <p className="qm-eyebrow">Quick match</p><h1>Choose a topic<span>.</span></h1>
-          <p className="qm-lead">Pick a topic you want to debate. We?ll match<br className="qm-desktop-break" /> you with someone who has the opposite take.</p>
+          <p className="qm-lead">Pick a topic you want to debate. We’ll match<br className="qm-desktop-break" /> you with someone who has the opposite take.</p>
 
           <div className="qm-topic-list">
             {topics.map((topic, index) => {
@@ -110,14 +104,14 @@ export default function QuickMatchPage({
         </section>}
 
         <aside className="qm-next"><h2>What happens next?</h2>
-          <NextStep number="1" icon={<IconUser />} title="Get matched">We?ll find someone who chooses the opposite take.</NextStep>
-          <NextStep number="2" icon={<IconVideo />} title="Debate face to face">You?ll join a private video call and make your case.</NextStep>
+          <NextStep number="1" icon={<IconUser />} title="Get matched">We’ll find someone who chooses the opposite take.</NextStep>
+          <NextStep number="2" icon={<IconVideo />} title="Debate face to face">You’ll join a private video call and make your case.</NextStep>
           <NextStep number="3" icon={<IconShield />} title="Respect the rules">Be respectful, listen, and keep it on topic.</NextStep>
           <div className="qm-promise"><IconShield /><div><h3>Our promise</h3><p>Real people. No filters.<br />Just real debates.</p></div></div>
         </aside>
       </main>
 
-      <footer className="qm-footer"><HotTakeWordmark variant="footer" /><p>&copy; 2026 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX /></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram /></a><a href="https://reddit.com" aria-label="Reddit"><IconReddit /></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube /></a></div></footer>
+      <SiteFooter onHome={onBack} onAbout={onAbout} onFaq={onSupport} onSupport={onHelp} onPickLegal={onPickLegal} />
     </div>
   );
 }

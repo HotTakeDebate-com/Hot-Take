@@ -4,6 +4,7 @@ import {
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 import './MissionPage.css';
 import './MissionHeaderFix.css';
+import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 
 function MissionIcon({ type }) {
   const shapes = {
@@ -24,11 +25,7 @@ const cards = [
 
 export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal, onPickSupport }) {
   return <div className="mission-page">
-    <header className="mission-nav">
-      <button className="mission-brand" onClick={onBack}><HotTakeWordmark variant="nav" /></button>
-      <nav><button onClick={onBack}>How it works</button><button className="active">About</button><button onClick={onBack}>Topics</button><button onClick={onPickSupport}>FAQ</button></nav>
-      <div>{isSignedIn ? <><button className="mission-pill" onClick={onProfile}>Profile</button><HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={() => {}} onPickSupport={onPickSupport} /><button className="mission-pill" onClick={onSignOut}>Sign out</button></> : <><button className="mission-pill" onClick={onSignIn}>Sign in</button><button className="mission-pill mission-pill--red" onClick={onSignUp}>Create account</button></>}</div>
-    </header>
+    <SiteHeader onHome={onBack} onAbout={() => {}} onTopics={onBack} onFaq={onPickSupport} onSupport={onPickSupport} isSignedIn={isSignedIn} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
 
     <main className="mission-content">
       <button className="mission-back" onClick={onBack}>&larr;&nbsp; Back to Home</button>
@@ -40,6 +37,6 @@ export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, on
       <blockquote><span>&ldquo;</span><div>Different views. Real people. No echo chambers.<strong>That&apos;s the Hot Take mission.</strong></div></blockquote>
     </main>
 
-    <footer className="mission-footer"><HotTakeWordmark variant="footer" /><p>&copy; 2026 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX /></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram /></a><a href="https://reddit.com" aria-label="Reddit"><IconReddit /></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube /></a></div></footer>
+    <SiteFooter onHome={onBack} onAbout={() => {}} onFaq={onPickSupport} onSupport={onPickSupport} onPickLegal={onPickLegal} />
   </div>;
 }

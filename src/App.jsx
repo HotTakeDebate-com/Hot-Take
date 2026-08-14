@@ -26,6 +26,7 @@ import DebateRoomPage from './DebateRoomPage.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
+import './SiteChrome.css';
 import './DebateRoomPage.css';
 
 const FALLBACK_RTC = {
@@ -1324,6 +1325,8 @@ export default function App() {
           onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('topic'); setStep('profile'); }}
           onAbout={() => setHeaderOverlay('mission')}
           onSupport={() => setHeaderOverlay('faq')}
+          onHelp={() => setHeaderOverlay('support')}
+          onPickLegal={(id) => setHeaderOverlay(id)}
         />
       )}
 
