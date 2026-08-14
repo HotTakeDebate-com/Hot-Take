@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   HeroBubblesVisual,
   HotTakeWordmark,
@@ -15,6 +15,7 @@ import {
   StepIconDebate,
   StepIconMatch,
 } from './LandingAssets.jsx';
+import LegalViewer from './legal/LegalViewer.jsx';
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -33,6 +34,8 @@ export default function HomePage({
   onPickHelp,
   navExtras,
 }) {
+  const [localLegalDocument, setLocalLegalDocument] = useState(null);
+
   const handleQuick = () => {
     if (!isSignedIn) onSignIn();
     else onQuickMatch();
@@ -41,6 +44,13 @@ export default function HomePage({
   const handleCustom = () => {
     if (!isSignedIn) onSignIn();
     else onCustomRoom();
+  };
+
+  const openLegal = (id) => {
+    // Keep the landing page's legal links functional even while auth/Firebase is initializing.
+    // The app-level handler still receives the selection for non-landing contexts.
+    if (typeof onPickLegal === 'function') onPickLegal(id);
+    setLocalLegalDocument(id);
   };
 
   useEffect(() => {
@@ -130,10 +140,10 @@ export default function HomePage({
           <li><button type="button" onClick={onPickHelp}>Support</button></li>
         </ul></div>
         <div className="landing-footer-col"><h3>Policy agreements</h3><ul>
-          <li><button type="button" onClick={() => onPickLegal('recording')}>Recording &amp; streaming consent</button></li>
-          <li><button type="button" onClick={() => onPickLegal('community')}>Community guidelines</button></li>
-          <li><button type="button" onClick={() => onPickLegal('privacy')}>Privacy policy</button></li>
-          <li><button type="button" onClick={() => onPickLegal('terms')}>Terms of service</button></li>
+          <li><button type="button" onClick={() => openLegal('recording')}>Recording &amp; streaming consent</button></li>
+          <li><button type="button" onClick={() => openLegal('community')}>Community guidelines</button></li>
+          <li><button type="button" onClick={() => openLegal('privacy')}>Privacy policy</button></li>
+          <li><button type="button" onClick={() => openLegal('terms')}>Terms of service</button></li>
         </ul></div>
         <div className="landing-footer-col landing-footer-social"><h3>Follow us</h3><div className="landing-social-row">
           <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X"><IconX /></a>
@@ -143,6 +153,13 @@ export default function HomePage({
         </div></div>
         <p className="landing-copyright">&copy; 2026 Hot Take Debate. All rights reserved.</p>
       </footer>
+
+      {localLegalDocument && (
+        <LegalViewer
+          documentId={localLegalDocument}
+          onBack={() => setLocalLegalDocument(null)}
+        />
+      )}
     </div>
   );
 }
