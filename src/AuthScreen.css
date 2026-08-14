@@ -555,3 +555,99 @@
 
 /* Signup provider option is intentionally scoped to the account form. */
 .auth-screen--signup-account .signup-google-button{width:100%;height:50px;margin:0 0 17px;border:1px solid #414248;border-radius:9px;background:#060709;color:#fff;font:inherit;font-size:14px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer}.auth-screen--signup-account .signup-google-button:hover:not(:disabled){border-color:#686970;background:#101115}.auth-screen--signup-account .signup-google-button:disabled{opacity:.55;cursor:not-allowed}.auth-screen--signup-account .signup-provider-or{display:flex;align-items:center;gap:14px;margin-bottom:18px;color:#898a90;font-size:12px}.auth-screen--signup-account .signup-provider-or span{flex:1;border-top:1px solid #34353a}
+
+
+/* Keep the desktop policy-review page fixed to one viewport. Only the policy document scrolls. */
+@media (min-width: 951px) {
+  .auth-screen--signup:not(.auth-screen--signup-account) {
+    overflow: hidden;
+  }
+
+  .auth-screen--signup:not(.auth-screen--signup-account) > .auth-screen-inner {
+    min-height: 0;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .auth-screen--signup:not(.auth-screen--signup-account) .auth-screen-card--legal-gate {
+    height: calc(100vh - 122px);
+    min-height: 0;
+  }
+
+  .signup-legal-review {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .signup-policy-sidebar,
+  .signup-policy-main {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .signup-policy-sidebar {
+    display: flex;
+    flex-direction: column;
+    padding-top: 26px;
+    padding-bottom: 22px;
+  }
+
+  .signup-policy-sidebar > span {
+    margin-bottom: 18px;
+  }
+
+  .signup-policy-sidebar ol {
+    gap: 8px;
+  }
+
+  .signup-policy-sidebar li {
+    min-height: 72px;
+    padding-top: 14px;
+    padding-bottom: 11px;
+  }
+
+  .signup-policy-sidebar li i {
+    top: 25px;
+  }
+
+  .signup-policy-sidebar footer {
+    margin-top: auto;
+  }
+
+  .signup-policy-main {
+    display: flex;
+    flex-direction: column;
+    padding-top: 18px;
+    padding-bottom: 14px;
+  }
+
+  .signup-policy-main .signup-legal-review__progress {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+  }
+
+  .signup-policy-main .signup-legal-review__header,
+  .signup-policy-main .signup-legal-review__footer {
+    flex: 0 0 auto;
+  }
+
+  .signup-policy-main .signup-legal-review__scroll {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 190px;
+    margin-top: 10px;
+  }
+
+  .signup-policy-main .signup-legal-review__scroll-hint {
+    margin: 9px 0;
+  }
+
+  .signup-policy-agree {
+    margin-bottom: 9px;
+  }
+
+  .signup-policy-main .signup-legal-review__continue {
+    height: 50px;
+  }
+}
