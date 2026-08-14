@@ -23,27 +23,15 @@ function ConnectionBars({ connState, connectionText }) {
   </span>;
 }
 
-function LeaveDebateModal({ micOn, camOn, onCancel, onConfirm }) {
+function LeaveDebateModal({ onCancel, onConfirm }) {
   return (
     <div className="leave-confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="leave-confirm-title">
       <div className="leave-confirm-card">
         <div className="leave-confirm-icon"><LineIcon type="exit" /></div>
-        <h2 id="leave-confirm-title">End this debate?</h2>
-        <p>Are you sure you want to end this debate?</p>
-        <div className="leave-confirm-statuses" aria-label="Current debate controls">
-          <div className="leave-confirm-status leave-confirm-status--mic">
-            <span className="leave-confirm-status-label">{micOn ? 'Mic on' : 'Mic muted'}</span>
-          </div>
-          <div className="leave-confirm-status leave-confirm-status--camera">
-            <span className="leave-confirm-status-label">{camOn ? 'Camera on' : 'Camera off'}</span>
-          </div>
-          <div className="leave-confirm-status leave-confirm-status--danger">
-            <span className="leave-confirm-status-label">Leave debate</span>
-          </div>
-        </div>
+        <h2 id="leave-confirm-title">Are you sure you want to leave this debate?</h2>
         <div className="leave-confirm-actions">
-          <button type="button" className="leave-confirm-cancel" onClick={onCancel}>Keep debating</button>
-          <button type="button" className="leave-confirm-leave" onClick={onConfirm}><LineIcon type="exit" />Leave debate</button>
+          <button type="button" className="leave-confirm-cancel" onClick={onCancel}>Keep Debating</button>
+          <button type="button" className="leave-confirm-leave" onClick={onConfirm}><LineIcon type="exit" />End Debate</button>
         </div>
       </div>
     </div>
@@ -79,6 +67,6 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
       <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} />
     </main>
     <ReportIssue open={reportOpen} onClose={onCloseReport} topicId={debateInfo.topicId} roomId={debateInfo.roomId} yourSide={debateInfo.yourSide} peerUid={debateInfo.peerUid ?? null} matchMode={debateInfo.matchMode ?? null} />
-    {leaveConfirmOpen && <LeaveDebateModal micOn={micOn} camOn={camOn} onCancel={() => setLeaveConfirmOpen(false)} onConfirm={confirmLeave} />}
+    {leaveConfirmOpen && <LeaveDebateModal onCancel={() => setLeaveConfirmOpen(false)} onConfirm={confirmLeave} />}
   </div>;
 }
