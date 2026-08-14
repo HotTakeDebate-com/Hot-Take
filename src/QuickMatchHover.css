@@ -1,0 +1,1 @@
+.qm-topic{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.qm-topic:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.28)}.qm-topic:focus-within{transform:none;box-shadow:none}@media (prefers-reduced-motion:reduce){.qm-topic{transition:none}}
