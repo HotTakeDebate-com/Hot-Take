@@ -1,1 +1,7 @@
 .faq-page,.mission-page,.qm-page{--landing-red:#ff171b;--landing-red-hover:#ff3336;--landing-white:#f7f7f8;--landing-grey:#b2b2b8;--landing-border:#34353c;--site-page-pad:clamp(28px,5.45vw,84px);font-family:'Inter','DM Sans',system-ui,sans-serif}.site-brand-button{border:0;background:transparent;padding:0;cursor:pointer}.site-shared-footer{margin-top:32px}.mission-page,.qm-page{padding-left:var(--site-page-pad);padding-right:var(--site-page-pad)}.faq-page>.landing-nav,.mission-page>.landing-nav{width:calc(100vw - (2 * var(--site-page-pad)))}
+
+/* Keep the shared header navigation at the exact same horizontal position on every page. */
+.landing-nav{position:relative!important}
+.landing-nav-links{position:absolute!important;left:50%!important;transform:translateX(-50%)!important;justify-self:auto!important}
+
+@media (max-width:1100px){.landing-nav-links{display:none!important}}
