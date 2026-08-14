@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   apply:
-    if: "!contains(github.event.head_commit.message, 'feat: add debate end confirmation and rating')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +19,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           app = Path('src/App.jsx')
           text = app.read_text()
@@ -27,53 +27,56 @@ jobs:
           if 'debateRatingOpen' not in text:
               text = text.replace(
                   "  const [authModal, setAuthModal] = useState(null);",
-                  "  const [authModal, setAuthModal] = useState(null);\n  const [debateRatingOpen, setDebateRatingOpen] = useState(false);\n  const [debateRating, setDebateRating] = useState(0);"
+                  "  const [authModal, setAuthModal] = useState(null);\n  const [debateRatingOpen, setDebateRatingOpen] = useState(false);\n  const [debateRating, setDebateRating] = useState(0);",
+                  1,
               )
 
-          peer_marker = "      setDebateChatMessages([]);\n      setDebateChatDraft('');\n      flushDebateLog('peer_left');"
-          peer_replacement = "      setDebateChatMessages([]);\n      setDebateChatDraft('');\n      setDebateRating(0);\n      setDebateRatingOpen(true);\n      flushDebateLog('peer_left');"
-          if "setDebateRatingOpen(true);\n      flushDebateLog('peer_left');" not in text and peer_marker in text:
-              text = text.replace(peer_marker, peer_replacement, 1)
+          if "setDebateRatingOpen(true);\n      flushDebateLog('peer_left');" not in text:
+              text = text.replace(
+                  "      setDebateChatMessages([]);\n      setDebateChatDraft('');\n      flushDebateLog('peer_left');",
+                  "      setDebateChatMessages([]);\n      setDebateChatDraft('');\n      setDebateRating(0);\n      setDebateRatingOpen(true);\n      flushDebateLog('peer_left');",
+                  1,
+              )
 
-          old_end = """  const endDebate = () => {\n    setDebateChatMessages([]);\n    setDebateChatDraft('');\n    flushDebateLog('leave');\n    socketRef.current?.emit('leave-debate');\n    cleanupMedia();\n    setReportOpen(false);\n    setDebateInfo(null);\n    setStep('welcome');\n    setMatchMode(null);\n    setCustomHostWaiting(false);\n    setTopicId(null);\n    setSide(null);\n    setError(null);\n  };"""
-          new_end = """  const endDebate = () => {\n    setDebateChatMessages([]);\n    setDebateChatDraft('');\n    setDebateRating(0);\n    setDebateRatingOpen(true);\n    flushDebateLog('leave');\n    socketRef.current?.emit('leave-debate');\n    cleanupMedia();\n    setReportOpen(false);\n    setDebateInfo(null);\n    setStep('welcome');\n    setMatchMode(null);\n    setCustomHostWaiting(false);\n    setTopicId(null);\n    setSide(null);\n    setError(null);\n  };\n\n  const requestEndDebate = () => {\n    if (!window.confirm('Are you sure you want to end this debate?')) return;\n    endDebate();\n  };"""
-          if old_end in text and 'const requestEndDebate' not in text:
-              text = text.replace(old_end, new_end, 1)
+          if 'const requestEndDebate' not in text:
+              text = text.replace(
+                  "  const endDebate = () => {\n    setDebateChatMessages([]);\n    setDebateChatDraft('');\n    flushDebateLog('leave');",
+                  "  const endDebate = () => {\n    setDebateChatMessages([]);\n    setDebateChatDraft('');\n    setDebateRating(0);\n    setDebateRatingOpen(true);\n    flushDebateLog('leave');",
+                  1,
+              )
+              end_block = "  const endDebate = () => {"
+              pos = text.find(end_block)
+              if pos != -1:
+                  close = text.find("\n  };", pos)
+                  if close != -1:
+                      insert_at = close + len("\n  };")
+                      text = text[:insert_at] + "\n\n  const requestEndDebate = () => {\n    if (!window.confirm('Are you sure you want to end this debate?')) return;\n    endDebate();\n  };" + text[insert_at:]
 
           text = text.replace('onLeave={endDebate}', 'onLeave={requestEndDebate}')
 
-          rating_marker = "      {authModal && ("
-          rating_block = """      {debateRatingOpen && (\n        <div className=\"debate-rating-backdrop\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"debate-rating-title\">\n          <div className=\"debate-rating-card\">\n            <h2 id=\"debate-rating-title\">Rate your debate</h2>\n            <p>How was your debate experience?</p>\n            <div className=\"debate-rating-stars\" role=\"radiogroup\" aria-label=\"Rate this debate from 1 to 5 stars\">\n              {[1, 2, 3, 4, 5].map((star) => (\n                <button\n                  key={star}\n                  type=\"button\"\n                  className={star <= debateRating ? 'debate-rating-star debate-rating-star--active' : 'debate-rating-star'}\n                  aria-label={`${star} star${star === 1 ? '' : 's'}`}\n                  aria-pressed={star === debateRating}\n                  onClick={() => setDebateRating(star)}\n                >\n                  ★\n                </button>\n              ))}\n            </div>\n            <button\n              type=\"button\"\n              className=\"debate-rating-submit\"\n              disabled={!debateRating}\n              onClick={() => setDebateRatingOpen(false)}\n            >\n              Submit rating\n            </button>\n          </div>\n        </div>\n      )}\n\n"""
           if 'debate-rating-backdrop' not in text:
-              text = text.replace(rating_marker, rating_block + rating_marker, 1)
+              rating = '''      {debateRatingOpen && (\n        <div className="debate-rating-backdrop" role="dialog" aria-modal="true" aria-labelledby="debate-rating-title">\n          <div className="debate-rating-card">\n            <h2 id="debate-rating-title">Rate your debate</h2>\n            <p>How was your debate experience?</p>\n            <div className="debate-rating-stars" role="radiogroup" aria-label="Rate this debate from 1 to 5 stars">\n              {[1, 2, 3, 4, 5].map((star) => (\n                <button\n                  key={star}\n                  type="button"\n                  className={star <= debateRating ? 'debate-rating-star debate-rating-star--active' : 'debate-rating-star'}\n                  aria-label={`${star} star${star === 1 ? '' : 's'}`}\n                  aria-pressed={star === debateRating}\n                  onClick={() => setDebateRating(star)}\n                >\n                  ★\n                </button>\n              ))}\n            </div>\n            <button\n              type="button"\n              className="debate-rating-submit"\n              disabled={!debateRating}\n              onClick={() => setDebateRatingOpen(false)}\n            >\n              Submit rating\n            </button>\n          </div>\n        </div>\n      )}\n\n'''
+              text = text.replace("      {authModal && (", rating + "      {authModal && (", 1)
 
           app.write_text(text)
 
           css = Path('src/DebateRoomPage.css')
           css_text = css.read_text()
-          additions = """
-/* Debate end confirmation/rating and final header fit */
-.live-room-header{padding-right:24px}.live-room-header nav{gap:26px;padding-right:24px;box-sizing:border-box;max-width:calc(58% - 8px)}.live-connection{margin-right:4px}.live-opponent-name{height:auto;max-width:42%;padding:0;border:0;border-radius:0;background:none;justify-content:flex-end;color:#c7c7ca;font-weight:500}.live-opponent-name strong{color:#ff1d22;font-weight:700;overflow:hidden;text-overflow:ellipsis}.debate-rating-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}.debate-rating-card{width:min(420px,calc(100vw - 40px));padding:30px 28px 26px;border:1px solid #34353b;border-radius:20px;background:#0a0b0e;box-shadow:0 24px 80px rgba(0,0,0,.55);text-align:center}.debate-rating-card h2{margin:0;color:#fff;font-size:24px}.debate-rating-card p{margin:10px 0 22px;color:#9b9ca2}.debate-rating-stars{display:flex;justify-content:center;gap:8px;margin-bottom:24px}.debate-rating-star{width:52px;height:52px;border:1px solid #3b3c42;border-radius:14px;background:#090a0c;color:#55565d;font-size:30px;line-height:1;cursor:pointer;transition:transform .16s ease,border-color .16s ease,color .16s ease,background .16s ease}.debate-rating-star:hover{transform:translateY(-2px);border-color:#ff1d22;color:#ff1d22}.debate-rating-star--active{border-color:#ff1d22;background:rgba(255,29,34,.08);color:#ff1d22}.debate-rating-submit{width:100%;height:48px;border:1px solid #ff1d22;border-radius:12px;background:#ff1d22;color:#fff;font-size:15px;font-weight:700;cursor:pointer}.debate-rating-submit:disabled{opacity:.45;cursor:not-allowed}@media(max-width:1050px){.live-room-header{padding-right:14px}.live-room-header nav{padding-right:14px;max-width:64%}}@media(max-width:680px){.live-room-header{padding-right:4px}.live-room-header nav{padding-right:4px;max-width:52%}.live-opponent-name{max-width:48%;font-size:12px}.debate-rating-card{padding:26px 18px}.debate-rating-star{width:46px;height:46px;font-size:26px}}
-"""
           if 'debate-rating-backdrop' not in css_text:
-              css.write_text(css_text.rstrip() + additions)
+              css_text += '''\n/* Debate end confirmation/rating and final header fit */\n.live-room-header{padding-right:24px}.live-room-header nav{gap:26px;padding-right:24px;box-sizing:border-box;max-width:calc(58% - 8px)}.live-connection{margin-right:4px}.live-opponent-name{height:auto;max-width:42%;padding:0;border:0;border-radius:0;background:none;justify-content:flex-end;color:#c7c7ca;font-weight:500}.live-opponent-name strong{color:#ff1d22;font-weight:700;overflow:hidden;text-overflow:ellipsis}.debate-rating-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}.debate-rating-card{width:min(420px,calc(100vw - 40px));padding:30px 28px 26px;border:1px solid #34353b;border-radius:20px;background:#0a0b0e;box-shadow:0 24px 80px rgba(0,0,0,.55);text-align:center}.debate-rating-card h2{margin:0;color:#fff;font-size:24px}.debate-rating-card p{margin:10px 0 22px;color:#9b9ca2}.debate-rating-stars{display:flex;justify-content:center;gap:8px;margin-bottom:24px}.debate-rating-star{width:52px;height:52px;border:1px solid #3b3c42;border-radius:14px;background:#090a0c;color:#55565d;font-size:30px;line-height:1;cursor:pointer;transition:transform .16s ease,border-color .16s ease,color .16s ease,background .16s ease}.debate-rating-star:hover{transform:translateY(-2px);border-color:#ff1d22;color:#ff1d22}.debate-rating-star--active{border-color:#ff1d22;background:rgba(255,29,34,.08);color:#ff1d22}.debate-rating-submit{width:100%;height:48px;border:1px solid #ff1d22;border-radius:12px;background:#ff1d22;color:#fff;font-size:15px;font-weight:700;cursor:pointer}.debate-rating-submit:disabled{opacity:.45;cursor:not-allowed}@media(max-width:1050px){.live-room-header{padding-right:14px}.live-room-header nav{padding-right:14px;max-width:64%}}@media(max-width:680px){.live-room-header{padding-right:4px}.live-room-header nav{padding-right:4px;max-width:52%}.live-opponent-name{max-width:48%;font-size:12px}.debate-rating-card{padding:26px 18px}.debate-rating-star{width:46px;height:46px;font-size:26px}}\n'''
+              css.write_text(css_text)
           PY
 
-      - name: Commit patched UI
+      - name: Commit patched UI and remove patcher
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/App.jsx src/DebateRoomPage.css
-          if git diff --cached --quiet; then
-            echo "No changes needed."
-            exit 0
+          if grep -q "debate-rating-backdrop" src/App.jsx; then
+            git add src/App.jsx src/DebateRoomPage.css
+            git rm .github/workflows/apply-debate-rating.yml
+            git commit -m "feat: add debate end confirmation and rating"
+            git push origin HEAD:main
+          else
+            echo "Patch did not apply."
+            exit 1
           fi
-          git commit -m "feat: add debate end confirmation and rating"
-          git push origin HEAD:main
-
-      - name: Remove one-time workflow
-        if: success()
-        run: |
-          git rm .github/workflows/apply-debate-rating.yml
-          git commit -m "chore: remove one-time debate rating patcher"
-          git push origin HEAD:main
