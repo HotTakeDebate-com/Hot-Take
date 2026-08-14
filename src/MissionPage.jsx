@@ -1,6 +1,4 @@
-import {
-  HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube,
-} from './LandingAssets.jsx';
+import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 import './MissionPage.css';
 import './MissionHeaderFix.css';
@@ -23,9 +21,9 @@ const cards = [
   ['people', 'Stronger Together', 'By engaging with diverse viewpoints and real people, we build understanding across differences.'],
 ];
 
-export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal, onPickSupport }) {
+export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal, onPickSupport, onQuickMatch }) {
   return <div className="mission-page">
-    <SiteHeader onHome={onBack} onAbout={() => {}} onTopics={onBack} onFaq={onPickSupport} onSupport={onPickSupport} isSignedIn={isSignedIn} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
+    <SiteHeader onHome={onBack} onAbout={() => {}} onTopics={onBack} onQuickMatch={onQuickMatch} onFaq={onPickSupport} onSupport={onPickSupport} isSignedIn={isSignedIn} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
 
     <main className="mission-content">
       <button className="mission-back" onClick={onBack}>&larr;&nbsp; Back to Home</button>
