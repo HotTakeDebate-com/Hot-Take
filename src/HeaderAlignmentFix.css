@@ -1,0 +1,4 @@
+.faq-page > .landing-nav,
+.mission-page > .landing-nav {
+  width: calc(100vw - (2 * var(--site-page-pad)) - 15px);
+}
