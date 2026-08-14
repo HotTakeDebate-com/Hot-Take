@@ -56,7 +56,7 @@ const cards = [
   { n: 13, icon: 'mail', title: 'Contact Information', body: <><p>For questions or requests, contact:</p><p>Email: <ContactEmail /></p><p>Company: Hot Take</p></> },
 ];
 
-export default function PrivacyPolicy({ onBack, onPickLegal }) {
+export default function PrivacyPolicy({ onBack, onPickLegal, embedded = false }) {
   const [isSignedIn, setIsSignedIn] = useState(Boolean(auth?.currentUser));
   const [authModal, setAuthModal] = useState(null);
   const [enlargedCard, setEnlargedCard] = useState(null);
@@ -90,6 +90,19 @@ export default function PrivacyPolicy({ onBack, onPickLegal }) {
 
   const openCard = (card) => setEnlargedCard(card);
   const openLegal = (documentId) => onPickLegal?.(documentId);
+
+  if (embedded) {
+    return <article className="legal-doc-article legal-doc-article--embedded">
+      <header className="legal-doc-header">
+        <h1 className="legal-doc-title legal-doc-title--embedded">Hot Take – Privacy Policy</h1>
+        <p className="legal-doc-meta">Effective date: March 22, 2026</p>
+      </header>
+      {cards.map((card) => <section className="legal-section" key={card.n}>
+        <h2>{card.n}. {card.title}{card.subtitle ? ` ${card.subtitle}` : ''}</h2>
+        {card.body}
+      </section>)}
+    </article>;
+  }
 
   return <div className="privacy-policy-page">
     <SiteHeader onHome={onBack} onAbout={onBack} onTopics={handleQuickMatch} onFaq={onBack} onSupport={onBack} isSignedIn={isSignedIn} onSignIn={() => setAuthModal('signin')} onSignUp={() => setAuthModal('signup')} onSignOut={handleSignOut} onProfile={onBack} onPickLegal={openLegal} />
