@@ -26,6 +26,19 @@ const joinQueueLimiter = createRateLimiter({
   max: joinQueueMax,
 });
 
+const emailValidationWindowMs = Math.max(
+  10_000,
+  parseInt(process.env.EMAIL_VALIDATION_WINDOW_MS || '60000', 10) || 60_000
+);
+const emailValidationMax = Math.max(
+  1,
+  parseInt(process.env.EMAIL_VALIDATION_MAX || '10', 10) || 10
+);
+const emailValidationLimiter = createRateLimiter({
+  windowMs: emailValidationWindowMs,
+  max: emailValidationMax,
+});
+
 /** Set true when REDIS_URL connects (Socket.IO adapter + shared join RL). */
 const runtimeFlags = { redis: false };
 let redisJoinClient = null;
@@ -244,6 +257,95 @@ app.get('/api/rtc-config', (_req, res) => {
 });
 
 app.use(express.json({ limit: '64kb' }));
+
+/**
+ * Check mailbox deliverability before the browser creates a Firebase email/password account.
+ * The provider key stays server-side in Railway. Firebase email verification remains the
+ * separate proof that the registrant controls the mailbox.
+ */
+app.post('/api/auth/validate-email', async (req, res) => {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  if (!emailValidationLimiter(ip)) {
+    return res.status(429).json({
+      ok: false,
+      code: 'rate_limited',
+      message: 'Too many email checks. Please wait a minute and try again.',
+    });
+  }
+
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (
+    email.length < 3 ||
+    email.length > 320 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    return res.status(400).json({
+      ok: false,
+      code: 'invalid_format',
+      message: 'Enter a valid email address.',
+    });
+  }
+
+  const apiKey = process.env.EMAILABLE_API_KEY;
+  if (!apiKey) {
+    console.error('[email-validation] EMAILABLE_API_KEY is not configured.');
+    return res.status(503).json({
+      ok: false,
+      code: 'validation_unavailable',
+      message: 'Email validation is temporarily unavailable. Please try again later.',
+    });
+  }
+
+  try {
+    const url = new URL('https://api.emailable.com/v1/verify');
+    url.searchParams.set('email', email);
+    url.searchParams.set('api_key', apiKey);
+    url.searchParams.set('smtp', 'true');
+    url.searchParams.set('accept_all', 'true');
+    url.searchParams.set('timeout', '8');
+
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) {
+      console.error('[email-validation] Provider error:', response.status);
+      return res.status(503).json({
+        ok: false,
+        code: 'validation_unavailable',
+        message: 'Email validation is temporarily unavailable. Please try again later.',
+      });
+    }
+
+    const result = await response.json();
+    const deliverable =
+      result?.state === 'deliverable' &&
+      result?.disposable !== true &&
+      result?.accept_all !== true &&
+      result?.mailbox_full !== true;
+
+    if (!deliverable) {
+      return res.status(422).json({
+        ok: false,
+        code: result?.disposable === true ? 'disposable_email' : 'email_not_deliverable',
+        message:
+          result?.disposable === true
+            ? 'Temporary or disposable email addresses are not allowed.'
+            : 'This email address could not be confirmed as a working mailbox. Check it or use Google sign-in.',
+      });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('[email-validation] Check failed:', error?.message ?? error);
+    return res.status(503).json({
+      ok: false,
+      code: 'validation_unavailable',
+      message: 'Email validation is temporarily unavailable. Please try again later.',
+    });
+  }
+});
+
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {
