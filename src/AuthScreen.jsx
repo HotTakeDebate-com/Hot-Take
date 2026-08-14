@@ -15,7 +15,6 @@ import SignupLegalReview from './SignupLegalReview.jsx';
 import { HotTakeWordmark, IconLightning, IconShield, IconUser } from './LandingAssets.jsx';
 import './AuthScreen.css';
 import './AuthProviderFix.css';
-import './SignupProviderFix.css';
 
 function mapAuthError(code) {
   switch (code) {
@@ -298,7 +297,6 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             )}
           </p>
 
-          {mode === 'signup' && signupPhase === 'account' && <><div className="signup-provider-row"><button type="button" onClick={() => onProviderSignIn('google')} disabled={busy || !signupReady}><svg className="provider-google" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.4a4.6 4.6 0 0 1-2 3v2.6h3.2c1.9-1.7 3-4.3 3-7.5Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.3l-3.2-2.6c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.7A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 14a6 6 0 0 1 0-4V7.3H3A10 10 0 0 0 3 16.7L6.4 14Z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.6 9.6 0 0 0 12 2a10 10 0 0 0-9 5.3L6.4 10c.8-2.3 3-4.1 5.6-4.1Z"/></svg>Sign up with Google</button><button type="button" onClick={() => onProviderSignIn('apple')} disabled={busy || !signupReady}><svg className="provider-apple" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 12.5c0-3 2.5-4.5 2.6-4.5a5.5 5.5 0 0 0-4.3-2.3c-1.8-.2-3.6 1.1-4.5 1.1-.9 0-2.4-1.1-3.9-1.1A5.7 5.7 0 0 0 2.1 8.7c-2.1 3.6-.5 9 1.5 11.9 1 1.4 2.2 3 3.7 3 1.5-.1 2.1-1 3.9-1s2.3 1 3.9.9c1.6 0 2.6-1.5 3.6-2.9a12 12 0 0 0 1.6-3.3 5.2 5.2 0 0 1-3.3-4.8ZM14.1 3.7A5.3 5.3 0 0 0 15.3 0a5.4 5.4 0 0 0-3.5 1.8 5.1 5.1 0 0 0-1.2 3.6c1.3.1 2.6-.6 3.5-1.7Z"/></svg>Sign up with Apple</button></div><div className="signup-provider-or"><span />or create an account with email<span /></div></>}
 
           {mode === 'signin' && <><div className="signin-provider-row"><button type="button" onClick={() => onProviderSignIn('google')} disabled={busy}><svg className="provider-google" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.4a4.6 4.6 0 0 1-2 3v2.6h3.2c1.9-1.7 3-4.3 3-7.5Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.3l-3.2-2.6c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.7A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 14a6 6 0 0 1 0-4V7.3H3A10 10 0 0 0 3 16.7L6.4 14Z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.6 9.6 0 0 0 12 2a10 10 0 0 0-9 5.3L6.4 10c.8-2.3 3-4.1 5.6-4.1Z"/></svg>Continue with Google</button><button type="button" onClick={() => onProviderSignIn('apple')} disabled={busy}><svg className="provider-apple" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 12.5c0-3 2.5-4.5 2.6-4.5a5.5 5.5 0 0 0-4.3-2.3c-1.8-.2-3.6 1.1-4.5 1.1-.9 0-2.4-1.1-3.9-1.1A5.7 5.7 0 0 0 2.1 8.7c-2.1 3.6-.5 9 1.5 11.9 1 1.4 2.2 3 3.7 3 1.5-.1 2.1-1 3.9-1s2.3 1 3.9.9c1.6 0 2.6-1.5 3.6-2.9a12 12 0 0 0 1.6-3.3 5.2 5.2 0 0 1-3.3-4.8ZM14.1 3.7A5.3 5.3 0 0 0 15.3 0a5.4 5.4 0 0 0-3.5 1.8 5.1 5.1 0 0 0-1.2 3.6c1.3.1 2.6-.6 3.5-1.7Z"/></svg>Continue with Apple</button></div><div className="signin-or"><span />or<span /></div></>}
 
