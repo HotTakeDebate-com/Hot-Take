@@ -42,6 +42,14 @@ export async function syncUserPresence() {
       },
       { merge: true }
     );
+    await setDoc(
+      doc(db, 'publicProfiles', profileId),
+      {
+        uid: u.uid,
+        ...(u.displayName?.trim() ? { displayName: u.displayName.trim().slice(0, 100) } : {}),
+      },
+      { merge: true }
+    );
   } catch (e) {
     const code = e?.code ?? e?.message;
     console.error('[hot-take] syncUserPresence failed', code, e);
@@ -126,6 +134,51 @@ export async function fetchRecentDebates(max = 40) {
   }
 }
 
+/**
+ * Persist a user's 1–5 star rating of the opponent from a completed debate.
+ * The deterministic document id prevents a second rating for the same opponent/room.
+ */
+export async function submitDebateRating({ ratedUid, rating, roomId }) {
+  if (!isFirebaseConfigured || !db || !auth?.currentUser) return false;
+  const raterUid = auth.currentUser.uid;
+  const targetUid = String(ratedUid ?? '').trim();
+  const score = Number(rating);
+  const room = String(roomId ?? '').trim();
+  if (!targetUid || targetUid === raterUid || !Number.isInteger(score) || score < 1 || score > 5 || !room) {
+    throw new Error('Invalid debate rating.');
+  }
+  const ratingId = `${targetUid}_${raterUid}_${room}`.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 500);
+  await setDoc(doc(db, 'userRatings', ratingId), {
+    ratedUid: targetUid,
+    raterUid,
+    rating: score,
+    roomId: room.slice(0, 128),
+    createdAt: serverTimestamp(),
+  });
+  return true;
+}
+
+/** Fetch the decimal average and count for a user. */
+export async function fetchRatingSummary(uid) {
+  if (!isFirebaseConfigured || !db) return { average: null, count: 0 };
+  const targetUid = String(uid ?? '').trim();
+  if (!targetUid) return { average: null, count: 0 };
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'userRatings'), where('ratedUid', '==', targetUid), limit(500))
+    );
+    const scores = snap.docs
+      .map((d) => Number(d.data()?.rating))
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 5);
+    if (!scores.length) return { average: null, count: 0 };
+    const average = scores.reduce((sum, n) => sum + n, 0) / scores.length;
+    return { average: Number(average.toFixed(2)), count: scores.length };
+  } catch (e) {
+    console.warn('[hot-take] fetchRatingSummary', e);
+    return { average: null, count: 0 };
+  }
+}
+
 const REPORT_COOLDOWN_MS = 90_000;
 const REPORT_COOLDOWN_STORAGE_KEY = 'hottake:lastReportAt';
 /** Legacy key from pre-rebrand builds; still honored for cooldown until it ages out. */
@@ -199,20 +252,21 @@ export async function submitReport({
 const MAX_POST_CHARS = 2000;
 const MAX_BIO_CHARS = 500;
 
-/** @returns {Promise<{ email: string, displayName: string, bio: string, updatedAt?: import('firebase/firestore').Timestamp } | null>} */
+/** @returns {Promise<{ email: string, displayName: string, bio: string, uid?: string, updatedAt?: import('firebase/firestore').Timestamp } | null>} */
 export async function fetchPublicProfile(profileEmail) {
   if (!isFirebaseConfigured || !db) return null;
   const key = String(profileEmail ?? '').trim().toLowerCase();
   if (!key) return null;
   const snap = await getDoc(doc(db, 'publicProfiles', key));
   if (!snap.exists()) {
-    return { email: key, displayName: '', bio: '', updatedAt: null };
+    return { email: key, displayName: '', bio: '', uid: null, updatedAt: null };
   }
   const d = snap.data();
   return {
     email: key,
     displayName: typeof d.displayName === 'string' ? d.displayName : '',
     bio: typeof d.bio === 'string' ? d.bio : '',
+    uid: typeof d.uid === 'string' ? d.uid : null,
     updatedAt: d.updatedAt ?? null,
   };
 }
@@ -228,6 +282,7 @@ export async function savePublicProfile({ displayName, bio }) {
   await setDoc(
     doc(db, 'publicProfiles', key),
     {
+      uid: auth.currentUser.uid,
       displayName: dn,
       bio: b,
       updatedAt: serverTimestamp(),
@@ -339,7 +394,31 @@ export async function searchPublicProfilesByDisplayPrefix(prefix, maxResults = 2
       email: d.id,
       displayName: typeof x.displayName === 'string' ? x.displayName : '',
       bio: typeof x.bio === 'string' ? x.bio : '',
+      uid: typeof x.uid === 'string' ? x.uid : null,
       updatedAt: x.updatedAt ?? null,
     };
+  });
+}
+
+// Keep the existing review UI untouched while making its Submit button persist the selected score.
+// The debate page stores the current opponent context before it unmounts.
+if (typeof document !== 'undefined' && !window.__hotTakeRatingListenerInstalled) {
+  window.__hotTakeRatingListenerInstalled = true;
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target.closest('button') : null;
+    if (!target || target.textContent?.trim() !== 'Submit rating') return;
+    const contextRaw = window.localStorage?.getItem('hottake:ratingContext');
+    if (!contextRaw) return;
+    let context;
+    try {
+      context = JSON.parse(contextRaw);
+    } catch {
+      return;
+    }
+    const stars = Array.from(document.querySelectorAll('.debate-rating-star--active')).length;
+    if (!context?.peerUid || !context?.roomId || stars < 1 || stars > 5) return;
+    void submitDebateRating({ ratedUid: context.peerUid, rating: stars, roomId: context.roomId })
+      .catch((e) => console.error('[hot-take] submitDebateRating failed', e));
+    window.localStorage.removeItem('hottake:ratingContext');
   });
 }
