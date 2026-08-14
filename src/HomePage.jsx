@@ -47,9 +47,8 @@ export default function HomePage({
   };
 
   const openLegal = (id) => {
-    // Keep the landing page's legal links functional even while auth/Firebase is initializing.
-    // The app-level handler still receives the selection for non-landing contexts.
-    if (typeof onPickLegal === 'function') onPickLegal(id);
+    // Landing-page policy links use their own overlay so they work independently
+    // of Firebase/auth initialization and the global app shell.
     setLocalLegalDocument(id);
   };
 
