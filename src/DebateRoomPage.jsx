@@ -18,7 +18,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><button>View topic details <span>?</span></button></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label="Connected opponent">{opponentName}</div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video"><video ref={localVideoRef} autoPlay playsInline muted /><span className="live-video-label">You <AudioLevelMeter stream={localStream} compact muted={!micOn} /></span></div>
       <div className="live-video"><video ref={remoteVideoRef} autoPlay playsInline /><span className="live-video-label">{opponentName}</span></div>
