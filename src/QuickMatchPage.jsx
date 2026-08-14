@@ -3,6 +3,7 @@ import {
   IconVideo, IconX, IconYouTube,
 } from './LandingAssets.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
+import './QuickMatchHover.css';
 
 function TopicIcon({ index }) {
   const icons = [
@@ -32,7 +33,7 @@ function ArrowIcon({ direction = 'right' }) {
 }
 
 function ThumbIcon({ down = false }) {
-  return <svg className={`qm-thumb-icon ${down ? 'qm-thumb-icon--down' : ''}`} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v10H3V10h4Zm0 9h9.2a2 2 0 0 0 1.9-1.4l2.1-6.4A2 2 0 0 0 18.3 8H14l.6-3a2 2 0 0 0-3.7-1.4L7 10v9Z" /></svg>;
+  return <svg className={`qm-thumb-icon ${down ? 'qm-thumb-icon--down' : ''}`} viewBox="0 0 24 24"><path d="M7 10v10H3V10h4Zm0 9h9.2a2 2 0 0 0 1.9-1.4l2.1-6.4A2 2 0 0 0 18.3 8H14l.6-3a2 2 0 0 0-3.7-1.4L7 10v9Z" /></svg>;
 }
 
 function NextStep({ number, icon, title, children }) {
@@ -85,10 +86,10 @@ export default function QuickMatchPage({
               const isSelected = topic.id === selected?.id;
               return (
                 <article key={topic.id} className={`qm-topic ${isSelected ? 'qm-topic--selected' : ''}`}>
-                  <button type="button" className="qm-topic-summary" onClick={() => onSelectTopic(topic.id)}>
+                  <button type="button" className="qm-topic-summary" aria-expanded={isSelected} onClick={() => onSelectTopic(isSelected ? null : topic.id)}>
                     <span className="qm-topic-icon"><TopicIcon index={index} /></span><span className="qm-topic-label">{topic.label}</span>
                     <span className={`qm-radio ${isSelected ? 'qm-radio--checked' : ''}`}>{isSelected && <CheckIcon />}</span>
-                    {isSelected && <span className="qm-chevron"><ChevronUpIcon /></span>}
+                    {isSelected && <span className="qm-chevron" aria-hidden="true"><ChevronUpIcon /></span>}
                   </button>
                   {isSelected && <div className="qm-side-choice"><p>Do you agree or disagree with the statement?</p><div>
                     <button type="button" className={selectedSide === 'agree' ? 'selected' : ''} onClick={() => onSelectSide('agree')}><ThumbIcon /><span>Agree</span></button>
