@@ -350,6 +350,82 @@ app.post('/api/auth/validate-email', async (req, res) => {
   }
 });
 
+
+/**
+ * Permanently delete the signed-in Firebase account and app-owned data.
+ * A recently issued credential is required so a stolen long-lived browser session
+ * cannot delete the account without the owner signing in again.
+ */
+app.delete('/api/account', async (req, res) => {
+  if (!firebaseAdminReady) {
+    return res.status(503).json({
+      ok: false,
+      message: 'Account deletion is temporarily unavailable. Please try again later.',
+    });
+  }
+
+  const authorization = String(req.headers.authorization || '');
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  if (!token) {
+    return res.status(401).json({ ok: false, message: 'Sign in again before deleting your account.' });
+  }
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token, true);
+    const authenticatedAt = Number(decoded.auth_time || 0);
+    const credentialAgeSeconds = Math.floor(Date.now() / 1000) - authenticatedAt;
+    if (!authenticatedAt || credentialAgeSeconds > 10 * 60) {
+      return res.status(401).json({
+        ok: false,
+        code: 'recent_sign_in_required',
+        message: 'For security, sign out and sign back in, then try deleting your account again.',
+      });
+    }
+
+    const uid = decoded.uid;
+    const emailKey = String(decoded.email || '').trim().toLowerCase();
+    const firestore = admin.firestore();
+
+    const deleteMatchingDocuments = async (collectionName, field, value) => {
+      while (true) {
+        const snapshot = await firestore
+          .collection(collectionName)
+          .where(field, '==', value)
+          .limit(200)
+          .get();
+        if (snapshot.empty) break;
+        const batch = firestore.batch();
+        snapshot.docs.forEach((document) => batch.delete(document.ref));
+        await batch.commit();
+        if (snapshot.size < 200) break;
+      }
+    };
+
+    // Remove private nested data first, then public/social and moderation records.
+    if (emailKey) {
+      const userRef = firestore.collection('users').doc(emailKey);
+      await firestore.recursiveDelete(userRef);
+      await firestore.collection('publicProfiles').doc(emailKey).delete().catch(() => {});
+    }
+    await deleteMatchingDocuments('posts', 'authorUid', uid);
+    await deleteMatchingDocuments('reports', 'reporterUid', uid);
+    await deleteMatchingDocuments('debates', 'uid', uid);
+
+    // Authentication is removed last so a partial Firestore failure can be retried safely.
+    await admin.auth().deleteUser(uid);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('[account-delete] Failed:', error?.message ?? error);
+    if (error?.code === 'auth/id-token-revoked' || error?.code === 'auth/user-not-found') {
+      return res.status(401).json({ ok: false, message: 'Sign in again before deleting your account.' });
+    }
+    return res.status(500).json({
+      ok: false,
+      message: 'We could not finish deleting your account. Please try again or contact support.',
+    });
+  }
+});
+
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {
