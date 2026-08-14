@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
 import ReportIssue from './ReportIssue.jsx';
+import { fetchRatingSummary } from './chitChatFirestore.js';
 
 function LineIcon({ type }) {
   const paths = {
@@ -40,7 +41,27 @@ function LeaveDebateModal({ onCancel, onConfirm }) {
 
 export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, kickOpponent, canKick }) {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [opponentRating, setOpponentRating] = useState(null);
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
+
+  useEffect(() => {
+    let cancelled = false;
+    const peerUid = debateInfo?.peerUid;
+    if (typeof window !== 'undefined' && peerUid && debateInfo?.roomId) {
+      window.localStorage?.setItem(
+        'hottake:ratingContext',
+        JSON.stringify({ peerUid, roomId: debateInfo.roomId })
+      );
+    }
+    setOpponentRating(null);
+    if (!peerUid) return () => { cancelled = true; };
+    fetchRatingSummary(peerUid).then((summary) => {
+      if (!cancelled) setOpponentRating(summary.average);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [debateInfo?.peerUid, debateInfo?.roomId]);
 
   const confirmLeave = () => {
     setLeaveConfirmOpen(false);
@@ -55,7 +76,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
 
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating against ${opponentName}`}>Debating against: <strong>{opponentName}</strong></div></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName}`}>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span style={{ marginLeft: '0.55rem', whiteSpace: 'nowrap' }}>★ {opponentRating.toFixed(2)}</span>}</div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video">
         <video ref={localVideoRef} autoPlay playsInline muted />
