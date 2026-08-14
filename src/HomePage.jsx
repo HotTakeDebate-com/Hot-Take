@@ -93,6 +93,13 @@ const HOME_QUOTES = [
   },
   {
     category: 'Evil, morality & standing up',
+    quote: 'The world will not be destroyed by those who do evil, but by those who watch them without doing anything.',
+    author: 'Attributed to Albert Einstein',
+    date: 'Date unknown',
+    note: 'The attribution is questionable.',
+  },
+  {
+    category: 'Evil, morality & standing up',
     quote: 'In the end, we will remember not the words of our enemies, but the silence of our friends.',
     author: 'Martin Luther King Jr.',
     date: '1960s',
@@ -119,6 +126,13 @@ const HOME_QUOTES = [
     date: 'July 9, 1722',
     source: 'Silence Dogood No. 8',
     note: 'Franklin introduced the passage as an extract from the London Journal.',
+  },
+  {
+    category: 'Free speech',
+    quote: 'If freedom of speech is taken away, then dumb and silent we may be led, like sheep to the slaughter.',
+    author: 'Attributed to George Washington',
+    date: 'Date uncertain',
+    note: 'The precise provenance is uncertain.',
   },
 ];
 
