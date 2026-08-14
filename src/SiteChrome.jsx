@@ -2,12 +2,23 @@ import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from '
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 
 export function SiteHeader({ onHome, onAbout, onTopics, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+  const goQuickMatch = () => {
+    // On overlay pages, the landing page remains mounted underneath. Use its real
+    // Quick Match action so auth state and matchmaking state are handled centrally.
+    const quickMatchButton = document.querySelector('.landing-cta-card--primary .landing-cta-btn');
+    if (quickMatchButton) {
+      quickMatchButton.click();
+      return;
+    }
+    onTopics?.();
+  };
+
   return <header className="landing-nav">
     <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
     <nav className="landing-nav-links" aria-label="Primary">
       <button type="button" className="landing-nav-link" onClick={onHome}>How it works</button>
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
-      <button type="button" className="landing-nav-link" onClick={onTopics || onHome}>Topics</button>
+      <button type="button" className="landing-nav-link" onClick={goQuickMatch}>Quick match</button>
       <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
       <button type="button" className="landing-nav-link" onClick={onSupport}>Support</button>
     </nav>
