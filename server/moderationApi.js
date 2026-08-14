@@ -45,8 +45,108 @@ function parseLimit(raw, def, max) {
   return Math.min(max, Math.max(1, n));
 }
 
+async function requireVerifiedUser(req, res) {
+  const authHeader = req.get('authorization') || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    res.status(401).json({ error: 'Sign-in required.' });
+    return null;
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(match[1].trim());
+    if (decoded.email && decoded.email_verified !== true) {
+      res.status(403).json({ error: 'Verify your email before using ratings.' });
+      return null;
+    }
+    return decoded;
+  } catch (e) {
+    console.warn('[ratings] token verification failed', e?.message ?? e);
+    res.status(401).json({ error: 'Your sign-in session could not be verified.' });
+    return null;
+  }
+}
+
+function ratingDocId(ratedUid, raterUid, roomId) {
+  return `${ratedUid}_${raterUid}_${roomId}`
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .slice(0, 500);
+}
+
 export function attachModerationRoutes(app, { isAdminReady }) {
   const router = express.Router();
+
+  // Authenticated user-facing rating endpoints. These use Firebase Admin so rating
+  // persistence does not depend on the browser having the latest Firestore rules.
+  app.post('/api/debate-ratings', async (req, res) => {
+    if (!isAdminReady()) {
+      return res.status(503).json({ error: 'Firebase Admin not configured on this server.' });
+    }
+    const user = await requireVerifiedUser(req, res);
+    if (!user) return;
+
+    const ratedUid = String(req.body?.ratedUid || '').trim();
+    const roomId = String(req.body?.roomId || '').trim();
+    const rating = Number(req.body?.rating);
+    if (
+      !ratedUid ||
+      ratedUid === user.uid ||
+      ratedUid.length > 128 ||
+      !roomId ||
+      roomId.length > 128 ||
+      !Number.isInteger(rating) ||
+      rating < 1 ||
+      rating > 5
+    ) {
+      return res.status(400).json({ error: 'Invalid debate rating.' });
+    }
+
+    try {
+      const db = admin.firestore();
+      const id = ratingDocId(ratedUid, user.uid, roomId);
+      await db.collection('userRatings').doc(id).set({
+        ratedUid,
+        raterUid: user.uid,
+        rating,
+        roomId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: false });
+      res.status(201).json({ ok: true, ratedUid, rating });
+    } catch (e) {
+      console.warn('[ratings] write failed', e?.message ?? e);
+      res.status(500).json({ error: 'Could not save the debate rating.' });
+    }
+  });
+
+  app.get('/api/debate-ratings/:uid', async (req, res) => {
+    if (!isAdminReady()) {
+      return res.status(503).json({ error: 'Firebase Admin not configured on this server.' });
+    }
+    const user = await requireVerifiedUser(req, res);
+    if (!user) return;
+
+    const ratedUid = String(req.params.uid || '').trim();
+    if (!ratedUid || ratedUid.length > 128) {
+      return res.status(400).json({ error: 'Invalid user.' });
+    }
+
+    try {
+      const snap = await admin
+        .firestore()
+        .collection('userRatings')
+        .where('ratedUid', '==', ratedUid)
+        .limit(500)
+        .get();
+      const scores = snap.docs
+        .map((d) => Number(d.data()?.rating))
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 5);
+      if (!scores.length) return res.json({ average: null, count: 0 });
+      const average = scores.reduce((sum, n) => sum + n, 0) / scores.length;
+      res.json({ average: Number(average.toFixed(2)), count: scores.length });
+    } catch (e) {
+      console.warn('[ratings] read failed', e?.message ?? e);
+      res.status(500).json({ error: 'Could not load the debate rating.' });
+    }
+  });
 
   router.use((req, res, next) => {
     if (!isAdminReady()) {
@@ -111,7 +211,6 @@ export function attachModerationRoutes(app, { isAdminReady }) {
           .get();
         chat_messages = chatSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       } else {
-        // Legacy: top-level match_sessions (pre user-nested model)
         const sessionRef = db.collection('match_sessions').doc(roomId);
         const sessionSnap = await sessionRef.get();
         if (sessionSnap.exists) {
@@ -147,34 +246,21 @@ export function attachModerationRoutes(app, { isAdminReady }) {
       }
 
       const tasks = [
-        db
-          .collection('debates')
-          .where('uid', '==', uid)
-          .limit(half)
-          .get(),
+        db.collection('debates').where('uid', '==', uid).limit(half).get(),
       ];
       if (userEmail) {
-        tasks.push(
-          db.collection('users').doc(userEmail).collection('debates').limit(half).get()
-        );
+        tasks.push(db.collection('users').doc(userEmail).collection('debates').limit(half).get());
       }
 
       const snaps = await Promise.all(tasks);
       const map = new Map();
       for (const snap of snaps) {
-        for (const d of snap.docs) {
-          map.set(d.ref.path, { id: d.id, ...d.data() });
-        }
+        for (const d of snap.docs) map.set(d.ref.path, { id: d.id, ...d.data() });
       }
       const rows = [...map.values()];
       rows.sort((a, b) => (b.endedAtMs ?? 0) - (a.endedAtMs ?? 0));
       const sliced = rows.slice(0, lim);
-      res.json({
-        uid,
-        userEmail,
-        count: sliced.length,
-        debates: sliced,
-      });
+      res.json({ uid, userEmail, count: sliced.length, debates: sliced });
     } catch (e) {
       res.status(500).json({ error: e?.message ?? 'Query failed.' });
     }
@@ -203,9 +289,7 @@ export function attachModerationRoutes(app, { isAdminReady }) {
           .where('sessionKind', '==', 'match')
           .limit(100)
           .get();
-        for (const d of snap.docs) {
-          sessions.push({ id: d.id, ...d.data() });
-        }
+        for (const d of snap.docs) sessions.push({ id: d.id, ...d.data() });
       }
 
       const byId = new Map(sessions.map((s) => [s.id, s]));
@@ -214,9 +298,7 @@ export function attachModerationRoutes(app, { isAdminReady }) {
         db.collection('match_sessions').where('conUid', '==', uid).limit(lim).get(),
       ]);
       for (const d of [...proSnap.docs, ...conSnap.docs]) {
-        if (!byId.has(d.id)) {
-          byId.set(d.id, { id: d.id, ...d.data(), _legacyPath: 'match_sessions' });
-        }
+        if (!byId.has(d.id)) byId.set(d.id, { id: d.id, ...d.data(), _legacyPath: 'match_sessions' });
       }
       const merged = [...byId.values()].sort((a, b) => {
         const ta = a.startedAt?.toMillis?.() ?? 0;
@@ -224,12 +306,7 @@ export function attachModerationRoutes(app, { isAdminReady }) {
         return tb - ta;
       });
       const sliced = merged.slice(0, lim);
-      res.json({
-        uid,
-        userEmail,
-        count: sliced.length,
-        match_sessions: sliced,
-      });
+      res.json({ uid, userEmail, count: sliced.length, match_sessions: sliced });
     } catch (e) {
       console.warn('[mod] user sessions', e?.message ?? e);
       res.status(500).json({ error: e?.message ?? 'Query failed.' });
@@ -290,19 +367,16 @@ export function attachModerationRoutes(app, { isAdminReady }) {
     if (!text) return res.status(400).json({ error: 'reason required (audit trail).' });
     try {
       await admin.auth().updateUser(uid, { disabled: true });
-      await admin
-        .firestore()
-        .collection('moderation_actions')
-        .add({
-          targetUid: uid,
-          action: 'ban_applied',
-          reason: `Auth disabled. ${text}`,
-          actorLabel: String(actorLabel || '').trim().slice(0, 200) || 'operator',
-          relatedReportId: null,
-          relatedRoomId: null,
-          authDisabled: true,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      await admin.firestore().collection('moderation_actions').add({
+        targetUid: uid,
+        action: 'ban_applied',
+        reason: `Auth disabled. ${text}`,
+        actorLabel: String(actorLabel || '').trim().slice(0, 200) || 'operator',
+        relatedReportId: null,
+        relatedRoomId: null,
+        authDisabled: true,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
       res.json({ ok: true, disabled: true });
     } catch (e) {
       console.warn('[mod] auth-disable', e?.message ?? e);
