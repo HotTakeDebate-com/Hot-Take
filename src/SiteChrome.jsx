@@ -12,7 +12,7 @@ export function SiteHeader({ onHome, onAbout, onTopics, onFaq, onSupport, isSign
     </nav>
     <div className="landing-nav-actions">
       {isSignedIn ? <>
-        <button type="button" className="landing-btn landing-btn--ghost" onClick={onProfile}>Profile</button>
+        <button type="button" className="landing-btn landing-btn--ghost" onClick={onProfile}>Account</button>
         <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickSupport={onSupport} />
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignOut}>Sign out</button>
       </> : <>
