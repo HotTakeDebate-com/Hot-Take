@@ -8,7 +8,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase.js';
-import { sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
+import { sendHotTakeEmailVerification, sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
 import BrandLogo from './BrandLogo.jsx';
 import LegalViewer from './legal/LegalViewer.jsx';
 import SignupLegalReview from './SignupLegalReview.jsx';
@@ -144,21 +144,6 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
     try {
       if (mode === 'signup') {
         const normalizedEmail = email.trim().toLowerCase();
-        const validationResponse = await fetch('/api/auth/validate-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: normalizedEmail }),
-        });
-        const validationResult = await validationResponse.json().catch(() => ({}));
-        if (!validationResponse.ok || validationResult?.ok !== true) {
-          const validationError = new Error(
-            validationResult?.message ||
-              'We could not confirm that this email can receive messages. Check it and try again.'
-          );
-          validationError.code = 'email-validation/failed';
-          throw validationError;
-        }
-
         const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
         const name = displayName.trim();
         if (name) {
@@ -168,15 +153,16 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             /* profile update is optional; account still exists */
           }
         }
+        try {
+          await sendHotTakeEmailVerification(cred.user);
+        } catch (verificationError) {
+          console.warn('Could not send verification email automatically.', verificationError);
+        }
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (err) {
-      setError(
-        err?.code === 'email-validation/failed'
-          ? err.message
-          : mapAuthError(err?.code)
-      );
+      setError(mapAuthError(err?.code));
     } finally {
       setBusy(false);
     }
@@ -377,7 +363,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               placeholder="you@example.com"
             />
             {mode === 'signup' && (
-              <p className="auth-field-hint">This is your sign-in email. Verify it later from Profile if you like.</p>
+              <p className="auth-field-hint">This is your sign-in email. You must verify it before using protected features.</p>
             )}
 
             {mode === 'signin' && <div className="signin-options"><label><input type="checkbox" checked={rememberMe} onChange={(e)=>setRememberMe(e.target.checked)}/> Remember me</label><button type="button" onClick={onForgotPassword} disabled={busy}>Forgot password?</button></div>}
