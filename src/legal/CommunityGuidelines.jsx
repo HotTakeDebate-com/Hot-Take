@@ -22,6 +22,8 @@ function GuidelineIcon({ type }) {
     info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></>,
     calendar: <><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
     headset: <><path d="M4 15v-3a8 8 0 0 1 16 0v3M4 15h4v6H6a2 2 0 0 1-2-2v-4ZM20 15h-4v6h2a2 2 0 0 0 2-2v-4Z" /></>,
+    search: <><circle cx="10.8" cy="10.8" r="6.3" /><path d="m16 16 5 5" /></>,
+    close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   };
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[type]}</svg>;
 }
@@ -44,11 +46,26 @@ const cards = [
 export default function CommunityGuidelines({ onBack }) {
   const [isSignedIn, setIsSignedIn] = useState(Boolean(auth?.currentUser));
   const [authModal, setAuthModal] = useState(null);
+  const [enlargedCard, setEnlargedCard] = useState(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
     return onIdTokenChanged(auth, (user) => setIsSignedIn(Boolean(user)));
   }, []);
+
+  useEffect(() => {
+    if (!enlargedCard) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setEnlargedCard(null);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [enlargedCard]);
+
+  useEffect(() => {
+    document.body.style.overflow = enlargedCard ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [enlargedCard]);
 
   const handleQuickMatch = () => {
     if (!isSignedIn) {
@@ -103,7 +120,19 @@ export default function CommunityGuidelines({ onBack }) {
 
       <section className="community-grid" aria-label="Community guidelines">
         {cards.map((card) => <article className={`community-card community-card--${card.n}`} key={card.n}>
-          <header><GuidelineIcon type={card.icon} /><h2><span>{card.n}.</span> {card.title} {card.subtitle && <em>{card.subtitle}</em>}</h2></header>
+          <header>
+            <GuidelineIcon type={card.icon} />
+            <h2><span>{card.n}.</span> {card.title} {card.subtitle && <em>{card.subtitle}</em>}</h2>
+            <button
+              type="button"
+              className="community-enlarge-button"
+              onClick={() => setEnlargedCard(card)}
+              aria-label={`Enlarge guideline ${card.n}: ${card.title}`}
+              title="Enlarge this guideline"
+            >
+              <GuidelineIcon type="search" />
+            </button>
+          </header>
           <div className="community-card-body">{card.body}</div>
         </article>)}
         <p className="community-note"><GuidelineIcon type="info" /> These guidelines apply to all users on Hot Take. We appreciate your help in keeping debates meaningful, competitive, and respectful.</p>
@@ -113,5 +142,36 @@ export default function CommunityGuidelines({ onBack }) {
     <SiteFooter onHome={onBack} onAbout={onBack} onFaq={onBack} onSupport={onBack} onPickLegal={() => {}} />
 
     {authModal && <AuthScreen variant="modal" initialMode={authModal} onClose={() => setAuthModal(null)} />}
+
+    {enlargedCard && <div
+      className="community-enlarge-overlay"
+      role="presentation"
+      onMouseDown={(event) => { if (event.target === event.currentTarget) setEnlargedCard(null); }}
+    >
+      <section
+        className="community-enlarge-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`guideline-dialog-title-${enlargedCard.n}`}
+      >
+        <header className="community-enlarge-dialog-header">
+          <div className="community-enlarge-dialog-title">
+            <GuidelineIcon type={enlargedCard.icon} />
+            <h2 id={`guideline-dialog-title-${enlargedCard.n}`}><span>{enlargedCard.n}.</span> {enlargedCard.title} {enlargedCard.subtitle && <em>{enlargedCard.subtitle}</em>}</h2>
+          </div>
+          <button
+            type="button"
+            className="community-enlarge-close"
+            onClick={() => setEnlargedCard(null)}
+            aria-label="Close enlarged guideline"
+            title="Close"
+          >
+            <GuidelineIcon type="close" />
+          </button>
+        </header>
+        <div className="community-enlarge-dialog-body">{enlargedCard.body}</div>
+        <p className="community-enlarge-hint">Press Esc or select × to close.</p>
+      </section>
+    </div>}
   </div>;
 }
