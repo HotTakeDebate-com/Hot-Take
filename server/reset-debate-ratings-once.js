@@ -2,7 +2,7 @@ import 'dotenv/config';
 import admin from 'firebase-admin';
 
 const MIGRATION_COLLECTION = 'systemMigrations';
-const MIGRATION_DOC = 'resetDebateRatings20260814';
+const MIGRATION_DOC = 'resetDebateRatings20260814b';
 const RATINGS_COLLECTION = 'userRatings';
 
 function initFirebaseAdmin() {
@@ -49,7 +49,7 @@ async function resetDebateRatingsOnce() {
   await markerRef.set({
     completedAt: admin.firestore.FieldValue.serverTimestamp(),
     deleted,
-    purpose: 'Reset all debate ratings before production rating-system relaunch.',
+    purpose: 'Second one-time reset to guarantee a clean debate-rating relaunch.',
   });
 
   console.log(`[rating-reset] Completed one-time reset; deleted ${deleted} debate ratings.`);
