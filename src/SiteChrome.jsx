@@ -1,5 +1,6 @@
 import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
+import './SiteChrome.css';
 
 export function SiteHeader({ onHome, onAbout, onTopics, onQuickMatch, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   const goQuickMatch = () => {
