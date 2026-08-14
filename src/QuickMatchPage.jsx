@@ -89,7 +89,7 @@ export default function QuickMatchPage({
                   <button type="button" className="qm-topic-summary" aria-expanded={isSelected} onClick={() => onSelectTopic(isSelected ? null : topic.id)}>
                     <span className="qm-topic-icon"><TopicIcon index={index} /></span><span className="qm-topic-label">{topic.label}</span>
                     <span className={`qm-radio ${isSelected ? 'qm-radio--checked' : ''}`}>{isSelected && <CheckIcon />}</span>
-                    {isSelected && <span className="qm-chevron" aria-hidden="true"><ChevronUpIcon /></span>}
+                    <span className="qm-chevron" aria-hidden="true"><ChevronUpIcon /></span>
                   </button>
                   {isSelected && <div className="qm-side-choice"><p>Do you agree or disagree with the statement?</p><div>
                     <button type="button" className={selectedSide === 'agree' ? 'selected' : ''} onClick={() => onSelectSide('agree')}><ThumbIcon /><span>Agree</span></button>
