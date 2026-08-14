@@ -154,7 +154,11 @@ io.use(async (socket, next) => {
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
+    if (decoded.email && decoded.email_verified !== true) {
+      return next(new Error('Verify your email before using matchmaking.'));
+    }
     socket.data.uid = decoded.uid;
+    socket.data.emailVerified = decoded.email_verified === true;
     return next();
   } catch (e) {
     const msg = String(e?.message ?? e ?? '');
@@ -283,6 +287,16 @@ app.post('/api/auth/validate-email', async (req, res) => {
       ok: false,
       code: 'invalid_format',
       message: 'Enter a valid email address.',
+    });
+  }
+
+  const domain = email.split('@').pop();
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return res.status(422).json({
+      ok: false,
+      code: 'google_sign_in_required',
+      message:
+        'Gmail addresses must use Continue with Google so we can confirm the Google account exists.',
     });
   }
 
