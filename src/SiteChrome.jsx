@@ -8,8 +8,11 @@ export function SiteHeader({ onHome, onAbout, onTopics, onQuickMatch, onFaq, onS
       return;
     }
     const quickMatchButton = document.querySelector('.landing-cta-card--primary .landing-cta-btn');
-    if (quickMatchButton) quickMatchButton.click();
-    else onTopics?.();
+    if (quickMatchButton) {
+      quickMatchButton.click();
+      return;
+    }
+    window.location.assign('/?quickMatch=1');
   };
 
   return <header className="landing-nav">
