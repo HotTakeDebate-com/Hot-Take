@@ -4,6 +4,7 @@ import HeaderNavMenu from './HeaderNavMenu.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import './SupportPage.css';
 import './FaqActiveTabFix.css';
+import './FaqBubblyFix.css';
 
 function FaqIcon({ type }) {
   const shapes = {
