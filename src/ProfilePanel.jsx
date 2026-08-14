@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import {
   fetchPublicProfile,
+  fetchRatingSummary,
   followUser,
   isFollowingUser,
   savePublicProfile,
@@ -48,6 +49,7 @@ export default function ProfilePanel({
 
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [rating, setRating] = useState({ average: null, count: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -75,6 +77,8 @@ export default function ProfilePanel({
       const fromAuth = own ? auth.currentUser?.displayName?.trim() ?? '' : '';
       setDisplayName(prof?.displayName?.trim() || fromAuth);
       setBio(prof?.bio ?? '');
+      const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
+      setRating(await fetchRatingSummary(ratingUid));
       if (!own) setFollowing(await isFollowingUser(resolvedEmail));
     } catch (loadError) {
       setError(loadError?.message ?? 'Could not load account.');
@@ -95,6 +99,7 @@ export default function ProfilePanel({
     try {
       await savePublicProfile({ displayName, bio });
       setSavedMsg('Account details saved.');
+      setRating(await fetchRatingSummary(auth.currentUser?.uid));
     } catch (saveError) {
       setError(saveError?.message ?? 'Could not save your changes.');
     } finally {
@@ -168,6 +173,9 @@ export default function ProfilePanel({
     onPickLegal={onPickLegal}
   />;
 
+  const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
+  const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
+
   if (!resolvedEmail) {
     return <div className="account-page">{sharedHeader}<main className="account-empty"><p>Could not resolve this account.</p><button type="button" onClick={onBack}>Back</button></main></div>;
   }
@@ -183,6 +191,14 @@ export default function ProfilePanel({
             <div className="account-avatar">{(displayName || resolvedEmail).slice(0, 1).toUpperCase()}</div>
             <h1>{displayName || 'Hot Take member'}</h1>
             <p>{bio || 'No bio yet.'}</p>
+            <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
+              <div style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)' }}>Debate rating</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '.45rem', marginTop: '.25rem' }}>
+                <strong style={{ fontSize: '1.8rem' }}>{ratingDisplay}</strong>
+                <span style={{ color: '#ff2b2b', fontSize: '1.1rem' }}>★</span>
+                <span style={{ color: 'var(--muted)', fontSize: '.85rem' }}>{ratingCountLabel}</span>
+              </div>
+            </div>
             <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
               {followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}
             </button>
@@ -225,6 +241,20 @@ export default function ProfilePanel({
             <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
               {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
             </span>
+          </section>
+
+          <section className="account-card" aria-label="Debate rating">
+            <div className="account-card-heading">
+              <span style={{ color: '#ff2b2b', fontSize: '1.35rem', lineHeight: 1 }}>★</span>
+              <div><h2>Debate rating</h2><p>Your average rating from the people you have debated.</p></div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '.4rem' }}>
+              <strong style={{ fontSize: '2.4rem', lineHeight: 1 }}>{ratingDisplay}</strong>
+              <div>
+                <div style={{ color: '#ff2b2b', fontSize: '1.2rem', letterSpacing: '.08em' }}>★★★★★</div>
+                <div style={{ color: 'var(--muted)', fontSize: '.85rem', marginTop: '.15rem' }}>{ratingCountLabel}</div>
+              </div>
+            </div>
           </section>
 
           {loading ? <section className="account-card"><p>Loading your account…</p></section> : <>
