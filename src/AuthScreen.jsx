@@ -143,7 +143,23 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
     setBusy(true);
     try {
       if (mode === 'signup') {
-        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const normalizedEmail = email.trim().toLowerCase();
+        const validationResponse = await fetch('/api/auth/validate-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: normalizedEmail }),
+        });
+        const validationResult = await validationResponse.json().catch(() => ({}));
+        if (!validationResponse.ok || validationResult?.ok !== true) {
+          const validationError = new Error(
+            validationResult?.message ||
+              'We could not confirm that this email can receive messages. Check it and try again.'
+          );
+          validationError.code = 'email-validation/failed';
+          throw validationError;
+        }
+
+        const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
         const name = displayName.trim();
         if (name) {
           try {
@@ -156,7 +172,11 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (err) {
-      setError(mapAuthError(err?.code));
+      setError(
+        err?.code === 'email-validation/failed'
+          ? err.message
+          : mapAuthError(err?.code)
+      );
     } finally {
       setBusy(false);
     }
