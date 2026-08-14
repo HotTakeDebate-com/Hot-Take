@@ -66,6 +66,14 @@ function topicLabel(id) {
   return TOPICS.find((t) => t.id === id)?.label ?? id;
 }
 
+function signedInDisplayName() {
+  return (
+    auth.currentUser?.displayName?.trim().slice(0, 100) ||
+    auth.currentUser?.email?.split('@')[0]?.slice(0, 100) ||
+    null
+  );
+}
+
 const LEGAL_OVERLAY_IDS = new Set(['terms', 'privacy', 'community', 'recording']);
 
 function formatSocketConnectError(err) {
@@ -441,6 +449,7 @@ export default function App() {
         roomCode: payload.roomCode ?? null,
         statement: payload.statement ?? null,
         peerUid: payload.peerUid ?? null,
+        peerDisplayName: payload.peerDisplayName ?? null,
       });
       setStep('debate');
 
@@ -711,7 +720,7 @@ export default function App() {
     if (!sock.connected) sock.connect();
     // Optimistic UI: server will confirm with `queued` or reject with `queue-error`.
     setWaiting(true);
-    sock.emit('join-queue', { topicId, side: s });
+    sock.emit('join-queue', { topicId, side: s, displayName: signedInDisplayName() });
   };
 
   const cancelWaiting = () => {
@@ -760,7 +769,7 @@ export default function App() {
     if (!sock.connected) sock.connect();
     // Clear any stale quick/custom queue on the server before creating a lobby
     sock.emit('leave-queue');
-    sock.emit('create-custom-game', { statement, joinMode: customJoinMode });
+    sock.emit('create-custom-game', { statement, joinMode: customJoinMode, displayName: signedInDisplayName() });
   };
 
   const joinCustomGame = (roomCode) => {
@@ -774,7 +783,7 @@ export default function App() {
     setSide('disagree');
     if (!sock.connected) sock.connect();
     setWaiting(true);
-    sock.emit('join-custom-room', { side: 'disagree', roomCode });
+    sock.emit('join-custom-room', { side: 'disagree', roomCode, displayName: signedInDisplayName() });
   };
 
   const joinByCode = () => {
@@ -1375,7 +1384,7 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} displayName={auth.currentUser?.displayName?.trim() || auth.currentUser?.email?.split('@')[0] || 'You'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={endDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={endDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
 
       {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
