@@ -1,16 +1,15 @@
 import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 
-export function SiteHeader({ onHome, onAbout, onTopics, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+export function SiteHeader({ onHome, onAbout, onTopics, onQuickMatch, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   const goQuickMatch = () => {
-    // On overlay pages, the landing page remains mounted underneath. Use its real
-    // Quick Match action so auth state and matchmaking state are handled centrally.
-    const quickMatchButton = document.querySelector('.landing-cta-card--primary .landing-cta-btn');
-    if (quickMatchButton) {
-      quickMatchButton.click();
+    if (onQuickMatch) {
+      onQuickMatch();
       return;
     }
-    onTopics?.();
+    const quickMatchButton = document.querySelector('.landing-cta-card--primary .landing-cta-btn');
+    if (quickMatchButton) quickMatchButton.click();
+    else onTopics?.();
   };
 
   return <header className="landing-nav">
