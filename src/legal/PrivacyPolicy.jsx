@@ -56,7 +56,7 @@ const cards = [
   { n: 13, icon: 'mail', title: 'Contact Information', body: <><p>For questions or requests, contact:</p><p>Email: <ContactEmail /></p><p>Company: Hot Take</p></> },
 ];
 
-export default function PrivacyPolicy({ onBack }) {
+export default function PrivacyPolicy({ onBack, onPickLegal }) {
   const [isSignedIn, setIsSignedIn] = useState(Boolean(auth?.currentUser));
   const [authModal, setAuthModal] = useState(null);
   const [enlargedCard, setEnlargedCard] = useState(null);
@@ -89,9 +89,10 @@ export default function PrivacyPolicy({ onBack }) {
   };
 
   const openCard = (card) => setEnlargedCard(card);
+  const openLegal = (documentId) => onPickLegal?.(documentId);
 
   return <div className="privacy-policy-page">
-    <SiteHeader onHome={onBack} onAbout={onBack} onTopics={handleQuickMatch} onFaq={onBack} onSupport={onBack} isSignedIn={isSignedIn} onSignIn={() => setAuthModal('signin')} onSignUp={() => setAuthModal('signup')} onSignOut={handleSignOut} onProfile={onBack} onPickLegal={() => {}} />
+    <SiteHeader onHome={onBack} onAbout={onBack} onTopics={handleQuickMatch} onFaq={onBack} onSupport={onBack} isSignedIn={isSignedIn} onSignIn={() => setAuthModal('signin')} onSignUp={() => setAuthModal('signup')} onSignOut={handleSignOut} onProfile={onBack} onPickLegal={openLegal} />
 
     <main className="privacy-policy-content">
       <aside className="privacy-intro">
@@ -116,11 +117,11 @@ export default function PrivacyPolicy({ onBack }) {
           </header>
           <div className="privacy-card-body">{card.body}</div>
         </article>)}
-        <p className="privacy-note">ⓘ This Privacy Policy is part of our <button type="button" onClick={() => {}}>Terms of Service</button> and Community Guidelines.</p>
+        <p className="privacy-note">ⓘ This Privacy Policy is part of our <button type="button" onClick={() => openLegal('terms')}>Terms of Service</button> and <button type="button" className="privacy-community-link" onClick={() => openLegal('community')}>Community Guidelines</button>.</p>
       </section>
     </main>
 
-    <SiteFooter onHome={onBack} onAbout={onBack} onFaq={onBack} onSupport={onBack} onPickLegal={() => {}} />
+    <SiteFooter onHome={onBack} onAbout={onBack} onFaq={onBack} onSupport={onBack} onPickLegal={openLegal} />
 
     {authModal && <AuthScreen variant="modal" initialMode={authModal} onClose={() => setAuthModal(null)} />}
     {enlargedCard && <div className="privacy-enlarge-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEnlargedCard(null); }}>
