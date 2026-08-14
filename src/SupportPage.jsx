@@ -3,6 +3,7 @@ import HeaderNavMenu from './HeaderNavMenu.jsx';
 import { contactEmailLabel, contactEmailMailto } from './legal/contactEmail.js';
 import './SupportPage.css';
 import './SupportLayoutFix.css';
+import './SupportBubblyFix.css';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 
 const items=[['video','Camera or microphone not working?','Allow camera and microphone in your browser (lock icon in the address bar). On Windows, also check Settings → Privacy → Camera / Microphone and allow your browser. If you have no camera, you can still join with audio only — you should still hear your opponent and see their video when they have a camera.'],['shield','Safety during a debate','If something goes wrong while you are matched with someone, use Report issue on the debate screen. Reports are reviewed by our team and help keep the community safe.'],['user','Account & privacy','For terms, privacy, and community rules, open Menu in the header. Privacy requests (access, deletion, etc.) can also be sent to the contact email above.'],['tool','Technical issues','Try refreshing the page, clearing your cache, or using another browser. If the problem continues, contact us with details about what happened.'],['question','General questions','Check out our FAQ for answers to the most common questions about Hot Take.']];
