@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 
+const LINK_PATTERN = /(?:https?:\/\/|www\.|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/|$))/i;
+
 /**
  * Side text chat during an active debate (same Socket.IO room as WebRTC).
- * Links are intentionally treated as ordinary text for user safety.
+ * Links are intentionally blocked for user safety.
  */
 export default function DebateChatPanel({
   messages,
@@ -13,6 +15,7 @@ export default function DebateChatPanel({
   mySocketId,
 }) {
   const listRef = useRef(null);
+  const containsLink = LINK_PATTERN.test(draft.trim());
 
   useEffect(() => {
     const el = listRef.current;
@@ -22,14 +25,14 @@ export default function DebateChatPanel({
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!disabled && draft.trim()) onSend();
+      if (!disabled && draft.trim() && !containsLink) onSend();
     }
   };
 
   return (
     <div className="debate-chat" aria-label="Debate text chat">
       <h3 className="debate-chat-title">Text chat</h3>
-      <p className="debate-chat-hint">Enter sends; Shift+Enter for a new line.</p>
+      <p className="debate-chat-hint">Enter sends; Shift+Enter for a new line. Links are not allowed.</p>
       <div ref={listRef} className="debate-chat-messages" role="log" aria-live="polite">
         {messages.length === 0 ? (
           <p className="debate-chat-empty">No messages yet.</p>
@@ -64,7 +67,7 @@ export default function DebateChatPanel({
           type="button"
           className="btn btn-primary debate-chat-send"
           onClick={onSend}
-          disabled={disabled || !draft.trim()}
+          disabled={disabled || !draft.trim() || containsLink}
         >
           Send
         </button>
