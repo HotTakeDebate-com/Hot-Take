@@ -42,6 +42,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -184,9 +185,10 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const signupReady = signupPhase === 'account' && agreeAge18 && agreePolicies;
 
   const screen = (
-    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal', mode === 'signup' && 'auth-screen--signup', mode === 'signup' && signupPhase === 'account' && 'auth-screen--signup-account'].filter(Boolean).join(' ')}>
+    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal', mode === 'signin' && 'auth-screen--signin', mode === 'signup' && 'auth-screen--signup', mode === 'signup' && signupPhase === 'account' && 'auth-screen--signup-account'].filter(Boolean).join(' ')}>
       {mode === 'signup' && signupPhase === 'account' && <header className="signup-new-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
       {mode === 'signup' && signupPhase === 'account' && <aside className="signup-new-story"><h1>Real debates.<strong>Real people.</strong></h1><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul></aside>}
+      {mode === 'signin' && <aside className="signin-new-story"><h1>Real debates.<strong>Real people.</strong></h1><i/><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul></aside>}
       {signupLegalGate && <header className="signup-new-header signup-policy-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
       <div className="auth-screen-inner">
         <div
@@ -262,11 +264,11 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
           <div className="auth-screen-logo-wrap auth-screen-logo-wrap--form">
             <BrandLogo />
           </div>
-          <h2 className="auth-screen-title">{mode === 'signin' ? 'Sign in' : 'Create your account'}</h2>
+          <h2 className="auth-screen-title">{mode === 'signin' ? 'Welcome back' : 'Create your account'}</h2>
           <p className="auth-screen-lead">
             {mode === 'signin' ? (
               <>
-                Welcome back. Use the email and password for your Hot Take account.
+                Sign in to your Hot Take account and continue debating.
               </>
             ) : (
               <>
@@ -327,6 +329,8 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             {mode === 'signup' && (
               <p className="auth-field-hint">This is your sign-in email. Verify it later from Profile if you like.</p>
             )}
+
+            {mode === 'signin' && <div className="signin-options"><label><input type="checkbox" checked={rememberMe} onChange={(e)=>setRememberMe(e.target.checked)}/> Remember me</label><button type="button" onClick={onForgotPassword} disabled={busy}>Forgot password?</button></div>}
 
             {mode === 'signup' && (
               <>
@@ -487,7 +491,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             </button>
           </form>
 
-          {mode === 'signin' && (
+          {mode === 'signin' && false && (
             <button type="button" className="auth-linkish" onClick={onForgotPassword} disabled={busy}>
               Forgot password?
             </button>
