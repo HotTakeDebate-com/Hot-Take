@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   HeroBubblesVisual,
   HotTakeWordmark,
@@ -41,6 +42,13 @@ export default function HomePage({
     if (!isSignedIn) onSignIn();
     else onCustomRoom();
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('quickMatch') !== '1') return;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    handleQuick();
+  }, []);
 
   return (
     <div className="landing">
@@ -170,7 +178,6 @@ export default function HomePage({
         </div>
       </section>
 
-      {/* Hidden anchor targets for nav links */}
       <div id="topics" className="landing-anchor" aria-hidden="true" />
       <div id="faq" className="landing-anchor" aria-hidden="true" />
 
@@ -183,70 +190,30 @@ export default function HomePage({
         <div className="landing-footer-col">
           <h3>Company</h3>
           <ul>
-            <li>
-              <button type="button" onClick={onPickMission}>
-                About
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={() => scrollToId('how-it-works')}>
-                How it works
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={onPickSupport}>
-                FAQ
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={onPickHelp}>
-                Contact
-              </button>
-            </li>
+            <li><button type="button" onClick={onPickMission}>About</button></li>
+            <li><button type="button" onClick={() => scrollToId('how-it-works')}>How it works</button></li>
+            <li><button type="button" onClick={onPickSupport}>FAQ</button></li>
+            <li><button type="button" onClick={onPickHelp}>Contact</button></li>
           </ul>
         </div>
 
         <div className="landing-footer-col">
           <h3>Support</h3>
           <ul>
-            <li>
-              <button type="button" onClick={onPickHelp}>
-                Help center
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={() => onPickLegal('community')}>
-                Community guidelines
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={() => onPickLegal('privacy')}>
-                Privacy policy
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={() => onPickLegal('terms')}>
-                Terms of service
-              </button>
-            </li>
+            <li><button type="button" onClick={onPickHelp}>Help center</button></li>
+            <li><button type="button" onClick={() => onPickLegal('community')}>Community guidelines</button></li>
+            <li><button type="button" onClick={() => onPickLegal('privacy')}>Privacy policy</button></li>
+            <li><button type="button" onClick={() => onPickLegal('terms')}>Terms of service</button></li>
           </ul>
         </div>
 
         <div className="landing-footer-col landing-footer-social">
           <h3>Follow us</h3>
           <div className="landing-social-row">
-            <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X">
-              <IconX />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <IconInstagram />
-            </a>
-            <a href="https://reddit.com" target="_blank" rel="noopener noreferrer" aria-label="Reddit">
-              <IconReddit />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-              <IconYouTube />
-            </a>
+            <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X"><IconX /></a>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><IconInstagram /></a>
+            <a href="https://reddit.com" target="_blank" rel="noopener noreferrer" aria-label="Reddit"><IconReddit /></a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><IconYouTube /></a>
           </div>
         </div>
 
