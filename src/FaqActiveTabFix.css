@@ -1,4 +1,9 @@
 .faq-nav nav .active {
+  color: #fff;
+}
+
+.faq-nav nav button:hover,
+.faq-nav nav .active:hover {
   color: #ff2025;
 }
 

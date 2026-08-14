@@ -1510,7 +1510,7 @@ export default function App() {
         <SupportPage onBack={() => setHeaderOverlay(null)} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickMission={() => setHeaderOverlay('mission')} onPickFaq={() => setHeaderOverlay('faq')} />
       )}
       {showAppShell && headerOverlay === 'faq' && (
-        <FaqPage onBack={() => setHeaderOverlay(null)} onSupport={() => setHeaderOverlay('support')} />
+        <FaqPage onBack={() => setHeaderOverlay(null)} onSupport={() => setHeaderOverlay('support')} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickMission={() => setHeaderOverlay('mission')} />
       )}
     </>
   );
