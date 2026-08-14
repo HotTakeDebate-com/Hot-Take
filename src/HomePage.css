@@ -129,9 +129,6 @@
 .landing-how { padding: 21px 0 29px; scroll-margin-top: 24px; }
 .landing-how-title { margin: 0 0 18px; color: var(--landing-red); text-align: center; font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .landing-steps { display: grid; grid-template-columns: repeat(3,1fr); gap: clamp(40px,7vw,110px); position: relative; }
-.landing-steps::before {
-  content: ''; position: absolute; top: 41px; left: 22%; right: 22%; border-top: 1px dashed #6c6d74;
-}
 .landing-step {
   position: relative; z-index: 1; min-width: 0; display: grid; grid-template-columns: 86px 1fr;
   grid-template-areas: 'icon title' 'icon copy'; column-gap: 26px; align-content: center; text-align: left;
@@ -183,7 +180,6 @@
   .landing-cta-row { grid-template-columns: 1fr; gap: 20px; }
   .landing-cta-or { top: 50%; }
   .landing-steps { gap: 28px; }
-  .landing-steps::before { display: none; }
   .landing-step { grid-template-columns: 78px 1fr; column-gap: 16px; }
   .landing-step-icon-wrap, .landing-step-icon-wrap svg { width: 74px; height: 74px; }
   .landing-footer { grid-template-columns: 2fr 1fr 1fr; }
