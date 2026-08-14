@@ -448,49 +448,158 @@ export default function App() {
       try {
         let stream = localStreamRef.current;
         if (!stream) {
-          stream = await getUserMediaWithFallback({ videoDeviceId, audioDeviceId });
+          stream = await getUserMediaWithFallback(videoDeviceId, audioDeviceId);
           localStreamRef.current = stream;
           setLocalStream(stream);
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
         }
-        stream.getAudioTracks().forEach((t) => { t.enabled = micOn; });
-        stream.getVideoTracks().forEach((t) => { t.enabled = camOn; });
+
+        debateSessionRef.current = {
+          topicId: payload.topicId ?? (payload.matchMode === 'custom' ? 'custom' : null),
+          yourSide: payload.yourSide,
+          roomId: payload.roomId,
+          startedAtMs: Date.now(),
+          peerUid: payload.peerUid ?? null,
+          matchMode: payload.matchMode ?? 'quick',
+          roomCode: payload.roomCode ?? null,
+          statement: payload.statement ?? null,
+        };
 
         const pc = new RTCPeerConnection(rtcConfigRef.current);
         pcRef.current = pc;
+        setConnState(pc.connectionState);
+
+        addLocalTracksToPeerConnection(pc, stream);
+
+        pc.onconnectionstatechange = () => {
+          setConnState(pc.connectionState);
+        };
+
         pc.ontrack = handleRemoteTrack;
+
         pc.onicecandidate = (ev) => {
           if (ev.candidate && roomIdRef.current) {
-            socket.emit('signal', { roomId: roomIdRef.current, type: 'ice', payload: ev.candidate });
+            socket.emit('signal', {
+              roomId: roomIdRef.current,
+              type: 'ice',
+              payload: ev.candidate.toJSON(),
+            });
           }
         };
-        pc.onconnectionstatechange = () => setConnState(pc.connectionState);
-        addLocalTracksToPeerConnection(pc, stream);
+
+        await flushPendingSignals();
+
         if (payload.isOfferer) {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          socket.emit('signal', { roomId: payload.roomId, type: 'offer', payload: offer });
+          socket.emit('signal', {
+            roomId: payload.roomId,
+            type: 'offer',
+            payload: offer,
+          });
         }
-        await flushPendingSignals();
       } catch (e) {
+        setDebateChatMessages([]);
+        setDebateChatDraft('');
         setError(getMediaErrorMessage(e));
+        cleanupMedia();
+        setStep('side');
       }
     });
 
-    socket.on('queued', () => setWaiting(true));
-    socket.on('custom-game-created', ({ roomCode, statement, joinMode }) => {
-      setCustomRoomCode(roomCode);
-      setCustomStatement(statement);
-      setCustomHostWaiting(true);
-      setWaiting(false);
-      setError(null);
-      setCustomGames((prev) => [
-        ...prev.filter((g) => g.roomCode !== roomCode),
-        { roomCode, statement, status: 'waiting', joinMode },
-      ]);
+    socket.on('queued', (payload = {}) => {
+      setWaiting(true);
+      if (payload.matchMode === 'custom' && payload.roomCode) {
+        setCustomRoomCode(payload.roomCode);
+      }
     });
-    socket.on('custom-games', (games) => {
+
+    socket.on('custom-games-updated', (games = []) => {
       setCustomGames(Array.isArray(games) ? games : []);
     });
+
+    socket.on('custom-game-created', ({ roomCode, statement }) => {
+      if (roomCode) setCustomRoomCode(roomCode);
+      if (statement) setCustomStatement(statement);
+      setSide('agree');
+      setCustomHostWaiting(true);
+      setError(null);
+      setDebateInfo({
+        roomId: null,
+        topicId: 'custom',
+        yourSide: 'agree',
+        isOfferer: false,
+        matchMode: 'custom',
+        roomCode: roomCode ?? null,
+        statement: statement ?? null,
+      });
+      setStep('debate');
+      if (!localStreamRef.current) {
+        getUserMediaWithFallback(videoDeviceId, audioDeviceId)
+          .then((stream) => {
+            localStreamRef.current = stream;
+            setLocalStream(stream);
+            if (localVideoRef.current) {
+              localVideoRef.current.srcObject = stream;
+            }
+            debateSessionRef.current = {
+              topicId: 'custom',
+              yourSide: 'agree',
+              roomId: roomCode ?? null,
+              startedAtMs: Date.now(),
+              peerUid: null,
+              matchMode: 'custom',
+              roomCode: roomCode ?? null,
+              statement: statement ?? null,
+            };
+          })
+          .catch((e) => {
+            setError(getMediaErrorMessage(e));
+            cleanupMedia();
+            setStep('custom');
+          });
+      }
+    });
+
+    socket.on('custom-lobby-waiting', ({ roomCode, statement }) => {
+      setDebateChatMessages([]);
+      setDebateChatDraft('');
+      setCustomHostWaiting(true);
+      setDebateInfo((prev) => ({
+        roomId: null,
+        topicId: 'custom',
+        yourSide: 'agree',
+        isOfferer: false,
+        matchMode: 'custom',
+        roomCode: roomCode ?? prev?.roomCode ?? null,
+        statement: statement ?? prev?.statement ?? null,
+      }));
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      remoteStreamRef.current = null;
+      setConnState(null);
+      setError('Opponent left. Waiting for next challenger...');
+    });
+
+    socket.on('debate-chat', ({ text, from, sentAtMs }) => {
+      setDebateChatMessages((prev) => [
+        ...prev,
+        {
+          text,
+          from,
+          sentAtMs,
+          key: `${from}-${sentAtMs}-${prev.length}`,
+        },
+      ]);
+    });
+
     socket.on('peer-kicked', () => {
       setDebateChatMessages([]);
       setDebateChatDraft('');
@@ -1143,51 +1252,244 @@ export default function App() {
                           </td>
                         </tr>
                       ))}
+                    {customGames.filter((g) => {
+                      const query = customSearch.trim().toLowerCase();
+                      if (!query) return true;
+                      return (
+                        g.roomCode?.toLowerCase().includes(query) ||
+                        g.statement?.toLowerCase().includes(query)
+                      );
+                    }).length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="custom-empty-row">
+                          No open servers right now. Create one or use Join by code.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
+          {!!customRoomCode && side === 'agree' && (
+            <p className="mode-help-text">
+              Current room code: <strong>{customRoomCode}</strong>{' '}
+              <button type="button" className="auth-legal-link copy-code-btn" onClick={copyRoomCode}>
+                {copyConfirmed ? '✓ Copied' : 'Copy'}
+              </button>
+            </p>
+          )}
+          {waiting && (
+            <div className="waiting" style={{ marginTop: '1.5rem' }}>
+              <div className="spinner" aria-hidden />
+              <p>
+                {side === 'agree'
+                  ? 'Your custom game is live. Waiting for someone who disagrees to join…'
+                  : 'Joining debate…'}
+              </p>
+              <button type="button" className="back-btn" onClick={cancelWaiting}>
+                Cancel
+              </button>
+            </div>
+          )}
+          {!waiting && (
+            <button type="button" className="back-btn" onClick={() => setStep('welcome')}>
+              Back
+            </button>
+          )}
         </div>
       )}
 
-      {step === 'topic' && (
-        <QuickMatchPage
-          topics={TOPICS}
-          onPickTopic={pickTopic}
-          onBack={() => goHome()}
-          waiting={waiting}
-          side={side}
-          onJoinQueue={joinQueue}
-          onCancelWaiting={cancelWaiting}
-          error={error}
+      {isSignedIn && step === 'history' && (
+        <DebateHistory
+          rows={historyRows}
+          loading={historyLoading}
+          error={historyError}
+          onBack={() => setStep('welcome')}
+          onRefresh={loadHistory}
         />
       )}
 
-      {step === 'debate' && debateInfo && (
-        <DebateRoomPage
-          debateInfo={debateInfo}
-          topicLabel={topicLabel}
-          connectionLabel={connectionLabel}
-          connState={connState}
-          micOn={micOn}
-          camOn={camOn}
-          localVideoRef={localVideoRef}
-          remoteVideoRef={remoteVideoRef}
-          localStream={localStream}
-          audioLevelMeter={<AudioLevelMeter stream={localStream} />}
-          debateChatMessages={debateChatMessages}
-          debateChatDraft={debateChatDraft}
-          onDebateChatDraftChange={setDebateChatDraft}
-          onSendDebateChat={sendDebateChat}
-          socketId={socketId}
-          onToggleMic={() => setMicOn((m) => !m)}
-          onToggleCam={() => setCamOn((c) => !c)}
-          onReport={() => setReportOpen(true)}
-          onEnd={endDebate}
-          onKick={kickOpponent}
-          customHostWaiting={customHostWaiting}
+      {isSignedIn && step === 'topic' && (
+        <QuickMatchPage
+          topics={TOPICS}
+          selectedTopicId={topicId}
+          selectedSide={side}
+          waiting={waiting}
+          error={error}
+          onSelectTopic={(id) => { setTopicId(id); setSide(null); setError(null); }}
+          onSelectSide={setSide}
+          onFindMatch={joinQueue}
+          onCancel={cancelWaiting}
+          onBack={goHome}
+          onSignOut={handleSignOut}
+          onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('topic'); setStep('profile'); }}
+          onAbout={() => setHeaderOverlay('mission')}
+          onSupport={() => setHeaderOverlay('faq')}
+          onHelp={() => setHeaderOverlay('support')}
+          onPickLegal={(id) => setHeaderOverlay(id)}
         />
+      )}
+
+      {isSignedIn && step === 'side' && topicId && (
+        <div className="panel">
+          <h2>{topicLabel(topicId)}</h2>
+          <p style={{ color: 'var(--muted)', marginTop: '-0.5rem' }}>
+            Do you agree or disagree with the statement?
+          </p>
+          <div className="side-row">
+            <button type="button" className="side-btn agree" onClick={() => joinQueue('agree')}>
+              Agree
+            </button>
+            <button type="button" className="side-btn disagree" onClick={() => joinQueue('disagree')}>
+              Disagree
+            </button>
+          </div>
+          {waiting && (
+            <div className="waiting" style={{ marginTop: '1.5rem' }}>
+              <div className="spinner" aria-hidden />
+              <p>Looking for someone on the other side…</p>
+              <button type="button" className="back-btn" onClick={cancelWaiting}>
+                Cancel
+              </button>
+            </div>
+          )}
+          {error && step === 'side' && <div className="error-banner">{error}</div>}
+          {!waiting && (
+            <button
+              type="button"
+              className="back-btn"
+              onClick={() => setStep('topic')}
+            >
+              Back to topics
+            </button>
+          )}
+        </div>
+      )}
+
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={endDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+
+      {false && isSignedIn && step === 'debate' && debateInfo && (
+        <div className="panel">
+          <div className="debate-header">
+            <div className="debate-meta">
+              {debateInfo.matchMode === 'custom' ? (
+                <>
+                  Statement: <strong>{debateInfo.statement ?? 'Custom debate'}</strong>
+                  {' · '}
+                  You:{' '}
+                  <strong>{debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger'}</strong>
+                </>
+              ) : (
+                <>
+                  Topic: <strong>{topicLabel(debateInfo.topicId)}</strong>
+                  {' · '}
+                  You:{' '}
+                  <strong>{debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree'}</strong>
+                </>
+              )}
+              {debateInfo.matchMode === 'custom' && debateInfo.roomCode ? (
+                <>
+                  {' · '}
+                  Room: <strong>{debateInfo.roomCode}</strong>{' '}
+                  <button
+                    type="button"
+                    className="auth-legal-link copy-code-btn"
+                    onClick={() => copyRoomCode(debateInfo.roomCode)}
+                  >
+                    {copyConfirmed ? '✓ Copied' : 'Copy'}
+                  </button>
+                </>
+              ) : null}
+            </div>
+            {connState && (
+              <span
+                className={`conn-pill conn-${connState}`}
+                title="WebRTC connection state"
+              >
+                {connectionLabel(connState)}
+              </span>
+            )}
+          </div>
+          <div
+            className={
+              debateInfo.roomId ? 'debate-main debate-main--with-chat' : 'debate-main'
+            }
+          >
+            <div className="video-grid">
+              <div className="video-wrap">
+                <video ref={localVideoRef} autoPlay playsInline muted />
+                <div className="video-local-overlay">
+                  <AudioLevelMeter stream={localStream} compact muted={!micOn} />
+                </div>
+                <span className="video-label">You</span>
+              </div>
+              <div className="video-wrap">
+                <video ref={remoteVideoRef} autoPlay playsInline />
+                <span className="video-label">Opponent</span>
+              </div>
+            </div>
+            {debateInfo.roomId && (
+              <DebateChatPanel
+                messages={debateChatMessages}
+                draft={debateChatDraft}
+                onDraftChange={setDebateChatDraft}
+                onSend={sendDebateChat}
+                disabled={!debateInfo.roomId}
+                mySocketId={socketId}
+              />
+            )}
+          </div>
+          {error && <div className="error-banner">{error}</div>}
+          {connState === 'failed' && !error && (
+            <p className="rtc-hint">
+              If this keeps happening, add a TURN server via{' '}
+              <code>ICE_SERVERS_JSON</code> on the server (see <code>.env.example</code>).
+            </p>
+          )}
+          {customHostWaiting && debateInfo.matchMode === 'custom' && (
+            <p className="mode-help-text">Lobby is open. Waiting for someone to join your debate…</p>
+          )}
+          {debateInfo.matchMode === 'custom' && (
+            <p className="lobby-status">
+              Lobby:{' '}
+              <span className={`lobby-status-pill ${customHostWaiting ? 'waiting' : 'active'}`}>
+                {customHostWaiting ? 'Waiting' : 'In debate'}
+              </span>
+            </p>
+          )}
+          <div className="debate-actions">
+            <button type="button" className="btn" onClick={() => setMicOn((m) => !m)}>
+              {micOn ? 'Mute mic' : 'Unmute mic'}
+            </button>
+            <button type="button" className="btn" onClick={() => setCamOn((c) => !c)}>
+              {camOn ? 'Camera off' : 'Camera on'}
+            </button>
+            {debateInfo.matchMode === 'custom' &&
+              debateInfo.yourSide === 'agree' &&
+              !customHostWaiting &&
+              !!debateInfo.roomId && (
+                <button type="button" className="btn" onClick={kickOpponent}>
+                  Kick opponent
+                </button>
+              )}
+            <button type="button" className="btn" onClick={() => setReportOpen(true)}>
+              Report issue
+            </button>
+            <button type="button" className="btn btn-danger" onClick={endDebate}>
+              Leave debate
+            </button>
+          </div>
+          <ReportIssue
+            open={reportOpen}
+            onClose={() => setReportOpen(false)}
+            topicId={debateInfo.topicId}
+            roomId={debateInfo.roomId}
+            yourSide={debateInfo.yourSide}
+            peerUid={debateInfo.peerUid ?? null}
+            matchMode={debateInfo.matchMode ?? null}
+          />
+        </div>
       )}
 
         </>
@@ -1202,7 +1504,7 @@ export default function App() {
         />
       )}
 
-      {LEGAL_OVERLAY_IDS.has(headerOverlay) && (
+      {showAppShell && LEGAL_OVERLAY_IDS.has(headerOverlay) && (
         <LegalViewer documentId={headerOverlay} onBack={() => setHeaderOverlay(null)} />
       )}
       {showAppShell && headerOverlay === 'mission' && (
