@@ -26,7 +26,7 @@ export default function MissionPage({ onBack, isSignedIn, onSignIn, onSignUp, on
   return <div className="mission-page">
     <header className="mission-nav">
       <button className="mission-brand" onClick={onBack}><HotTakeWordmark variant="nav" /></button>
-      <nav><button onClick={onBack}>How it works</button><button className="active">About</button><button onClick={onBack}>Topics</button><button onClick={onBack}>FAQ</button></nav>
+      <nav><button onClick={onBack}>How it works</button><button className="active">About</button><button onClick={onBack}>Topics</button><button onClick={onPickSupport}>FAQ</button></nav>
       <div>{isSignedIn ? <><button className="mission-pill" onClick={onProfile}>Profile</button><HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={() => {}} onPickSupport={onPickSupport} /><button className="mission-pill" onClick={onSignOut}>Sign out</button></> : <><button className="mission-pill" onClick={onSignIn}>Sign in</button><button className="mission-pill mission-pill--red" onClick={onSignUp}>Create account</button></>}</div>
     </header>
 

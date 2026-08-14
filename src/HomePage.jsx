@@ -58,7 +58,7 @@ export default function HomePage({
           <button type="button" className="landing-nav-link" onClick={() => scrollToId('topics')}>
             Topics
           </button>
-          <button type="button" className="landing-nav-link" onClick={() => scrollToId('faq')}>
+          <button type="button" className="landing-nav-link" onClick={onPickSupport}>
             FAQ
           </button>
         </nav>
