@@ -39,6 +39,11 @@ const emailValidationLimiter = createRateLimiter({
   max: emailValidationMax,
 });
 
+function cleanDisplayName(value) {
+  const name = String(value ?? '').trim().replace(/\s+/g, ' ').slice(0, 100);
+  return name || null;
+}
+
 /** Set true when REDIS_URL connects (Socket.IO adapter + shared join RL). */
 const runtimeFlags = { redis: false };
 let redisJoinClient = null;
@@ -159,6 +164,7 @@ io.use(async (socket, next) => {
     }
     socket.data.uid = decoded.uid;
     socket.data.emailVerified = decoded.email_verified === true;
+    socket.data.displayName = cleanDisplayName(decoded.name);
     return next();
   } catch (e) {
     const msg = String(e?.message ?? e ?? '');
@@ -625,7 +631,7 @@ io.on('connection', (socket) => {
     return { agreeUid, disagreeUid };
   };
 
-  socket.on('join-queue', async ({ topicId, side }) => {
+  socket.on('join-queue', async ({ topicId, side, displayName }) => {
     metrics.quickJoinAttempts += 1;
     if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
@@ -658,6 +664,7 @@ io.on('connection', (socket) => {
     clearMatchmaking();
 
     socket.data.matchType = 'quick';
+    socket.data.displayName = cleanDisplayName(displayName) ?? socket.data.displayName;
     socket.data.topicId = topicId;
     socket.data.side = side;
 
@@ -699,6 +706,7 @@ io.on('connection', (socket) => {
         topicId,
         yourSide: peerSocket.data.side,
         peerUid: socket.data.uid ?? null,
+        peerDisplayName: socket.data.displayName ?? null,
       });
 
       socket.emit('matched', {
@@ -707,6 +715,7 @@ io.on('connection', (socket) => {
         topicId,
         yourSide: side,
         peerUid: peerSocket.data.uid ?? null,
+        peerDisplayName: peerSocket.data.displayName ?? null,
       });
       metrics.matches += 1;
       return;
@@ -717,7 +726,7 @@ io.on('connection', (socket) => {
     socket.emit('queued', { topicId, side });
   });
 
-  socket.on('create-custom-game', async ({ statement, joinMode }) => {
+  socket.on('create-custom-game', async ({ statement, joinMode, displayName }) => {
     metrics.customCreateAttempts += 1;
     if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
@@ -766,6 +775,7 @@ io.on('connection', (socket) => {
     });
 
     socket.data.matchType = 'custom';
+    socket.data.displayName = cleanDisplayName(displayName) ?? socket.data.displayName;
     socket.data.side = 'agree';
     socket.data.customRoomCode = roomCode;
 
@@ -785,7 +795,7 @@ io.on('connection', (socket) => {
     emitCustomGamesUpdate();
   });
 
-  socket.on('join-custom-room', async ({ side, roomCode }) => {
+  socket.on('join-custom-room', async ({ side, roomCode, displayName }) => {
     metrics.customJoinAttempts += 1;
     if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
@@ -833,6 +843,7 @@ io.on('connection', (socket) => {
     clearMatchmaking();
 
     socket.data.matchType = 'custom';
+    socket.data.displayName = cleanDisplayName(displayName) ?? socket.data.displayName;
     socket.data.topicId = null;
     socket.data.side = side;
     socket.data.customRoomCode = normalizedRoomCode;
@@ -878,6 +889,7 @@ io.on('connection', (socket) => {
         roomCode: normalizedRoomCode,
         statement: game.statement,
         peerUid: socket.data.uid ?? null,
+        peerDisplayName: socket.data.displayName ?? null,
       });
 
       socket.emit('matched', {
@@ -889,6 +901,7 @@ io.on('connection', (socket) => {
         roomCode: normalizedRoomCode,
         statement: game.statement,
         peerUid: peerSocket.data.uid ?? null,
+        peerDisplayName: peerSocket.data.displayName ?? null,
       });
       metrics.matches += 1;
       game.activeRoomId = roomId;
