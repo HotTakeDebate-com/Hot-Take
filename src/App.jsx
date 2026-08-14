@@ -27,7 +27,6 @@ import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
 import './SiteChrome.css';
-import './HeaderAlignmentFix.css';
 import './DebateRoomPage.css';
 
 const FALLBACK_RTC = {
