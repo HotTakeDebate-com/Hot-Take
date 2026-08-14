@@ -183,7 +183,11 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const onProviderSignIn = async (kind) => {
     setError(null);
     if (!auth) { setError('Firebase is not configured.'); return; }
-    if (mode === 'signup' && !signupReady) { setError('Please confirm you are at least 18 and accept all policies before continuing.'); return; }
+    if (mode === 'signup' && !signupReady) {
+      setError('Please confirm you are at least 18 and accept all policies before continuing.');
+      requestAnimationFrame(() => signupCertifyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      return;
+    }
     setBusy(true);
     try {
       const provider = kind === 'google' ? new GoogleAuthProvider() : new OAuthProvider('apple.com');
@@ -420,7 +424,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
                   placeholder="Confirm your password"
                 />
 
-                <div className="auth-screen-certify">
+                <div ref={signupCertifyRef} className="auth-screen-certify" tabIndex={-1}>
                   <p className="auth-screen-certify-intro">
                     By creating an account, you agree that:
                   </p>
