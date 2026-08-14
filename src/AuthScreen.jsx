@@ -57,6 +57,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const [agreePolicies, setAgreePolicies] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
   const avatarInputRef = useRef(null);
+  const signupCertifyRef = useRef(null);
 
   const resetLegal = () => {
     setSignupPhase('legal');
