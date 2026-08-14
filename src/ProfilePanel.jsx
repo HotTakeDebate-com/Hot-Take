@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import {
   fetchPublicProfile,
-  fetchRatingSummary,
   followUser,
   isFollowingUser,
   savePublicProfile,
@@ -14,6 +13,21 @@ import { sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
 import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import './AccountPage.css';
+
+async function fetchLiveRatingSummary(uid) {
+  const targetUid = String(uid ?? '').trim();
+  if (!targetUid || !auth?.currentUser) return { average: null, count: 0 };
+  const token = await auth.currentUser.getIdToken(true);
+  const response = await fetch(`/api/debate-ratings/${encodeURIComponent(targetUid)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.error || 'Could not load the debate rating.');
+  return {
+    average: result?.average == null ? null : Number(result.average),
+    count: Number(result?.count ?? 0),
+  };
+}
 
 function AccountIcon({ type }) {
   const paths = {
@@ -78,7 +92,7 @@ export default function ProfilePanel({
       setDisplayName(prof?.displayName?.trim() || fromAuth);
       setBio(prof?.bio ?? '');
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
-      setRating(await fetchRatingSummary(ratingUid));
+      setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own) setFollowing(await isFollowingUser(resolvedEmail));
     } catch (loadError) {
       setError(loadError?.message ?? 'Could not load account.');
@@ -107,7 +121,7 @@ export default function ProfilePanel({
     try {
       await savePublicProfile({ displayName, bio });
       setSavedMsg('Account details saved.');
-      setRating(await fetchRatingSummary(auth.currentUser?.uid));
+      setRating(await fetchLiveRatingSummary(auth.currentUser?.uid));
     } catch (saveError) {
       setError(saveError?.message ?? 'Could not save your changes.');
     } finally {
