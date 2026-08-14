@@ -902,7 +902,7 @@ export default function App() {
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -922,7 +922,7 @@ export default function App() {
                 <BrandLogo className="brand-logo--header" />
                 <p className="app-tagline">
                   {isSignedIn
-                    ? 'Live video debates: pick a side, get matched, argue face to face. Use Profile in the corner when you want to connect off the debate floor.'
+                    ? 'Live video debates: pick a side, get matched, argue face to face. Use Account in the corner when you want to manage settings off the debate floor.'
                     : 'Browse topics and see how Hot Take works. Sign in to join live video debates.'}
                 </p>
               </div>
@@ -939,7 +939,7 @@ export default function App() {
                         setStep('profile');
                       }}
                     >
-                      Profile
+                      Account
                     </button>
                   </nav>
                 )}
@@ -1050,7 +1050,7 @@ export default function App() {
                     setStep('profile');
                   }}
                 >
-                  Profile
+                  Account
                 </button>
                 <HeaderNavMenu
                   variant="landing"
@@ -1082,6 +1082,14 @@ export default function App() {
             setStep(socialReturnStep);
             setSocialProfileEmail(null);
           }}
+          onHome={goHome}
+          onAbout={() => setHeaderOverlay('mission')}
+          onQuickMatch={startQuickMatch}
+          onFaq={() => setHeaderOverlay('faq')}
+          onSupport={() => setHeaderOverlay('support')}
+          onSignOut={handleSignOut}
+          onPickLegal={(id) => setHeaderOverlay(id)}
+          onDeleted={goHome}
         />
       )}
 
