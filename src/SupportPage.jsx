@@ -1,47 +1,8 @@
-import LegalDocumentShell from './legal/LegalDocumentShell.jsx';
+import { HotTakeWordmark, IconInstagram, IconReddit, IconShield, IconUser, IconX, IconYouTube } from './LandingAssets.jsx';
+import HeaderNavMenu from './HeaderNavMenu.jsx';
 import { contactEmailLabel, contactEmailMailto } from './legal/contactEmail.js';
+import './SupportPage.css';
 
-export default function SupportPage({ onBack }) {
-  const mailto = contactEmailMailto();
-  const label = contactEmailLabel();
-  const hasEmail = Boolean(mailto);
-
-  return (
-    <LegalDocumentShell title="Support" onBack={onBack}>
-      <section className="legal-section">
-        <h3 className="legal-subhead">Contact us</h3>
-        <p>
-          For account help, privacy requests, technical issues, or general questions, email us at{' '}
-          {hasEmail ? (
-            <a href={mailto} className="legal-contact-link">
-              {label}
-            </a>
-          ) : (
-            <span className="legal-contact-placeholder">{label}</span>
-          )}
-          . We aim to reply within a few business days.
-        </p>
-
-        <h3 className="legal-subhead">Camera or microphone not working?</h3>
-        <p>
-          Allow camera and microphone in your browser (lock icon in the address bar). On Windows, also
-          check Settings → Privacy → Camera / Microphone and allow your browser. If you have no camera,
-          you can still join with audio only — you should still hear your opponent and see their video
-          when they have a camera.
-        </p>
-
-        <h3 className="legal-subhead">Safety during a debate</h3>
-        <p>
-          If something goes wrong while you are matched with someone, use <strong>Report issue</strong>{' '}
-          on the debate screen. Reports are reviewed by our team and help keep the community safer.
-        </p>
-
-        <h3 className="legal-subhead">Account &amp; privacy</h3>
-        <p>
-          For terms, privacy, and community rules, open <strong>Menu</strong> in the header. Privacy
-          requests (access, deletion, etc.) can also be sent to the contact email above.
-        </p>
-      </section>
-    </LegalDocumentShell>
-  );
-}
+function FaqIcon({type}){const shapes={bolt:<path d="m14 1-9 14h7l-2 12 10-16h-7l1-10Z"/>,lock:<><rect x="5" y="12" width="18" height="14" rx="2"/><path d="M9 12V8a5 5 0 0 1 10 0v4M14 17v4"/></>,age:<><circle cx="14" cy="14" r="12"/><text x="14" y="17" textAnchor="middle">18+</text></>,crown:<path d="m3 10 6 5 5-11 5 11 6-5-2 14H5L3 10Z"/>,headset:<><path d="M4 16v-3a10 10 0 0 1 20 0v3M4 16h4v8H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 1-2ZM24 16h-4v8h3a2 2 0 0 0 2-2v-4a2 2 0 0 0-1-2ZM20 24c0 2-2 3-5 3"/></>};return <svg viewBox="0 0 28 29" aria-hidden="true">{shapes[type]}</svg>}
+const faqs=[['user','What is Hot Take?','Hot Take is a 1-on-1 live debate platform that connects you with someone who has an opposing viewpoint. You discuss, debate, and diverge?live.'],['bolt','How does a debate work?',"You?ll be matched with an opponent, join a private room, and debate in real time using our video and voice technology. After the debate, you can optionally continue the conversation."],['shield','How is safety enforced?','We enforce safety on our platform to ensure a secure environment for all users. All forms of free speech are protected.'],['lock','Is my personal information safe?','Yes. We take your privacy seriously. We never share your personal information with third parties. For more details, please review our Privacy Policy.'],['age','Do I have to be 18 or older?','Yes. You must be at least 18 years old to create an account and use Hot Take.'],['crown','Is Hot Take free to use?','Yes, Hot Take is free to use!'],['headset','Need more help?',"Reach out to our support team any time. We?re happy to help."]];
+export default function SupportPage({onBack,isSignedIn,onSignIn,onSignUp,onSignOut,onProfile,onPickLegal,onPickMission}){const email=contactEmailLabel(),mailto=contactEmailMailto();return <div className="faq-page"><header className="faq-nav"><button onClick={onBack}><HotTakeWordmark variant="nav"/></button><nav><button onClick={onBack}>How it works</button><button onClick={onPickMission}>About</button><button onClick={onBack}>Topics</button><button className="active">FAQ</button></nav><div>{isSignedIn?<><button className="faq-pill" onClick={onProfile}>Profile</button><HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onPickMission} onPickSupport={()=>{}}/><button className="faq-pill" onClick={onSignOut}>Sign out</button></>:<><button className="faq-pill" onClick={onSignIn}>Sign in</button><button className="faq-pill red" onClick={onSignUp}>Create account</button></>}</div></header><main className="faq-content"><aside><p>FAQ</p><h1>Frequently<br/>Asked Questions</h1><i/><span>Everything you need to know about Hot Take. Can&apos;t find what you&apos;re looking for?</span><section><FaqIcon type="headset"/><div><h2>Still have questions?</h2><p>Contact us at</p>{mailto?<a href={mailto}>{email}</a>:<b>{email}</b>}<p>We&apos;re here to help.</p></div></section></aside><div className="faq-list">{faqs.map(([icon,title,copy])=><article key={title}><span>{icon==='user'?<IconUser/>:icon==='shield'?<IconShield/>:<FaqIcon type={icon}/>}</span><div><h2>{title}</h2><p>{copy}</p></div></article>)}</div></main><footer className="faq-footer"><HotTakeWordmark variant="footer"/><p>&copy; 2026 Hot Take Debate. All rights reserved.</p><div><span>Follow us</span><a href="https://x.com" aria-label="X"><IconX/></a><a href="https://instagram.com" aria-label="Instagram"><IconInstagram/></a><a href="https://reddit.com" aria-label="Reddit"><IconReddit/></a><a href="https://youtube.com" aria-label="YouTube"><IconYouTube/></a></div></footer></div>}
