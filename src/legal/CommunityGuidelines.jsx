@@ -43,7 +43,7 @@ const cards = [
   { n: 12, icon: 'edit', title: 'Changes to Guidelines', body: <><p>We may update these guidelines at any time.</p><p>Continued use of Hot Take = acceptance of updates.</p></> },
 ];
 
-export default function CommunityGuidelines({ onBack }) {
+export default function CommunityGuidelines({ onBack, embedded = false }) {
   const [isSignedIn, setIsSignedIn] = useState(Boolean(auth?.currentUser));
   const [authModal, setAuthModal] = useState(null);
   const [enlargedCard, setEnlargedCard] = useState(null);
@@ -79,6 +79,19 @@ export default function CommunityGuidelines({ onBack }) {
     try { if (auth) await signOut(auth); } catch { /* ignore */ }
     onBack?.();
   };
+
+  if (embedded) {
+    return <article className="legal-doc-article legal-doc-article--embedded">
+      <header className="legal-doc-header">
+        <h1 className="legal-doc-title legal-doc-title--embedded">Hot Take – Community Guidelines</h1>
+        <p className="legal-doc-meta">Effective date: March 22, 2026</p>
+      </header>
+      {cards.map((card) => <section className="legal-section" key={card.n}>
+        <h2>{card.n}. {card.title}{card.subtitle ? ` ${card.subtitle}` : ''}</h2>
+        {card.body}
+      </section>)}
+    </article>;
+  }
 
   return <div className="community-guidelines-page">
     <SiteHeader
