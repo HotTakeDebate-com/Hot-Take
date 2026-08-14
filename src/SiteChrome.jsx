@@ -8,11 +8,11 @@ export function SiteHeader({ onHome, onAbout, onTopics, onQuickMatch, onFaq, onS
       onQuickMatch();
       return;
     }
-    const quickMatchButton = document.querySelector('.landing-cta-card--primary .landing-cta-btn');
-    if (quickMatchButton) {
-      quickMatchButton.click();
-      return;
-    }
+
+    // Some secondary pages are rendered as overlays and do not currently pass
+    // the Quick Match callback through. Do a clean, deterministic navigation
+    // instead of clicking the hidden homepage CTA underneath the overlay.
+    // HomePage consumes ?quickMatch=1 and immediately opens the Quick Match UI.
     window.location.assign('/?quickMatch=1');
   };
 
