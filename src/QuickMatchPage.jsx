@@ -66,13 +66,13 @@ function WaitingPanel({ onCancel, topic, topicIndex, side }) {
 export default function QuickMatchPage({
   topics, selectedTopicId, selectedSide, waiting, error, onSelectTopic,
   onSelectSide, onFindMatch, onCancel, onBack, onSignOut, onProfile,
-  onAbout, onSupport, onHelp, onPickLegal,
+  onAbout, onSupport, onHelp, onPickLegal, onQuickMatch,
 }) {
   const selected = topics.find((topic) => topic.id === selectedTopicId) ?? null;
 
   return (
     <div className="qm-page">
-      <SiteHeader onHome={onBack} onAbout={onAbout} onTopics={() => {}} onFaq={onSupport} onSupport={onHelp} isSignedIn onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
+      <SiteHeader onHome={onBack} onAbout={onAbout} onTopics={() => {}} onQuickMatch={onQuickMatch} onFaq={onSupport} onSupport={onHelp} isSignedIn onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
 
       <main className={`qm-main ${waiting ? 'qm-main--waiting' : ''}`}>
         {waiting ? <WaitingPanel onCancel={onCancel} topic={selected} topicIndex={topics.findIndex((topic) => topic.id === selected?.id)} side={selectedSide} /> : <section className="qm-picker">
