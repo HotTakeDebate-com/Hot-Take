@@ -19,10 +19,14 @@ if (typeof document !== 'undefined' && !window.__hotTakeRatingCaptureInstalled) 
         return;
       }
 
-      const selectedStars = Array.from(
-        document.querySelectorAll('.debate-rating-star[aria-pressed="true"]')
+      // The review UI marks only the selected star with aria-pressed="true".
+      // Read that star's position (1–5) instead of counting selected stars;
+      // otherwise every rating was being submitted as 1 star.
+      const stars = Array.from(document.querySelectorAll('.debate-rating-star'));
+      const selectedIndex = stars.findIndex(
+        (star) => star.getAttribute('aria-pressed') === 'true'
       );
-      const rating = selectedStars.length;
+      const rating = selectedIndex >= 0 ? selectedIndex + 1 : 0;
       if (!context?.peerUid || !context?.roomId || rating < 1 || rating > 5) return;
 
       try {
