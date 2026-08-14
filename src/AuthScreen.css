@@ -551,3 +551,7 @@
 .signup-policy-main .signup-legal-review__scroll-hint .signup-policy-lock-icon{stroke:#a5a6ab;width:21px;height:21px}
 .signup-policy-sidebar li.completed i{border-color:#ff2025;background:#ff2025;box-shadow:inset 0 0 0 4px #ff2025}
 .signup-policy-main .signup-legal-review__progress .signup-legal-review__progress-dot--done{border-color:#ff2025;background:#ff2025;color:#fff}
+
+
+/* Signup provider option is intentionally scoped to the account form. */
+.auth-screen--signup-account .signup-google-button{width:100%;height:50px;margin:0 0 17px;border:1px solid #414248;border-radius:9px;background:#060709;color:#fff;font:inherit;font-size:14px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer}.auth-screen--signup-account .signup-google-button:hover:not(:disabled){border-color:#686970;background:#101115}.auth-screen--signup-account .signup-google-button:disabled{opacity:.55;cursor:not-allowed}.auth-screen--signup-account .signup-provider-or{display:flex;align-items:center;gap:14px;margin-bottom:18px;color:#898a90;font-size:12px}.auth-screen--signup-account .signup-provider-or span{flex:1;border-top:1px solid #34353a}
