@@ -1,26 +1,12 @@
 import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
-import './SiteChrome.css';
 
-export function SiteHeader({ onHome, onAbout, onTopics, onQuickMatch, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
-  const goQuickMatch = () => {
-    if (onQuickMatch) {
-      onQuickMatch();
-      return;
-    }
-
-    // Some secondary pages are rendered as overlays and do not currently pass
-    // the Quick Match callback through. Do a clean, deterministic navigation
-    // instead of clicking the hidden homepage CTA underneath the overlay.
-    // HomePage consumes ?quickMatch=1 and immediately opens the Quick Match UI.
-    window.location.assign('/?quickMatch=1');
-  };
-
+export function SiteHeader({ onHome, onAbout, onTopics, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   return <header className="landing-nav">
     <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
     <nav className="landing-nav-links" aria-label="Primary">
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
-      <button type="button" className="landing-nav-link" onClick={goQuickMatch}>Quick match</button>
+      <button type="button" className="landing-nav-link" onClick={onTopics}>Quick match</button>
       <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
       <button type="button" className="landing-nav-link" onClick={onSupport}>Support</button>
     </nav>
