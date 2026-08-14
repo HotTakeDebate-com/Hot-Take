@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup,
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
@@ -11,6 +14,7 @@ import LegalViewer from './legal/LegalViewer.jsx';
 import SignupLegalReview from './SignupLegalReview.jsx';
 import { HotTakeWordmark, IconLightning, IconShield, IconUser } from './LandingAssets.jsx';
 import './AuthScreen.css';
+import './AuthProviderFix.css';
 
 function mapAuthError(code) {
   switch (code) {
@@ -176,6 +180,21 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
     }
   };
 
+  const onProviderSignIn = async (kind) => {
+    setError(null);
+    if (!auth) { setError('Firebase is not configured.'); return; }
+    setBusy(true);
+    try {
+      const provider = kind === 'google' ? new GoogleAuthProvider() : new OAuthProvider('apple.com');
+      if (kind === 'google') provider.setCustomParameters({ prompt: 'select_account' });
+      else provider.addScope('email');
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      if (err?.code === 'auth/operation-not-allowed') setError(`${kind === 'google' ? 'Google' : 'Apple'} sign-in is not enabled in Firebase yet.`);
+      else if (err?.code !== 'auth/popup-closed-by-user') setError(mapAuthError(err?.code));
+    } finally { setBusy(false); }
+  };
+
   const flipMode = () => {
     if (mode === 'signin') goToSignUp();
     else goToSignIn();
@@ -276,6 +295,8 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               </>
             )}
           </p>
+
+          {mode === 'signin' && <><div className="signin-provider-row"><button type="button" onClick={() => onProviderSignIn('google')} disabled={busy}><span className="google-g">G</span>Continue with Google</button><button type="button" onClick={() => onProviderSignIn('apple')} disabled={busy}><span className="apple-mark" />Continue with Apple</button></div><div className="signin-or"><span />or<span /></div></>}
 
           {mode === 'signup' && signupPhase === 'account' && (
             <button
