@@ -127,10 +127,10 @@ export default function HomePage({
           <li><button type="button" onClick={onPickMission}>About</button></li>
           <li><button type="button" onClick={() => scrollToId('how-it-works')}>How it works</button></li>
           <li><button type="button" onClick={onPickSupport}>FAQ</button></li>
-          <li><button type="button" onClick={onPickHelp}>Contact</button></li>
+          <li><button type="button" onClick={onPickHelp}>Support</button></li>
         </ul></div>
         <div className="landing-footer-col"><h3>Support</h3><ul>
-          <li><button type="button" onClick={onPickHelp}>Help center</button></li>
+          <li><button type="button" onClick={() => onPickLegal('recording')}>Recording &amp; streaming consent</button></li>
           <li><button type="button" onClick={() => onPickLegal('community')}>Community guidelines</button></li>
           <li><button type="button" onClick={() => onPickLegal('privacy')}>Privacy policy</button></li>
           <li><button type="button" onClick={() => onPickLegal('terms')}>Terms of service</button></li>
