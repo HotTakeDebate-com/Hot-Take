@@ -62,6 +62,9 @@ export default function HomePage({
           <button type="button" className="landing-nav-link" onClick={onPickSupport}>
             FAQ
           </button>
+          <button type="button" className="landing-nav-link" onClick={onPickHelp}>
+            Support
+          </button>
         </nav>
 
         <div className="landing-nav-actions">

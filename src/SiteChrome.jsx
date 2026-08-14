@@ -9,6 +9,7 @@ export function SiteHeader({ onHome, onAbout, onTopics, onFaq, onSupport, isSign
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
       <button type="button" className="landing-nav-link" onClick={onTopics || onHome}>Topics</button>
       <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
+      <button type="button" className="landing-nav-link" onClick={onSupport}>Support</button>
     </nav>
     <div className="landing-nav-actions">
       {isSignedIn ? <>
