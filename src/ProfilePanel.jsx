@@ -91,7 +91,6 @@ export default function ProfilePanel({
     load();
   }, [load]);
 
-  // A completed debate rating can arrive while this profile remains mounted.
   useEffect(() => {
     const refresh = () => {
       if (own) void load();
@@ -242,14 +241,15 @@ export default function ProfilePanel({
 
           <section id="account-overview" className="account-card account-overview">
             <div className="account-avatar">{(displayName || resolvedEmail).slice(0, 1).toUpperCase()}</div>
-            <div className="account-overview-identity">
+            <div>
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'}</h2>
               <p>{resolvedEmail}</p>
-            </div>
-            <div className="account-overview-rating" aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
-              <span aria-hidden="true">★</span>
-              <strong>{ratingDisplay}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.38rem', marginTop: '.65rem', fontSize: '.95rem' }} aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
+                <span style={{ color: '#ff2b2b', lineHeight: 1 }} aria-hidden="true">★</span>
+                <strong style={{ color: '#f4f4f6', fontSize: '.95rem' }}>{ratingDisplay}</strong>
+                {rating.count > 0 && <span style={{ color: '#777781', fontSize: '.75rem' }}>({rating.count})</span>}
+              </div>
             </div>
             <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
               {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
