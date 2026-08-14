@@ -136,6 +136,8 @@ export default function App() {
   const [socialReturnStep, setSocialReturnStep] = useState('welcome');
   /** Guest auth overlay: signin or signup modal. */
   const [authModal, setAuthModal] = useState(null);
+  const [debateRatingOpen, setDebateRatingOpen] = useState(false);
+  const [debateRating, setDebateRating] = useState(0);
 
   const isSignedIn = Boolean(firebaseUserId);
   const showHeaderSocialTabs =
@@ -674,6 +676,8 @@ export default function App() {
       }
       setDebateChatMessages([]);
       setDebateChatDraft('');
+      setDebateRating(0);
+      setDebateRatingOpen(true);
       flushDebateLog('peer_left');
       setError('Your opponent left the debate.');
       cleanupMedia();
@@ -845,6 +849,8 @@ export default function App() {
   const endDebate = () => {
     setDebateChatMessages([]);
     setDebateChatDraft('');
+    setDebateRating(0);
+    setDebateRatingOpen(true);
     flushDebateLog('leave');
     socketRef.current?.emit('leave-debate');
     cleanupMedia();
@@ -856,6 +862,11 @@ export default function App() {
     setTopicId(null);
     setSide(null);
     setError(null);
+  };
+
+  const requestEndDebate = () => {
+    if (!window.confirm('Are you sure you want to end this debate?')) return;
+    endDebate();
   };
 
   /** Header brand: return to welcome and leave queues / debates safely. */
@@ -1384,7 +1395,7 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={endDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
 
       {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
@@ -1512,6 +1523,37 @@ export default function App() {
         </>
       )}
       </div>
+
+      {debateRatingOpen && (
+        <div className="debate-rating-backdrop" role="dialog" aria-modal="true" aria-labelledby="debate-rating-title">
+          <div className="debate-rating-card">
+            <h2 id="debate-rating-title">Rate your debate</h2>
+            <p>How was your debate experience?</p>
+            <div className="debate-rating-stars" role="radiogroup" aria-label="Rate this debate from 1 to 5 stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  className={star <= debateRating ? 'debate-rating-star debate-rating-star--active' : 'debate-rating-star'}
+                  aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                  aria-pressed={star === debateRating}
+                  onClick={() => setDebateRating(star)}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="debate-rating-submit"
+              disabled={!debateRating}
+              onClick={() => setDebateRatingOpen(false)}
+            >
+              Submit rating
+            </button>
+          </div>
+        </div>
+      )}
 
       {authModal && (
         <AuthScreen
