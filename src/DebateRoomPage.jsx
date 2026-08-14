@@ -2,8 +2,23 @@ import { useEffect, useState } from 'react';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
 import ReportIssue from './ReportIssue.jsx';
-import { fetchRatingSummary } from './chitChatFirestore.js';
+import { auth } from './firebase.js';
 import './debateRatingCapture.js';
+
+async function fetchLiveRatingSummary(uid) {
+  const targetUid = String(uid ?? '').trim();
+  if (!targetUid || !auth?.currentUser) return { average: null, count: 0 };
+  const token = await auth.currentUser.getIdToken(true);
+  const response = await fetch(`/api/debate-ratings/${encodeURIComponent(targetUid)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.error || 'Could not load the debate rating.');
+  return {
+    average: result?.average == null ? null : Number(result.average),
+    count: Number(result?.count ?? 0),
+  };
+}
 
 function LineIcon({ type }) {
   const paths = {
@@ -56,15 +71,16 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     }
     setOpponentRating(null);
     if (!peerUid) return () => { cancelled = true; };
-    fetchRatingSummary(peerUid).then((summary) => {
+    fetchLiveRatingSummary(peerUid).then((summary) => {
       if (!cancelled) setOpponentRating(summary.average);
+    }).catch((error) => {
+      console.warn('[hot-take] opponent rating load failed', error);
+      if (!cancelled) setOpponentRating(null);
     });
     return () => {
       cancelled = true;
     };
   }, [debateInfo?.peerUid, debateInfo?.roomId]);
-
-  const opponentRatingDisplay = opponentRating != null ? opponentRating.toFixed(2) : '—';
 
   const confirmLeave = () => {
     setLeaveConfirmOpen(false);
@@ -79,9 +95,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
 
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName} rating ${opponentRatingDisplay}`}>
-      Debating: <strong>{opponentName}</strong><span style={{ marginLeft: '0.5rem', whiteSpace: 'nowrap', color: '#ff2b2b', fontWeight: 700 }}>★ {opponentRatingDisplay}</span>
-    </div></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName}`}>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span style={{ marginLeft: '0.55rem', whiteSpace: 'nowrap' }}>★ {opponentRating.toFixed(2)}</span>}</div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video">
         <video ref={localVideoRef} autoPlay playsInline muted />
