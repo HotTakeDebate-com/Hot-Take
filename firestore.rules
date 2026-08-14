@@ -65,11 +65,30 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // User-to-user debate ratings. Each rating is immutable and tied to the authenticated rater.
+    match /userRatings/{ratingId} {
+      allow create: if isSignedIn()
+        && request.resource.data.raterUid == request.auth.uid
+        && request.resource.data.ratedUid is string
+        && request.resource.data.ratedUid != request.auth.uid
+        && request.resource.data.ratedUid.size() > 0
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.roomId.size() <= 128
+        && request.resource.data.createdAt == request.time;
+
+      allow read: if isSignedIn();
+      allow update, delete: if false;
+    }
+
     match /reports/{reportId} {
       allow create: if isSignedIn()
         && request.resource.data.reporterUid == request.auth.uid
         && request.resource.data.topicId is string
-        && request.resource.data.yourSide in ['agree', 'disagree']
+        && request.resource.data.yourSide in ['harassment', 'spam', 'other']
         && request.resource.data.category in ['harassment', 'spam', 'other']
         && request.resource.data.details is string
         && request.resource.data.details.size() > 0
