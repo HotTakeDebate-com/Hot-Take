@@ -248,6 +248,25 @@ function removeFromQueue(socketId, topicId, side) {
   const arr = side === 'agree' ? q.agree : q.disagree;
   const i = arr.indexOf(socketId);
   if (i !== -1) arr.splice(i, 1);
+  if (q.agree.length === 0 && q.disagree.length === 0) queues.delete(topicId);
+}
+
+/** Remove sockets that disconnected, changed queues, or already entered a room. */
+function pruneQuickQueue(topicId) {
+  const q = queues.get(topicId);
+  if (!q) return;
+  for (const side of ['agree', 'disagree']) {
+    q[side] = q[side].filter((socketId) => {
+      const queuedSocket = io.sockets.sockets.get(socketId);
+      return !!queuedSocket &&
+        queuedSocket.connected &&
+        queuedSocket.data.matchType === 'quick' &&
+        queuedSocket.data.topicId === topicId &&
+        queuedSocket.data.side === side &&
+        !queuedSocket.data.roomId;
+    });
+  }
+  if (q.agree.length === 0 && q.disagree.length === 0) queues.delete(topicId);
 }
 
 app.get('/health', (_req, res) => {
@@ -668,6 +687,7 @@ io.on('connection', (socket) => {
     socket.data.topicId = topicId;
     socket.data.side = side;
 
+    pruneQuickQueue(topicId);
     const q = getQueue(topicId);
     const opposite = side === 'agree' ? 'disagree' : 'agree';
     const oppositeList = q[opposite];
@@ -675,7 +695,14 @@ io.on('connection', (socket) => {
     while (oppositeList.length > 0) {
       const peerId = oppositeList.shift();
       const peerSocket = io.sockets.sockets.get(peerId);
-      if (!peerSocket) {
+      if (
+        !peerSocket ||
+        !peerSocket.connected ||
+        peerSocket.data.matchType !== 'quick' ||
+        peerSocket.data.topicId !== topicId ||
+        peerSocket.data.side !== opposite ||
+        peerSocket.data.roomId
+      ) {
         continue;
       }
       const roomId = `${topicId}-${socket.id}-${peerId}`;
