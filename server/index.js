@@ -290,16 +290,6 @@ app.post('/api/auth/validate-email', async (req, res) => {
     });
   }
 
-  const domain = email.split('@').pop();
-  if (domain === 'gmail.com' || domain === 'googlemail.com') {
-    return res.status(422).json({
-      ok: false,
-      code: 'google_sign_in_required',
-      message:
-        'Gmail addresses must use Continue with Google so we can confirm the Google account exists.',
-    });
-  }
-
   const apiKey = process.env.EMAILABLE_API_KEY;
   if (!apiKey) {
     console.error('[email-validation] EMAILABLE_API_KEY is not configured.');
