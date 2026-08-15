@@ -2499,3 +2499,45 @@
   .admin-console-sidebar > button b { display:none; }
   .admin-console-sidebar > span { display:none; }
 }
+
+
+/* Admin is a full-width application workspace, not a centered website page */
+.app.app--admin {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+.app.app--admin .admin-console {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.app.app--admin .admin-console-body {
+  width: 100%;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+.app.app--admin .admin-console-main {
+  width: 100%;
+  max-width: none;
+  padding: 42px clamp(32px, 4vw, 76px) 90px;
+}
+.app.app--admin .admin-console-topbar {
+  width: 100%;
+  padding-inline: 30px;
+}
+.app.app--admin .admin-stat-grid {
+  gap: clamp(16px, 2vw, 30px);
+}
+.app.app--admin .admin-dashboard-panels {
+  gap: clamp(18px, 2vw, 32px);
+}
+@media (max-width: 1050px) {
+  .app.app--admin .admin-console-body { grid-template-columns: 230px minmax(0,1fr); }
+  .app.app--admin .admin-console-main { padding: 30px 28px 70px; }
+}
+@media (max-width: 760px) {
+  .app.app--admin .admin-console-body { display:block; }
+  .app.app--admin .admin-console-main { padding:24px 15px 50px; }
+}

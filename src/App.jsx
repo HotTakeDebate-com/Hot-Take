@@ -1011,6 +1011,7 @@ export default function App() {
           step === 'topic' && 'app--quick-match',
           step === 'debate' && 'app--debate-room',
           step === 'profile' && 'app--account',
+          step === 'admin' && 'app--admin',
           !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
         ]
           .filter(Boolean)
@@ -1040,7 +1041,8 @@ export default function App() {
         step !== 'history' &&
         step !== 'feed' &&
         step !== 'profile' &&
-        step !== 'search' && (
+        step !== 'search' &&
+        step !== 'admin' && (
         <details className="device-details" open>
           <summary className="device-details-summary">
             Camera &amp; microphone
