@@ -428,7 +428,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                     <div className={'user-editor-avatar staff-avatar-preview' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="Profile preview" /> : profileInitial(userDraft.displayName, userDraft.email)}</div>
                     <div><strong>Profile picture</strong><small>Moderators and administrators can update pictures only for accounts below their role.</small>
                       <div className="staff-avatar-actions">
-                        <label className={'admin-small-button' + ((!capabilities.editAvatars || editingProtected || avatarBusy) ? ' disabled' : '')}>${avatarBusy ? 'Preparing…' : 'Choose image'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onChange={onStaffAvatarSelected} /></label>
+                        <label className={'admin-small-button' + ((!capabilities.editAvatars || editingProtected || avatarBusy) ? ' disabled' : '')}>{avatarBusy ? 'Preparing…' : 'Choose image'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onChange={onStaffAvatarSelected} /></label>
                         {userDraft.avatarUrl && <button type="button" className="admin-small-button" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onClick={() => setUserDraft((draft) => ({ ...draft, avatarUrl: '' }))}>Remove</button>}
                       </div>
                     </div>
@@ -474,7 +474,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                 </section>
               </>}
             </div>
-            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingProtected || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium)} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
+            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingProtected || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium || capabilities.editAvatars)} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
         </div>}
         {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
