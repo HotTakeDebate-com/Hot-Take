@@ -2768,3 +2768,42 @@
   .user-editor-message{margin:16px 18px 0}
   .user-editor-footer{padding:14px 18px}
 }
+
+/* Refined user management table and credential editor */
+.admin-console .staff-table-wrap .staff-actions {
+  display:flex; align-items:center; gap:6px; min-width:230px; white-space:nowrap;
+}
+.admin-console .staff-table-wrap .staff-actions button {
+  min-height:34px; padding:0 10px; border-radius:6px; font-size:11px;
+}
+.admin-console .staff-table-wrap .staff-actions button:nth-child(2) { border-color:#7e2228; color:#ff7379; }
+.admin-console .staff-user-row:focus { outline:2px solid #ed141e; outline-offset:-2px; }
+.admin-console .staff-user-row td { vertical-align:middle; }
+.user-editor { width:min(1160px,100%); }
+.user-editor-content.editor-security { grid-template-columns:minmax(0,1.3fr) minmax(330px,.7fr); }
+.password-security-note,.user-editor-readonly {
+  display:grid; gap:5px; margin:2px 0 14px; padding:13px 15px; border:1px solid #34363e;
+  border-radius:8px; background:#111217;
+}
+.password-security-note strong { color:#fff; font-size:13px; }
+.password-security-note span,.user-editor-readonly span { color:#8d9099; font-size:11px; line-height:1.5; }
+.user-editor-readonly { border-color:#553b1f; background:#211a11; }
+.user-editor-readonly strong { color:#ffc36a; font-size:13px; }
+.user-password-options { gap:10px; }
+.user-password-options > label {
+  grid-template-columns:22px minmax(0,1fr); align-items:center; min-height:64px; padding:12px 16px;
+}
+.user-password-options label span { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.user-password-options label strong { font-size:13px; line-height:1.3; }
+.user-password-options label small { grid-column:auto; margin:0; font-size:11px; line-height:1.45; }
+.user-password-fields { padding:2px 0 2px 33px; }
+.show-new-password {
+  display:flex !important; grid-template-columns:none !important; align-items:center !important; gap:9px !important;
+  margin:0 0 5px 33px; padding:0 !important; border:0 !important; color:#aeb0b8; font-size:11px; cursor:pointer;
+}
+.show-new-password input { width:16px; height:16px; accent-color:#ed141e; }
+.user-editor-protected { color:#a7a9b0; font-size:12px; padding:8px 0; }
+@media(max-width:900px){
+  .user-editor-content.editor-security{grid-template-columns:1fr}
+  .admin-console .staff-table-wrap .staff-actions{min-width:210px}
+}
