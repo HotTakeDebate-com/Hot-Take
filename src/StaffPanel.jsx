@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
+import { prepareProfileImage, profileInitial } from './profileImage.js';
 import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
@@ -116,6 +117,7 @@ const ROLE_PERMISSIONS = [
   { group: 'Administration', permissions: [
     { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true] },
     { key: 'editUsers', name: 'Edit user profile details', values: [false, false, true, true] },
+    { key: 'editAvatars', name: 'Edit profile pictures for lower roles', values: [false, true, true, true] },
     { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true] },
     { key: 'manageRoles', name: 'Assign User, Moderator, and Admin roles', values: [false, false, true, true] },
     { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true] },
@@ -146,6 +148,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -195,7 +198,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   };
   const openUserEditor = (user) => {
     setEditingUser(user);
-    setUserDraft({ displayName: user.displayName || '', email: user.email || '', role: user.role || 'user', premium: user.premium === true, emailVerified: user.emailVerified === true });
+    setUserDraft({ displayName: user.displayName || '', email: user.email || '', role: user.role || 'user', premium: user.premium === true, emailVerified: user.emailVerified === true, avatarUrl: user.avatarUrl || '' });
     setPasswordMode('none');
     setNewPassword('');
     setConfirmPassword('');
@@ -203,6 +206,22 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     setEditorTab('details');
     setEditorMessage('');
     setError('');
+  };
+
+  const onStaffAvatarSelected = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setAvatarBusy(true); setEditorMessage(''); setError('');
+    try {
+      const avatarUrl = await prepareProfileImage(file);
+      setUserDraft((draft) => ({ ...draft, avatarUrl }));
+      setEditorMessage('Profile picture ready. Save the account to publish it.');
+    } catch (avatarError) {
+      setError(avatarError?.message || 'Could not prepare that image.');
+    } finally {
+      setAvatarBusy(false);
+    }
   };
 
   const saveUser = async () => {
@@ -213,7 +232,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         if (newPassword.length < 8) throw new Error('The new password must be at least 8 characters.');
         if (newPassword !== confirmPassword) throw new Error('The new passwords do not match.');
       }
-      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, email: userDraft.email, emailVerified: userDraft.emailVerified });
+      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, email: userDraft.email, emailVerified: userDraft.emailVerified, avatarUrl: userDraft.avatarUrl || '' });
       if (userDraft.role !== editingUser.role || userDraft.premium !== editingUser.premium) {
         await staffRole(editingUser.uid, userDraft.role, userDraft.role === 'user' && userDraft.premium);
       }
@@ -273,7 +292,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     { label: 'Reports submitted', source: reports, field: 'createdAt' },
     { label: 'User registrations', source: users, field: 'createdAt' },
   ];
-  const editingProtected = Boolean(editingUser && role !== 'owner' && ROLE_RANK[editingUser.role] >= ROLE_RANK[role]);
+  const editingProtected = Boolean(editingUser && ROLE_RANK[editingUser.role] >= ROLE_RANK[role]);
 
   return <div className="admin-console">
     <header className="admin-console-topbar">
@@ -391,7 +410,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         {editingUser && userDraft && <div className="user-editor-backdrop" onMouseDown={() => setEditingUser(null)}>
           <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Manage ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
             <header className="user-editor-header">
-              <div className="user-editor-avatar">{(editingUser.displayName || editingUser.email || '?').charAt(0).toUpperCase()}</div>
+              <div className={'user-editor-avatar' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="" /> : profileInitial(editingUser.displayName, editingUser.email)}</div>
               <div><p>HOT TAKE ACCOUNT MANAGEMENT</p><h2>{editingUser.displayName || 'No display name'}</h2><span>{editingUser.email}</span></div>
               <button type="button" onClick={() => setEditingUser(null)} aria-label="Close user editor">×</button>
             </header>
@@ -405,6 +424,15 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
             <div className={'user-editor-content editor-' + editorTab}>
               {editorTab === 'details' && <>
                 <section className="user-editor-section"><h3>Identity</h3>
+                  <div className="staff-avatar-editor">
+                    <div className={'user-editor-avatar staff-avatar-preview' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="Profile preview" /> : profileInitial(userDraft.displayName, userDraft.email)}</div>
+                    <div><strong>Profile picture</strong><small>Moderators and administrators can update pictures only for accounts below their role.</small>
+                      <div className="staff-avatar-actions">
+                        <label className={'admin-small-button' + ((!capabilities.editAvatars || editingProtected || avatarBusy) ? ' disabled' : '')}>${avatarBusy ? 'Preparing…' : 'Choose image'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onChange={onStaffAvatarSelected} /></label>
+                        {userDraft.avatarUrl && <button type="button" className="admin-small-button" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onClick={() => setUserDraft((draft) => ({ ...draft, avatarUrl: '' }))}>Remove</button>}
+                      </div>
+                    </div>
+                  </div>
                   <label><span>Display name</span><input value={userDraft.displayName} disabled={!capabilities.editUsers || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
                   <label><span>Email address</span><input type="email" value={userDraft.email} disabled={!capabilities.manageCredentials || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
                   <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
