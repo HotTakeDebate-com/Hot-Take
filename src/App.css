@@ -2705,6 +2705,11 @@
 }
 .user-warning-copy button:hover { background:#ff2932; }
 .user-warning-copy button:disabled { opacity:.65; cursor:wait; }
+.user-warning-notice.report-response { border-color:#2fd67b; background:#10271b; box-shadow:0 18px 55px rgba(0,0,0,.45),0 0 0 1px rgba(47,214,123,.16); }
+.user-warning-notice.report-response .user-warning-icon { border-color:#2fd67b; background:#163d27; color:#5bea99; }
+.user-warning-notice.report-response .user-warning-copy > strong { color:#5bea99; }
+.user-warning-notice.report-response .user-warning-copy button { border-color:#2fd67b; background:#168548; }
+.user-warning-notice.report-response .user-warning-copy button:hover { background:#1ba75a; }
 @media(max-width:600px){.user-warning-notice{top:76px;right:16px;}}
 
 /* Clickable user rows and dedicated user editor */
