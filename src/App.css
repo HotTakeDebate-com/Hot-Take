@@ -2997,6 +2997,7 @@
 .admin-monitor-button { white-space:nowrap; padding:9px 12px; border:1px solid #ff3038; border-radius:7px; color:#fff; background:#721017; font-weight:800; }
 .admin-monitor-backdrop { position:fixed; inset:0; z-index:3000; display:grid; place-items:center; padding:24px; background:rgba(0,0,0,.78); backdrop-filter:blur(7px); }
 .admin-monitor-modal { width:min(680px,100%); border:1px solid #444751; border-radius:14px; overflow:hidden; background:#111217; box-shadow:0 30px 90px rgba(0,0,0,.65); }
+.admin-monitor-modal.live { width:min(1040px,100%); }
 .admin-monitor-modal > header { display:flex; justify-content:space-between; gap:20px; padding:20px 22px; border-bottom:1px solid #30323a; }
 .admin-monitor-modal header p { margin:0 0 5px; color:#ff3038; font-size:10px; font-weight:900; letter-spacing:.15em; }
 .admin-monitor-modal header h2 { margin:0; }
@@ -3014,6 +3015,14 @@
 .admin-monitor-modal footer { display:flex; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #30323a; }
 .admin-monitor-modal footer button { padding:11px 16px; border:1px solid #42454f; border-radius:8px; background:#191a20; color:#fff; font-weight:800; }
 .admin-monitor-modal footer button.primary { border-color:#ff3038; background:#e51620; }
+.admin-spectator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.admin-spectator-feed { position:relative; aspect-ratio:16/10; overflow:hidden; border:1px solid #3c3f49; border-radius:10px; background:#050506; }
+.admin-spectator-feed video { width:100%; height:100%; object-fit:cover; }
+.admin-spectator-feed span { position:absolute; left:10px; bottom:10px; padding:6px 9px; border-radius:6px; background:rgba(0,0,0,.75); font-size:11px; font-weight:900; }
+.admin-spectator-connecting { grid-column:1/-1; min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; border:1px dashed #3d4049; border-radius:10px; background:#090a0d; }
+.admin-spectator-connecting small { color:#8f929d; }
+.admin-spectator-error { color:#ff656c !important; }
+@media (max-width:700px) { .admin-spectator-grid { grid-template-columns:1fr; } }
 .admin-staff-list i, .admin-health-list i {
   width: 9px; height: 9px; display: block; border-radius: 50%;
 }
