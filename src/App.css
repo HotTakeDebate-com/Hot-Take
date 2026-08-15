@@ -2416,7 +2416,7 @@
 .admin-loading-spinner { width:20px; height:20px; flex:0 0 20px; border:2px solid #34363e; border-top-color:#ff252d; border-radius:50%; animation:admin-loading-spin .8s linear infinite; }
 @keyframes admin-loading-spin { to { transform:rotate(360deg); } }
 @media (prefers-reduced-motion:reduce) { .admin-loading-spinner { animation:none; border-color:#ff252d; } }
-.admin-notice.warning { justify-content:center; background:#261c0c; border-color:#d48716; color:#ffb43d; }
+.admin-notice.warning { background:#261c0c; border-color:#d48716; color:#ffb43d; }
 .admin-notice.danger { background:#281013; border-color:#d42b35; color:#ff535b; }
 .admin-search-box { display:grid; grid-template-columns:220px minmax(240px,1fr) 140px; align-items:stretch; margin:26px 0; border:1px solid #30323a; border-radius:8px; overflow:hidden; background:#15161b; }
 .admin-search-box label { display:grid; place-items:center; border-right:1px solid #30323a; font-weight:800; }
@@ -2495,6 +2495,8 @@
 .admin-console-title > div > p { margin:0 0 8px; color:#ff3038; font-size:12px; font-weight:900; letter-spacing:.16em; }
 .admin-console-title > div > h1 { margin:0; }
 .admin-notice > b { flex:0 0 34px; height:34px; display:grid; place-items:center; border:2px solid currentColor; border-radius:50%; font-size:22px; }
+.admin-notice-alert-icon svg { width:20px; height:20px; display:block; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; }
+.admin-notice-alert-icon svg circle { fill:currentColor; stroke:none; }
 .admin-notice.error { background:#281013; border-color:#d42b35; color:#ff535b; }
 .admin-stat-grid > article { border:1px solid #30323a; border-radius:9px; background:#15161b; padding:20px; }
 .admin-stat-grid > article h2 { margin:0; font-size:14px; color:#a5a8b1; }
