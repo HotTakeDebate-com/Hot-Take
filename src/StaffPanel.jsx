@@ -429,7 +429,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                     <div><strong>Profile picture</strong><small>Moderators and administrators can update pictures only for accounts below their role.</small>
                       <div className="staff-avatar-actions">
                         <label className={'admin-small-button' + ((!capabilities.editAvatars || editingProtected || avatarBusy) ? ' disabled' : '')}>{avatarBusy ? 'Preparing…' : 'Choose image'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onChange={onStaffAvatarSelected} /></label>
-                        {userDraft.avatarUrl && <button type="button" className="admin-small-button" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onClick={() => setUserDraft((draft) => ({ ...draft, avatarUrl: '' }))}>Remove</button>}
+                        <button type="button" className="admin-small-button" disabled={!capabilities.editAvatars || editingProtected || avatarBusy || !userDraft.avatarUrl} onClick={() => setUserDraft((draft) => ({ ...draft, avatarUrl: '' }))}>Remove image</button>
                       </div>
                     </div>
                   </div>

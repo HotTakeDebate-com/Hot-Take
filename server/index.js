@@ -294,7 +294,9 @@ app.get('/api/rtc-config', (_req, res) => {
   res.json(getRtcConfigForClient());
 });
 
-app.use(express.json({ limit: '64kb' }));
+// Profile pictures are cropped and compressed in the browser, then sent as a data URL.
+// Keep this bounded above the 250 KB avatar limit so staff updates are accepted.
+app.use(express.json({ limit: '384kb' }));
 
 /**
  * Check mailbox deliverability before the browser creates a Firebase email/password account.
