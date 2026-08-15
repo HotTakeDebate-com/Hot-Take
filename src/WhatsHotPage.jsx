@@ -98,6 +98,11 @@ export default function WhatsHotPage({
         </header>
 
         <section className="whats-hot-feature" aria-labelledby="featured-debate-title">
+          <header className="whats-hot-feature-heading">
+            <p className="whats-hot-eyebrow">Main story</p>
+            <p>The lead debate shaping the conversation right now.</p>
+          </header>
+
           <div className="whats-hot-story">
             <div className="whats-hot-meta">
               <span>{featured.category || 'Featured debate'}</span>
