@@ -200,26 +200,17 @@
 }
 .landing-live-proof p { margin: 0; }
 .landing-live-avatars {
-  display: flex;
-  padding-left: 8px;
+  width: 145px;
+  height: 48px;
+  display: grid;
+  place-items: center;
 }
-.landing-live-avatars span {
-  position: relative;
-  width: 28px;
-  height: 28px;
-  margin-left: -8px;
-  overflow: hidden;
-  border: 2px solid #050609;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 35%, #d5d6da 0 19%, transparent 20%),
-    radial-gradient(ellipse at 50% 95%, #888b93 0 42%, transparent 43%),
-    linear-gradient(145deg, #2f3138, #111217);
+.landing-live-avatars img {
+  display: block;
+  width: 145px;
+  height: auto;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.4));
 }
-.landing-live-avatars span:nth-child(2) { filter: brightness(.82); }
-.landing-live-avatars span:nth-child(3) { filter: sepia(.2) brightness(1.05); }
-.landing-live-avatars span:nth-child(4) { filter: contrast(1.12); }
-.landing-live-avatars span:nth-child(5) { filter: brightness(.72); }
 .landing-live-dot {
   width: 7px;
   height: 7px;
