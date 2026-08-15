@@ -8,7 +8,7 @@ const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, deleteReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false, viewPunishments: false,
-    manageRoles: false, managePremium: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, manageNews: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
@@ -18,12 +18,12 @@ const PERMISSION_DEFAULTS = {
   admin: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, manageNews: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, manageNews: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
@@ -104,8 +104,114 @@ async function audit(action, actor, targetUid, details = {}) {
   });
 }
 
+const INITIAL_WHATS_HOT_STORY = {
+  title: 'Candace Owens vs. Andrew Wilson',
+  slug: 'candace-owens-vs-andrew-wilson-2026-08-14',
+  category: 'Latest debate',
+  summary: 'Candace Owens and Andrew Wilson meet for a long-form debate that has become a major topic across online debate communities.',
+  body: 'Watch the full exchange, hear both sides in their own words, and form your own view.',
+  videoUrl: 'https://www.youtube.com/watch?v=aPOyk1i2LOc&t=11251s',
+  videoId: 'aPOyk1i2LOc',
+  startSeconds: 11251,
+  eventDate: '2026-08-14',
+  status: 'published',
+  featured: true,
+};
+
+function storyTimestamp(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return Date.parse(value) || 0;
+  if (value._seconds) return value._seconds * 1000;
+  return 0;
+}
+
+function parseYouTubeVideo(value) {
+  const input = String(value || '').trim();
+  if (!input) return { videoUrl: '', videoId: '', startSeconds: 0 };
+  let parsed;
+  try {
+    parsed = new URL(input);
+  } catch {
+    throw new Error('Enter a valid YouTube URL.');
+  }
+  const host = parsed.hostname.replace(/^www\./, '');
+  let videoId = '';
+  if (host === 'youtu.be') videoId = parsed.pathname.split('/').filter(Boolean)[0] || '';
+  if (host.endsWith('youtube.com')) {
+    videoId = parsed.searchParams.get('v') || '';
+    if (!videoId && parsed.pathname.startsWith('/embed/')) videoId = parsed.pathname.split('/')[2] || '';
+  }
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) throw new Error('The YouTube video ID is invalid.');
+  const rawStart = parsed.searchParams.get('t') || parsed.searchParams.get('start') || '0';
+  let startSeconds = Number(String(rawStart).replace(/s$/i, ''));
+  if (!Number.isFinite(startSeconds) || startSeconds < 0) startSeconds = 0;
+  return { videoUrl: input, videoId, startSeconds: Math.floor(startSeconds) };
+}
+
+function serializeStory(doc) {
+  const data = doc.data ? doc.data() : doc;
+  return {
+    id: doc.id || data.id,
+    ...data,
+    publishedAtMs: storyTimestamp(data.publishedAt),
+    createdAtMs: storyTimestamp(data.createdAt),
+    updatedAtMs: storyTimestamp(data.updatedAt),
+  };
+}
+
+async function ensureInitialWhatsHotStory(db) {
+  const ref = db.collection('whats_hot_stories').doc(INITIAL_WHATS_HOT_STORY.slug);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    await ref.set({
+      ...INITIAL_WHATS_HOT_STORY,
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: now,
+      createdBy: 'system migration',
+      updatedBy: 'system migration',
+    });
+  }
+}
+
+function cleanStoryInput(body = {}) {
+  const title = String(body.title || '').trim().slice(0, 180);
+  const category = String(body.category || 'Debate').trim().slice(0, 80);
+  const summary = String(body.summary || '').trim().slice(0, 800);
+  const storyBody = String(body.body || '').trim().slice(0, 3000);
+  const eventDate = String(body.eventDate || '').trim().slice(0, 10);
+  const status = String(body.status || 'draft').trim();
+  if (!title || !summary) throw new Error('Title and summary are required.');
+  if (!['draft', 'published', 'archived'].includes(status)) throw new Error('Invalid story status.');
+  if (eventDate && !/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) throw new Error('Use a valid story date.');
+  const video = parseYouTubeVideo(body.videoUrl);
+  return { title, category, summary, body: storyBody, eventDate, status, featured: body.featured === true, ...video };
+}
+
 export function attachStaffRoutes(app, { isAdminReady, io }) {
   const router = express.Router();
+
+  app.get('/api/whats-hot', async (_req, res) => {
+    if (!isAdminReady()) return res.status(503).json({ error: 'News is temporarily unavailable.' });
+    try {
+      const db = admin.firestore();
+      await ensureInitialWhatsHotStory(db);
+      const snap = await db.collection('whats_hot_stories').limit(100).get();
+      const stories = snap.docs
+        .map(serializeStory)
+        .filter((story) => story.status === 'published')
+        .sort((a, b) => Number(b.featured) - Number(a.featured) || b.publishedAtMs - a.publishedAtMs || b.updatedAtMs - a.updatedAtMs);
+      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      res.json({ stories });
+    } catch (error) {
+      console.warn('[whats-hot] public list failed', error?.message ?? error);
+      res.status(500).json({ error: 'Could not load What\'s Hot stories.' });
+    }
+  });
+
   router.use((req, res, next) => {
     if (!isAdminReady()) return res.status(503).json({ error: 'Firebase Admin not configured.' });
     next();
@@ -508,6 +614,63 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
       };
     });
     res.json({ punishments, capabilities: (await permissionConfig())[_req.staff.role] || {} });
+  });
+
+  router.get('/news', requirePermission('manageNews'), async (_req, res) => {
+    const db = admin.firestore();
+    await ensureInitialWhatsHotStory(db);
+    const snap = await db.collection('whats_hot_stories').limit(200).get();
+    const stories = snap.docs.map(serializeStory).sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+    res.json({ stories });
+  });
+
+  router.post('/news', requirePermission('manageNews'), async (req, res) => {
+    let story;
+    try { story = cleanStoryInput(req.body); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
+    const db = admin.firestore();
+    const ref = db.collection('whats_hot_stories').doc();
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    if (story.featured && story.status === 'published') {
+      const featured = await db.collection('whats_hot_stories').where('featured', '==', true).limit(50).get();
+      await Promise.all(featured.docs.map((doc) => doc.ref.set({ featured: false, updatedAt: now }, { merge: true })));
+    }
+    await ref.set({
+      ...story,
+      createdAt: now,
+      updatedAt: now,
+      publishedAt: story.status === 'published' ? now : null,
+      createdBy: req.staff.email,
+      updatedBy: req.staff.email,
+    });
+    await audit('news_create', req.staff, null, { storyId: ref.id, title: story.title, status: story.status });
+    res.status(201).json({ ok: true, id: ref.id });
+  });
+
+  router.post('/news/:id', requirePermission('manageNews'), async (req, res) => {
+    const id = String(req.params.id || '').trim();
+    if (!id || id.length > 180) return res.status(400).json({ error: 'Invalid story.' });
+    let story;
+    try { story = cleanStoryInput(req.body); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
+    const db = admin.firestore();
+    const ref = db.collection('whats_hot_stories').doc(id);
+    const existing = await ref.get();
+    if (!existing.exists) return res.status(404).json({ error: 'Story not found.' });
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    if (story.featured && story.status === 'published') {
+      const featured = await db.collection('whats_hot_stories').where('featured', '==', true).limit(50).get();
+      await Promise.all(featured.docs.filter((doc) => doc.id !== id).map((doc) => doc.ref.set({ featured: false, updatedAt: now }, { merge: true })));
+    }
+    const wasPublished = existing.data()?.status === 'published';
+    await ref.set({
+      ...story,
+      updatedAt: now,
+      updatedBy: req.staff.email,
+      publishedAt: story.status === 'published' ? (wasPublished ? existing.data().publishedAt || now : now) : existing.data().publishedAt || null,
+    }, { merge: true });
+    await audit('news_update', req.staff, null, { storyId: id, title: story.title, status: story.status });
+    res.json({ ok: true, id });
   });
 
   router.get('/audit', requirePermission('viewAudit'), async (_req, res) => {

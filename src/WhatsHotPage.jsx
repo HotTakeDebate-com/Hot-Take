@@ -1,7 +1,43 @@
+import { useEffect, useMemo, useState } from 'react';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import './WhatsHotPage.css';
 
-const FEATURED_VIDEO_URL = 'https://www.youtube.com/watch?v=aPOyk1i2LOc&t=11251s';
+const FALLBACK_STORY = {
+  id: 'candace-owens-vs-andrew-wilson-2026-08-14',
+  title: 'Candace Owens vs. Andrew Wilson',
+  category: 'Latest debate',
+  summary: 'Candace Owens and Andrew Wilson meet for a long-form debate that has become a major topic across online debate communities.',
+  body: 'Watch the full exchange, hear both sides in their own words, and form your own view.',
+  videoUrl: 'https://www.youtube.com/watch?v=aPOyk1i2LOc&t=11251s',
+  videoId: 'aPOyk1i2LOc',
+  startSeconds: 11251,
+  eventDate: '2026-08-14',
+  featured: true,
+};
+
+function formatStoryDate(value) {
+  if (!value) return 'Recently published';
+  const date = new Date(value + 'T12:00:00');
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function StoryCard({ story }) {
+  return (
+    <article className="whats-hot-card">
+      <div className="whats-hot-card-thumb">
+        <img src={`https://img.youtube.com/vi/${story.videoId}/hqdefault.jpg`} alt="" loading="lazy" />
+        <span aria-hidden="true">▶</span>
+      </div>
+      <div>
+        <p>{story.category || 'Debate'} · {formatStoryDate(story.eventDate)}</p>
+        <h3>{story.title}</h3>
+        <p>{story.summary}</p>
+        <a href={story.videoUrl} target="_blank" rel="noopener noreferrer">Watch debate <span aria-hidden="true">↗</span></a>
+      </div>
+    </article>
+  );
+}
 
 export default function WhatsHotPage({
   onBack,
@@ -16,6 +52,27 @@ export default function WhatsHotPage({
   onPickSupport,
   onQuickMatch,
 }) {
+  const [stories, setStories] = useState([FALLBACK_STORY]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/whats-hot')
+      .then((response) => {
+        if (!response.ok) throw new Error('Could not load stories.');
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.stories) && data.stories.length) setStories(data.stories);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const featured = useMemo(() => stories.find((story) => story.featured) || stories[0] || FALLBACK_STORY, [stories]);
+  const moreStories = useMemo(() => stories.filter((story) => story.id !== featured.id), [stories, featured]);
+
   return (
     <div className="whats-hot-page">
       <SiteHeader
@@ -43,17 +100,13 @@ export default function WhatsHotPage({
         <section className="whats-hot-feature" aria-labelledby="featured-debate-title">
           <div className="whats-hot-story">
             <div className="whats-hot-meta">
-              <span>Latest debate</span>
-              <time dateTime="2026-08-14">August 14, 2026</time>
+              <span>{featured.category || 'Featured debate'}</span>
+              <time dateTime={featured.eventDate || undefined}>{formatStoryDate(featured.eventDate)}</time>
             </div>
-            <h2 id="featured-debate-title">Candace Owens vs. Andrew Wilson</h2>
-            <p className="whats-hot-deck">
-              Candace Owens and Andrew Wilson meet for a long-form debate that has become a major topic across online debate communities.
-            </p>
-            <p className="whats-hot-summary">
-              Watch the full exchange, hear both sides in their own words, and form your own view.
-            </p>
-            <a className="whats-hot-watch" href={FEATURED_VIDEO_URL} target="_blank" rel="noopener noreferrer">
+            <h2 id="featured-debate-title">{featured.title}</h2>
+            <p className="whats-hot-deck">{featured.summary}</p>
+            {featured.body && <p className="whats-hot-summary">{featured.body}</p>}
+            <a className="whats-hot-watch" href={featured.videoUrl} target="_blank" rel="noopener noreferrer">
               Watch the debate on YouTube
               <span aria-hidden="true">↗</span>
             </a>
@@ -62,8 +115,8 @@ export default function WhatsHotPage({
           <div className="whats-hot-video">
             <div className="whats-hot-video-frame">
               <iframe
-                src="https://www.youtube.com/embed/aPOyk1i2LOc?start=11251"
-                title="Candace Owens versus Andrew Wilson debate"
+                src={`https://www.youtube.com/embed/${featured.videoId}?start=${featured.startSeconds || 0}`}
+                title={featured.title + ' debate'}
                 loading="lazy"
                 referrerPolicy="strict-origin-when-cross-origin"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -74,22 +127,26 @@ export default function WhatsHotPage({
           </div>
         </section>
 
-        <section className="whats-hot-more" aria-label="More debate coverage">
-          <div>
-            <p className="whats-hot-eyebrow">The conversation continues</p>
-            <h2>More debates are coming.</h2>
-          </div>
-          <p>What&apos;s Hot will track noteworthy debates, exchanges, and moments from across debate media as they happen.</p>
-        </section>
+        {moreStories.length > 0 ? (
+          <section className="whats-hot-latest" aria-labelledby="latest-stories-heading">
+            <div className="whats-hot-latest-heading">
+              <p className="whats-hot-eyebrow">Latest coverage</p>
+              <h2 id="latest-stories-heading">More from debate media.</h2>
+            </div>
+            <div className="whats-hot-card-grid">{moreStories.map((story) => <StoryCard key={story.id} story={story} />)}</div>
+          </section>
+        ) : (
+          <section className="whats-hot-more" aria-label="More debate coverage">
+            <div>
+              <p className="whats-hot-eyebrow">{loading ? 'Loading coverage' : 'The conversation continues'}</p>
+              <h2>{loading ? 'Checking what’s happening now.' : 'More debates are coming.'}</h2>
+            </div>
+            <p>What&apos;s Hot will track noteworthy debates, exchanges, and moments from across debate media as they happen.</p>
+          </section>
+        )}
       </main>
 
-      <SiteFooter
-        onHome={onBack}
-        onAbout={onPickMission}
-        onFaq={onPickFaq}
-        onSupport={onPickSupport}
-        onPickLegal={onPickLegal}
-      />
+      <SiteFooter onHome={onBack} onAbout={onPickMission} onFaq={onPickFaq} onSupport={onPickSupport} onPickLegal={onPickLegal} />
     </div>
   );
 }

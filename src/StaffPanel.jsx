@@ -2,7 +2,8 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
-import { staffAction, staffAudit, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
+import { staffAction, staffAudit, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
+import './WhatsHotAdmin.css';
 
 function dateValue(value) {
   if (!value) return '—';
@@ -123,6 +124,7 @@ const ROLE_PERMISSIONS = [
     { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true] },
     { key: 'manageRoles', name: 'Assign User, Moderator, and Admin roles', values: [false, false, true, true] },
     { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true] },
+    { key: 'manageNews', name: 'Create and publish What’s Hot stories', values: [false, false, true, true] },
     { key: 'deleteUsers', name: 'Delete eligible user accounts', values: [false, false, true, true] },
     { name: 'Manage the protected Owner account', values: [false, false, false, true] },
   ]},
@@ -132,12 +134,113 @@ function permissionLabel(value) {
   return value ? 'Yes' : 'No';
 }
 
+const EMPTY_NEWS_STORY = {
+  id: '',
+  title: '',
+  category: 'Featured debate',
+  summary: '',
+  body: '',
+  videoUrl: '',
+  eventDate: new Date().toISOString().slice(0, 10),
+  status: 'draft',
+  featured: false,
+};
+
+function NewsManager({ stories, onReload }) {
+  const [draft, setDraft] = useState(EMPTY_NEWS_STORY);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const edit = (story) => {
+    setDraft({
+      id: story.id || '',
+      title: story.title || '',
+      category: story.category || 'Debate',
+      summary: story.summary || '',
+      body: story.body || '',
+      videoUrl: story.videoUrl || '',
+      eventDate: story.eventDate || '',
+      status: story.status || 'draft',
+      featured: story.featured === true,
+    });
+    setMessage('');
+  };
+
+  const reset = () => {
+    setDraft({ ...EMPTY_NEWS_STORY, eventDate: new Date().toISOString().slice(0, 10) });
+    setMessage('');
+  };
+
+  const save = async (nextStatus = draft.status) => {
+    setSaving(true);
+    setMessage('');
+    try {
+      await staffSaveNews({ ...draft, status: nextStatus, featured: nextStatus === 'published' && draft.featured });
+      setMessage(nextStatus === 'published' ? 'Story published successfully.' : nextStatus === 'archived' ? 'Story archived.' : 'Draft saved.');
+      await onReload();
+      if (!draft.id) reset();
+      else setDraft((current) => ({ ...current, status: nextStatus }));
+    } catch (error) {
+      setMessage(error.message || 'Could not save the story.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="admin-news-layout">
+      <section className="admin-news-library">
+        <div className="admin-news-section-head">
+          <div><p>EDITORIAL LIBRARY</p><h2>What&apos;s Hot stories</h2></div>
+          <button type="button" onClick={reset}>+ New story</button>
+        </div>
+        <div className="admin-news-list">
+          {stories.map((story) => (
+            <button type="button" key={story.id} className={draft.id === story.id ? 'active' : ''} onClick={() => edit(story)}>
+              <span className={`admin-news-status ${story.status || 'draft'}`}>{story.status || 'draft'}</span>
+              <strong>{story.title}</strong>
+              <small>{story.category || 'Debate'} · {story.eventDate || 'No date'}{story.featured ? ' · Featured' : ''}</small>
+            </button>
+          ))}
+          {!stories.length && <p className="admin-news-empty">No stories yet. Create the first one.</p>}
+        </div>
+      </section>
+
+      <section className="admin-news-editor">
+        <div className="admin-news-section-head">
+          <div><p>{draft.id ? 'EDIT STORY' : 'NEW STORY'}</p><h2>{draft.id ? draft.title || 'Untitled story' : 'Create a debate story'}</h2></div>
+          <span className={`admin-news-status ${draft.status}`}>{draft.status}</span>
+        </div>
+
+        <div className="admin-news-form">
+          <label className="wide">Headline<input value={draft.title} maxLength="180" onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Who debated whom?" /></label>
+          <label>Category<input value={draft.category} maxLength="80" onChange={(event) => setDraft({ ...draft, category: event.target.value })} placeholder="Latest debate" /></label>
+          <label>Debate date<input type="date" value={draft.eventDate} onChange={(event) => setDraft({ ...draft, eventDate: event.target.value })} /></label>
+          <label className="wide">Short summary<textarea rows="3" value={draft.summary} maxLength="800" onChange={(event) => setDraft({ ...draft, summary: event.target.value })} placeholder="A neutral summary shown prominently on the page." /></label>
+          <label className="wide">Additional context<textarea rows="4" value={draft.body} maxLength="3000" onChange={(event) => setDraft({ ...draft, body: event.target.value })} placeholder="Optional context. Avoid declaring a winner." /></label>
+          <label className="wide">YouTube URL<input type="url" value={draft.videoUrl} onChange={(event) => setDraft({ ...draft, videoUrl: event.target.value })} placeholder="https://www.youtube.com/watch?v=…" /></label>
+          <label>Status<select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+          <label className="admin-news-check"><input type="checkbox" checked={draft.featured} onChange={(event) => setDraft({ ...draft, featured: event.target.checked })} /><span><strong>Feature this story</strong><small>It becomes the large lead story. Only one published story can be featured.</small></span></label>
+        </div>
+
+        {message && <p className="admin-news-message">{message}</p>}
+        <div className="admin-news-actions">
+          <button type="button" disabled={saving} onClick={() => save('draft')}>Save draft</button>
+          {draft.id && draft.status !== 'archived' && <button type="button" disabled={saving} onClick={() => save('archived')}>Archive</button>}
+          <button type="button" className="primary" disabled={saving} onClick={() => save('published')}>{saving ? 'Saving…' : 'Publish story'}</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
   const [tab, setTab] = useState('dashboard');
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
   const [punishments, setPunishments] = useState([]);
+  const [newsStories, setNewsStories] = useState([]);
   const [punishmentNow, setPunishmentNow] = useState(Date.now());
   const [permissions, setPermissions] = useState({});
   const [capabilities, setCapabilities] = useState({});
@@ -177,6 +280,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
+      if (tab === 'news') setNewsStories((await staffNews()).stories || []);
       if (tab === 'punishments') {
         const punishmentData = await staffPunishments();
         setPunishments(punishmentData.punishments || []);
@@ -350,12 +454,13 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b>♙</b>Users</button>
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b>♟</b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b>↶</b>Audit logs</button>}
+        {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b>◉</b>What&apos;s Hot</button>}
         <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b>⚖</b>Punishment Log</button>
         <span />
         <button onClick={onBack}><b>←</b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}>↻ Refresh</button></div>
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}>↻ Refresh</button></div>
         {error && <div className="admin-notice error"><b>×</b>{error}</div>}
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
@@ -543,6 +648,8 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
             <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingProtected || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium || capabilities.editAvatars)} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
         </div>}
+        {tab === 'news' && !busy && <NewsManager stories={newsStories} onReload={load} />}
+
         {tab === 'punishments' && !busy && <section className="punishment-log">
           <div className="punishment-log-summary">
             <div><span>Total recorded infractions</span><strong>{punishments.length}</strong></div>
