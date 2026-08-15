@@ -23,7 +23,7 @@ const PERMISSION_DEFAULTS = {
   owner: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, manageNews: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
