@@ -2586,3 +2586,32 @@
 .staff-premium { display:inline-flex; align-items:center; gap:7px; color:#f2c45c; font-weight:700; }
 .staff-premium input { accent-color:#f2c45c; }
 .staff-not-applicable { color:#757883; font-size:12px; }
+
+
+/* Hot Take role and permission matrix */
+.role-permissions { display:grid; gap:24px; }
+.role-permissions-intro { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 20px; border:1px solid #30323a; border-left:4px solid #ed141e; border-radius:8px; background:#15161b; }
+.role-permissions-intro p { margin:0; color:#c3c5cc; line-height:1.55; }
+.role-permissions-intro span { flex:0 0 auto; border:1px solid #4b1b20; border-radius:999px; padding:8px 12px; color:#ff4b52; background:#251014; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.role-card-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.role-card-grid article { min-width:0; display:flex; gap:14px; padding:18px; border:1px solid #30323a; border-radius:9px; background:#15161b; }
+.role-card-grid article.current { border-color:#ed141e; box-shadow:inset 0 0 0 1px rgba(237,20,30,.25); }
+.role-card-icon { flex:0 0 42px; width:42px; height:42px; display:grid; place-items:center; border-radius:50%; background:#272930; color:#fff; font-size:18px; font-weight:900; }
+.role-card-icon.role-moderator { background:#351b10; color:#ffad42; }
+.role-card-icon.role-admin { background:#3a1015; color:#ff4b52; }
+.role-card-icon.role-owner { background:#3a2c0d; color:#f4cd58; }
+.role-card-grid h2 { margin:1px 0 6px; font-size:16px; text-transform:capitalize; }
+.role-card-grid p { margin:0; color:#92959e; font-size:12px; line-height:1.5; }
+.role-card-grid small { display:block; margin-top:9px; color:#ff424a; font-weight:800; }
+.permission-table-wrap { overflow:auto; border:1px solid #30323a; border-radius:9px; background:#111217; }
+.permission-table { width:100%; min-width:850px; border-collapse:collapse; }
+.permission-table th,.permission-table td { padding:15px 18px; border-bottom:1px solid #292b32; text-align:center; }
+.permission-table thead th { background:#1b1c22; color:#bfc1c8; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+.permission-table thead th:first-child,.permission-table tbody td:first-child { width:42%; text-align:left; }
+.permission-table .permission-group th { padding:12px 18px; background:#251014; color:#ff4b52; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.1em; }
+.permission-value { display:inline-flex; align-items:center; justify-content:center; min-width:72px; min-height:30px; border-radius:6px; font-size:12px; font-weight:800; }
+.permission-value.allowed { color:#46e08a; background:rgba(53,220,128,.11); border:1px solid rgba(53,220,128,.35); }
+.permission-value.denied { color:#858893; background:#1a1b20; border:1px solid #30323a; }
+.permission-footnote { margin:0; color:#858893; font-size:12px; line-height:1.55; }
+@media(max-width:1100px){.role-card-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.role-permissions-intro{align-items:flex-start;flex-direction:column}.role-card-grid{grid-template-columns:1fr}}
