@@ -186,6 +186,34 @@ export function attachModerationRoutes(app, { isAdminReady }) {
     }
   });
 
+  router.post('/reports/:id/respond', async (req, res) => {
+    const reportId = String(req.params.id || '').trim();
+    const response = String(req.body?.response || '').trim().slice(0, 4000);
+    const actorLabel = String(req.body?.actorLabel || '').trim().slice(0, 200) || 'Hot Take Support';
+    const status = String(req.body?.status || 'responded').trim();
+    if (!reportId || !response) {
+      return res.status(400).json({ error: 'Report id and response are required.' });
+    }
+    if (!['open', 'reviewing', 'responded', 'resolved', 'closed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid report status.' });
+    }
+    try {
+      const ref = admin.firestore().collection('reports').doc(reportId);
+      const snap = await ref.get();
+      if (!snap.exists) return res.status(404).json({ error: 'Report not found.' });
+      await ref.set({
+        status,
+        staffResponse: response,
+        respondedAt: admin.firestore.FieldValue.serverTimestamp(),
+        respondedBy: actorLabel,
+      }, { merge: true });
+      res.json({ ok: true, id: reportId, status });
+    } catch (e) {
+      console.warn('[mod] report response', e?.message ?? e);
+      res.status(500).json({ error: 'Could not save the response.' });
+    }
+  });
+
   router.get('/match/:roomId', async (req, res) => {
     const roomId = String(req.params.roomId || '').trim();
     if (!roomId || roomId.length > 512) return res.status(400).json({ error: 'Invalid roomId.' });
