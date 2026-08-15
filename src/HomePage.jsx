@@ -4,7 +4,6 @@ import {
   IconInstagram,
   IconLightning,
   IconReddit,
-  IconUserPlus,
   IconX,
   IconYouTube,
   StepIconChat,
