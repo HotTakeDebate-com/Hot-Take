@@ -590,10 +590,9 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
       respondedBy: req.staff.email,
     }, { merge: true });
     if (report.reporterUid) {
-      const noticeRef = admin.firestore().collection('user_warnings').doc();
+      const noticeRef = admin.firestore().collection('user_report_responses').doc();
       batch.set(noticeRef, {
         uid: report.reporterUid,
-        type: 'report_response',
         reportId: String(req.params.id),
         message: response,
         issuedBy: req.staff.email,
