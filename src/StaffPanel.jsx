@@ -61,6 +61,10 @@ function Pagination({ page, total, onChange }) {
 function SpectatorVideo({ stream, label }) {
   return <div className="admin-spectator-feed"><video ref={(element) => { if (element && element.srcObject !== stream) { element.srcObject = stream; void element.play().catch(() => {}); } }} autoPlay playsInline /><span>{label}</span></div>;
 }
+function chatIdentityClass(authorUid, participants) {
+  const index = participants.findIndex((participant) => participant.uid === authorUid);
+  return index === 1 ? 'chat-user-two' : 'chat-user-one';
+}
 
 
 function dailySeries(items, field, days = 30) {
@@ -838,7 +842,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               <p>You are spectating silently. Your camera and microphone are not connected, and neither debater is notified.</p>
               <div className="admin-monitor-columns">
                 <section><h3>Connected users</h3>{debateDetails.participants.map((participant) => <div className="admin-monitor-user" key={participant.uid}><b>{participant.email}</b><small>{participant.uid}</small></div>)}</section>
-                <section><h3>Live chat log</h3><div className="admin-monitor-chat">{debateDetails.messages.map((message) => <div key={message.id}><b>{debateDetails.participants.find((participant) => participant.uid === message.authorUid)?.email || 'Debater'}</b><span>{message.text}</span><time>{message.sentAtMs ? new Date(message.sentAtMs).toLocaleTimeString() : ''}</time></div>)}{!debateDetails.messages.length && <p>No chat messages in this debate.</p>}</div></section>
+                <section><h3>Live chat log</h3><div className="admin-monitor-chat">{debateDetails.messages.map((message) => <div key={message.id}><b className={chatIdentityClass(message.authorUid, debateDetails.participants)}>{debateDetails.participants.find((participant) => participant.uid === message.authorUid)?.email || 'Debater'}</b><span>{message.text}</span><time>{message.sentAtMs ? new Date(message.sentAtMs).toLocaleTimeString() : ''}</time></div>)}{!debateDetails.messages.length && <p>No chat messages in this debate.</p>}</div></section>
               </div>
             </div>
             <footer><button onClick={exitDebate}>Exit debate</button><button className="danger" disabled={endingDebate} onClick={endWatchedDebate}>{endingDebate ? 'Ending…' : 'End debate for everyone'}</button></footer>
