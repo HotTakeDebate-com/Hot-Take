@@ -2927,14 +2927,20 @@
 .admin-chart-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .admin-chart-line.registrations { stroke: #ff3038; }
 .admin-chart-line.reports { stroke: #f2f2f4; }
+.admin-chart-line.debates { stroke: #35dc80; }
+.admin-chart-line.bans { stroke: #ffae32; }
 .admin-chart-point { stroke-width: 2; vector-effect: non-scaling-stroke; }
 .admin-chart-point.registrations { fill: #ff3038; stroke: #15161b; }
 .admin-chart-point.reports { fill: #f2f2f4; stroke: #15161b; }
+.admin-chart-point.debates { fill: #35dc80; stroke: #15161b; }
+.admin-chart-point.bans { fill: #ffae32; stroke: #15161b; }
 .admin-chart-legend { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 4px 0 8px; color: #b8bac2; font-size: 12px; }
 .admin-chart-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .admin-chart-legend i { width: 12px; height: 12px; border-radius: 3px; }
 .admin-chart-legend i.registrations { background: #ff3038; }
 .admin-chart-legend i.reports { background: #f2f2f4; }
+.admin-chart-legend i.debates { background: #35dc80; }
+.admin-chart-legend i.bans { background: #ffae32; }
 .admin-activity-table { width: 100%; }
 .admin-activity-row {
   min-height: 54px;
@@ -2971,6 +2977,10 @@
   width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%;
   background: linear-gradient(135deg,#f52831,#83040a); border: 1px solid #ff3b43; font-weight: 900;
 }
+.admin-staff-avatar.has-image { overflow: hidden; background: #22242b; }
+.admin-staff-avatar.has-image img { width: 100%; height: 100%; object-fit: cover; }
+.admin-empty-list { margin: 0; padding: 24px 18px; color: #8f929d; }
+.admin-online-staff > header p { color: #35dc80; }
 .admin-staff-list i, .admin-health-list i {
   width: 9px; height: 9px; display: block; border-radius: 50%;
 }
