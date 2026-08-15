@@ -2495,6 +2495,8 @@
 .admin-console-title > div > p { margin:0 0 8px; color:#ff3038; font-size:12px; font-weight:900; letter-spacing:.16em; }
 .admin-console-title > div > h1 { margin:0; }
 .admin-notice > b { flex:0 0 34px; height:34px; display:grid; place-items:center; border:2px solid currentColor; border-radius:50%; font-size:22px; }
+.admin-notice-alert-icon svg { width:20px; height:20px; display:block; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; }
+.admin-notice-alert-icon svg circle { fill:currentColor; stroke:none; }
 .admin-notice.error { background:#281013; border-color:#d42b35; color:#ff535b; }
 .admin-stat-grid > article { border:1px solid #30323a; border-radius:9px; background:#15161b; padding:20px; }
 .admin-stat-grid > article h2 { margin:0; font-size:14px; color:#a5a8b1; }
