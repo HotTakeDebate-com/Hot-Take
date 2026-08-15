@@ -924,7 +924,7 @@ export default function App() {
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -1101,7 +1101,18 @@ export default function App() {
         />
       )}
 
-      {isSignedIn && step === 'admin' && staffRole && <StaffPanel role={staffRole} onBack={() => setStep('welcome')} />}
+      {isSignedIn && step === 'admin' && staffRole && (
+        <StaffPanel
+          role={staffRole}
+          onBack={() => setStep('welcome')}
+          onAbout={() => setHeaderOverlay('mission')}
+          onFaq={() => setHeaderOverlay('faq')}
+          onSupport={() => setHeaderOverlay('support')}
+          onAccount={() => setStep('profile')}
+          onSignOut={handleSignOut}
+          onPickLegal={(id) => setHeaderOverlay(id)}
+        />
+      )}
 
       {isSignedIn && step === 'feed' && (
         <SocialFeed
