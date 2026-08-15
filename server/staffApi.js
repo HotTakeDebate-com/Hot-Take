@@ -343,6 +343,34 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
     res.json({ debates: [...debatesByRoom.values()] });
   });
 
+  router.get('/debates', requirePermission('viewReports'), async (_req, res) => {
+    const snapshot = await admin.firestore().collectionGroup('debates').limit(2000).get();
+    const activeRoomIds = new Set(
+      [...(io?.sockets?.sockets?.values?.() || [])].map((socket) => socket.data?.roomId).filter(Boolean)
+    );
+    const debatesByRoom = new Map();
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data() || {};
+      const roomId = String(data.roomId || doc.id);
+      const current = debatesByRoom.get(roomId) || {};
+      debatesByRoom.set(roomId, {
+        ...current, roomId,
+        topicId: data.topicId ?? current.topicId ?? null,
+        statement: data.statement ?? current.statement ?? null,
+        matchMode: data.matchMode || current.matchMode || 'quick',
+        startedAt: data.startedAt || current.startedAt || null,
+        reported: data.reported === true || current.reported === true,
+        reportCount: Math.max(Number(data.reportCount || 0), Number(current.reportCount || 0)),
+        active: activeRoomIds.has(roomId),
+      });
+    });
+    const debates = [...debatesByRoom.values()].sort((a, b) => {
+      if (a.active !== b.active) return a.active ? -1 : 1;
+      return (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0);
+    });
+    res.json({ debates });
+  });
+
   router.post('/users/:uid/update', requirePermission('viewUsers'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
