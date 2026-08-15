@@ -32,7 +32,7 @@ export default function SupportPage({ onBack, isSignedIn, onSignIn, onSignUp, on
         <h1>Support</h1>
         <p>We&apos;re here to help. Find answers to common questions, troubleshooting tips, and ways to get in touch with our team.</p>
         <section className="support-contact">
-          <div className="support-contact-title"><span>✉</span><h2>Contact us</h2></div>
+          <div className="support-contact-title"><span><svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: 28, height: 28, fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></svg></span><h2>Contact us</h2></div>
           <p>For account help, privacy requests, technical issues, or general questions, email us at:</p>
           {mailto ? <a href={mailto}>{email}</a> : <b>{email}</b>}
           <p>We aim to reply within a few business days.</p>
