@@ -7,7 +7,13 @@ import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 function MissionIcon({ type }) {
   const shapes = {
     chat: <><path d="M5 6h13a4 4 0 0 1 4 4v5a4 4 0 0 1-4 4h-5l-5 4v-4H5a4 4 0 0 1-4-4v-5a4 4 0 0 1 4-4Z" /><circle cx="7" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="17" cy="12" r="1" /></>,
-    fire: <path d="M13 2c2 5-2 7 1 10 2-2 3-4 3-6 4 4 6 8 5 12-1 5-5 8-10 8S3 23 3 18c0-4 2-7 6-11 0 4 1 6 2 7 1-3 0-7 2-12Zm-1 23c3 0 5-2 5-5 0-2-1-4-3-6 0 3-3 4-3 7-1-1-1-2-1-4-2 2-3 4-3 5 0 2 2 3 5 3Z" />,
+    fire: <>
+      <circle cx="16" cy="16" r="6" />
+      <circle cx="16" cy="16" r="2.25" />
+      <path d="M12 11C9 7 6 5 2 5c3 3 4.5 5.6 4.2 8.3C4.5 12.2 2.8 12 1 12.5c3 1.8 5.1 4.2 6.2 7.1" />
+      <path d="M13.2 10.4C13.1 7.1 11.8 4.3 9 2c5.1 1 8.8 4.7 9.8 8.5" />
+      <path d="M11.2 20.5C7.8 21.2 5 20.6 2.5 19c2.3 4 6.2 6.5 11 6.8" />
+    </>,
     target: <><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="9" /><path d="M12 0v5M12 19v5M0 12h5M19 12h5" /></>,
     people: <><circle cx="8" cy="8" r="4" /><circle cx="18" cy="9" r="3" /><path d="M1 22c0-6 3-10 7-10s7 4 7 10M15 14c5 0 8 3 8 8" /></>,
   };
