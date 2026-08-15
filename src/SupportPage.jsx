@@ -1,10 +1,8 @@
-import { useMemo, useState } from 'react';
 import { IconShield, IconUser, IconVideo } from './LandingAssets.jsx';
 import { contactEmailLabel, contactEmailMailto } from './legal/contactEmail.js';
 import './SupportPage.css';
 import './SupportLayoutFix.css';
 import './SupportBubblyFix.css';
-import './SupportSearch.css';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 
 const items = [
@@ -24,14 +22,8 @@ function SupportIcon({ type }) {
 }
 
 export default function SupportPage({ onBack, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal, onPickMission, onPickFaq, onQuickMatch }) {
-  const [query, setQuery] = useState('');
   const email = contactEmailLabel();
   const mailto = contactEmailMailto();
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const filteredItems = useMemo(() => {
-    if (!normalizedQuery) return items;
-    return items.filter(([, title, copy]) => `${title} ${copy}`.toLocaleLowerCase().includes(normalizedQuery));
-  }, [normalizedQuery]);
 
   return <div className="faq-page support-page">
     <SiteHeader onHome={onBack} onAbout={onPickMission} onTopics={onBack} onQuickMatch={onQuickMatch} onFaq={onPickFaq} onSupport={() => {}} isSignedIn={isSignedIn} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
@@ -39,11 +31,6 @@ export default function SupportPage({ onBack, isSignedIn, onSignIn, onSignUp, on
       <aside>
         <h1>Support</h1>
         <p>We&apos;re here to help. Find answers to common questions, troubleshooting tips, and ways to get in touch with our team.</p>
-        <label className="support-search">
-          <span aria-hidden="true">⌕</span>
-          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search for help..." aria-label="Search support topics" />
-        </label>
-        <p className="support-search-status" aria-live="polite">{normalizedQuery ? `${filteredItems.length} ${filteredItems.length === 1 ? 'result' : 'results'} for “${query.trim()}”` : 'Search by issue, feature, or keyword.'}</p>
         <section className="support-contact">
           <div className="support-contact-title"><span>✉</span><h2>Contact us</h2></div>
           <p>For account help, privacy requests, technical issues, or general questions, email us at:</p>
@@ -56,22 +43,11 @@ export default function SupportPage({ onBack, isSignedIn, onSignIn, onSignUp, on
           <p><strong>Feedback &amp; Suggestions</strong><br />Help us improve Hot Take</p>
         </section>
       </aside>
-      <div className="support-list" aria-label="Support search results">
-        {filteredItems.map(([icon, title, copy]) => <article key={title}>
+      <div className="support-list" aria-label="Support topics">
+        {items.map(([icon, title, copy]) => <article key={title}>
           <span><SupportIcon type={icon} /></span>
           <div><h2>{title}</h2><p>{copy}</p>{icon === 'question' && <button type="button" onClick={onPickFaq}>View FAQ</button>}</div>
         </article>)}
-        {normalizedQuery && filteredItems.length === 0 && <section className="support-no-results" role="status">
-          <span aria-hidden="true">?</span>
-          <div>
-            <h2>Can&apos;t find your issue?</h2>
-            <p>We couldn&apos;t find a help topic matching “{query.trim()}”. Contact our support team and tell us what happened—we&apos;ll point you in the right direction.</p>
-            <div className="support-no-results-actions">
-              {mailto ? <a href={mailto}>Email support</a> : <b>{email}</b>}
-              <button type="button" onClick={() => setQuery('')}>View all help topics</button>
-            </div>
-          </div>
-        </section>}
       </div>
     </main>
     <div className="support-bottom">Still need help? Email us at {mailto ? <a href={mailto}>{email}</a> : <b>{email}</b>} and we&apos;ll get back to you.</div>
