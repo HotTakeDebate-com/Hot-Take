@@ -184,6 +184,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const openReports = reports.filter((r) => !['resolved', 'closed'].includes(r.status)).length;
   const bannedUsers = users.filter((u) => u.disabled).length;
   const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'owner'].includes(u.role)).length;
+  const editingProtected = Boolean(editingUser && role !== 'owner' && ROLE_RANK[editingUser.role] >= ROLE_RANK[role]);
 
   return <div className="admin-console">
     <header className="admin-console-topbar">
@@ -282,24 +283,25 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               <button className={editorTab === 'security' ? 'active' : ''} onClick={() => setEditorTab('security')}>Security</button>
               <button className={editorTab === 'moderation' ? 'active' : ''} onClick={() => setEditorTab('moderation')}>Moderation</button>
             </nav>
+            {editingProtected && <div className="user-editor-message protected">This account has an equal or higher role and is view-only.</div>}
             {editorMessage && <div className="user-editor-message">✓ {editorMessage}</div>}
             <div className={'user-editor-content editor-' + editorTab}>
               {editorTab === 'details' && <>
                 <section className="user-editor-section"><h3>Identity</h3>
-                  <label><span>Display name</span><input value={userDraft.displayName} disabled={!capabilities.editUsers || editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
-                  <label><span>Email address</span><input type="email" value={userDraft.email} disabled={!capabilities.manageCredentials || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
+                  <label><span>Display name</span><input value={userDraft.displayName} disabled={!capabilities.editUsers || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
+                  <label><span>Email address</span><input type="email" value={userDraft.email} disabled={!capabilities.manageCredentials || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
                   <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
                 </section>
                 <section className="user-editor-section"><h3>Role & membership</h3>
-                  <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
-                  <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={!capabilities.managePremium || userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
+                  <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
+                  <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={!capabilities.managePremium || editingProtected || userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
                 </section>
               </>}
               {editorTab === 'security' && <>
                 <section className="user-editor-section"><h3>Sign-in security</h3>
-                  <label className="user-editor-check"><span>Email verification</span><input type="checkbox" checked={userDraft.emailVerified} disabled={!capabilities.manageCredentials || editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, emailVerified: event.target.checked }))} /><b>{userDraft.emailVerified ? 'Email is verified' : 'Email is not verified'}</b><small>Use this override only after independently confirming the address belongs to the user.</small></label>
+                  <label className="user-editor-check"><span>Email verification</span><input type="checkbox" checked={userDraft.emailVerified} disabled={!capabilities.manageCredentials || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, emailVerified: event.target.checked }))} /><b>{userDraft.emailVerified ? 'Email is verified' : 'Email is not verified'}</b><small>Use this override only after independently confirming the address belongs to the user.</small></label>
                   <div className="password-security-note"><strong>Current password unavailable</strong><span>Firebase securely hashes passwords, so the existing password cannot be viewed. You can replace it below.</span></div>
-                  {capabilities.manageCredentials ? <div className="user-password-options">
+                  {capabilities.manageCredentials && !editingProtected ? <div className="user-password-options">
                     <label className={passwordMode === 'none' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'none'} onChange={() => setPasswordMode('none')} /><span><strong>Do not change</strong><small>Leave the current password untouched.</small></span></label>
                     <label className={passwordMode === 'reset' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'reset'} onChange={() => setPasswordMode('reset')} /><span><strong>Send password reset</strong><small>Firebase emails a secure reset link when you save.</small></span></label>
                     <label className={passwordMode === 'set' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'set'} onChange={() => setPasswordMode('set')} /><span><strong>Set a new password</strong><small>Set a temporary password and sign the user out everywhere.</small></span></label>
@@ -327,7 +329,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                 </section>
               </>}
             </div>
-            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium) || editingUser.role === 'owner' && role !== 'owner'} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
+            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingProtected || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium)} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
         </div>}
         {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}

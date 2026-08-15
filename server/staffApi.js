@@ -159,6 +159,10 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
     const isOwner = target.email?.toLowerCase() === OWNER_EMAIL;
+    const targetRole = isOwner ? 'owner' : (target.customClaims?.role || 'user');
+    if (req.staff.role !== 'owner' && ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
+      return res.status(403).json({ error: 'You cannot edit an equal or higher role.' });
+    }
     if (isOwner && req.staff.role !== 'owner') {
       return res.status(403).json({ error: 'Owner account is protected.' });
     }
@@ -320,6 +324,9 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     const target = await admin.auth().getUser(uid);
     if (target.email?.toLowerCase() === OWNER_EMAIL) return res.status(400).json({ error: 'Owner role is protected.' });
     const currentRole = target.customClaims?.role || 'user';
+    if (req.staff.role !== 'owner' && ROLE_LEVEL[currentRole] >= ROLE_LEVEL[req.staff.role]) {
+      return res.status(403).json({ error: 'You cannot change the access of an equal or higher role.' });
+    }
     const currentPremium = target.customClaims?.premium === true;
     if (role !== currentRole && !(await hasPermission(req.staff.role, 'manageRoles'))) {
       return res.status(403).json({ error: 'Your role cannot manage roles.' });

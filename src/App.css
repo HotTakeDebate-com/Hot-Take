@@ -2807,3 +2807,5 @@
   .user-editor-content.editor-security{grid-template-columns:1fr}
   .admin-console .staff-table-wrap .staff-actions{min-width:210px}
 }
+
+.user-editor-message.protected { border-color:#654b22; background:#261d10; color:#ffc56e; }
