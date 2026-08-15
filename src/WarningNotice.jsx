@@ -53,6 +53,7 @@ export default function WarningNotice() {
   }, [loadWarnings]);
 
   const warning = warnings[0];
+  const isReportResponse = warning?.type === 'report_response';
   const minutesRemaining = ban?.permanent ? null : Math.max(0, Math.ceil((Number(ban?.banUntilMs || 0) - nowMs) / 60_000));
   useEffect(() => {
     if (ban && !ban.permanent && minutesRemaining === 0) {
@@ -84,13 +85,14 @@ export default function WarningNotice() {
 
   if (!warning) return null;
 
-  return <aside className="user-warning-notice" role="alert" aria-live="assertive">
-    <div className="user-warning-icon">!</div>
+  return <aside className={'user-warning-notice' + (isReportResponse ? ' report-response' : '')} role="alert" aria-live="assertive">
+    <div className="user-warning-icon">{isReportResponse ? '✓' : '!'}</div>
     <div className="user-warning-copy">
-      <strong>Account warning</strong>
-      <p>You have received a warning for {warning.reason || 'a violation of the community guidelines'}.</p>
-      <p>Warned by {roleName(warning.issuedByRole)}.</p>
-      <button type="button" disabled={busy} onClick={acknowledge}>{busy ? 'Saving…' : 'Acknowledged'}</button>
+      <strong>{isReportResponse ? 'Thanks for your report!' : 'Account warning'}</strong>
+      {isReportResponse
+        ? <p>{roleName(warning.issuedByRole)} has responded to your report with: “{warning.message}”</p>
+        : <><p>You have received a warning for {warning.reason || 'a violation of the community guidelines'}.</p><p>Warned by {roleName(warning.issuedByRole)}.</p></>}
+      <button type="button" disabled={busy} onClick={acknowledge}>{busy ? 'Saving…' : isReportResponse ? 'Dismiss' : 'Acknowledged'}</button>
     </div>
   </aside>;
 }
