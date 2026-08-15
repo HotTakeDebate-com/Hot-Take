@@ -1,6 +1,7 @@
 import './PrivacyPolicy.css';
 
 export default function LegalDocumentShell({ title, effectiveDate, children, onBack, embedded = false }) {
+  const isTerms = title?.toLowerCase().includes('terms of service');
   const article = (
     <article className={embedded ? 'legal-doc-article legal-doc-article--embedded' : 'legal-doc-article'}>
       <header className="legal-doc-header">
@@ -18,7 +19,7 @@ export default function LegalDocumentShell({ title, effectiveDate, children, onB
   }
 
   return (
-    <div className="legal-doc">
+    <div className={`legal-doc${isTerms ? ' legal-doc--terms' : ''}`}>
       <div className="legal-doc-inner">
         {onBack && (
           <button type="button" className="btn btn-ghost legal-doc-back" onClick={onBack}>
