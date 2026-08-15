@@ -2981,6 +2981,39 @@
 .admin-staff-avatar.has-image img { width: 100%; height: 100%; object-fit: cover; }
 .admin-empty-list { margin: 0; padding: 24px 18px; color: #8f929d; }
 .admin-online-staff > header p { color: #35dc80; }
+.admin-pagination { display:flex; align-items:center; justify-content:center; gap:18px; padding:18px; color:#9da0aa; }
+.admin-pagination button { min-width:100px; padding:10px 14px; border:1px solid #3a3d47; border-radius:8px; background:#17181e; color:#fff; font-weight:800; }
+.admin-pagination button:disabled { opacity:.35; cursor:not-allowed; }
+.admin-debate-summary { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
+.admin-debate-summary span { display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid #30323a; border-radius:999px; background:#15161b; font-weight:800; }
+.admin-debate-summary i { width:9px; height:9px; border-radius:50%; }
+.admin-debate-summary i.active { background:#35dc80; box-shadow:0 0 10px rgba(53,220,128,.5); }
+.admin-debate-summary i.reported { background:#ff3038; box-shadow:0 0 10px rgba(255,48,56,.5); }
+.admin-debate-summary i.completed { background:#737680; }
+.debate-status { display:inline-flex; align-items:center; padding:7px 10px; border-radius:999px; font-size:11px; font-weight:900; letter-spacing:.06em; }
+.debate-status.active { color:#63eba0; background:#10291d; border:1px solid #236c44; }
+.debate-status.reported { color:#fff; background:#a70c14; border:1px solid #ff3038; }
+.debate-status.completed { color:#b3b5bd; background:#24252b; border:1px solid #464852; }
+.admin-monitor-button { white-space:nowrap; padding:9px 12px; border:1px solid #ff3038; border-radius:7px; color:#fff; background:#721017; font-weight:800; }
+.admin-monitor-backdrop { position:fixed; inset:0; z-index:3000; display:grid; place-items:center; padding:24px; background:rgba(0,0,0,.78); backdrop-filter:blur(7px); }
+.admin-monitor-modal { width:min(680px,100%); border:1px solid #444751; border-radius:14px; overflow:hidden; background:#111217; box-shadow:0 30px 90px rgba(0,0,0,.65); }
+.admin-monitor-modal > header { display:flex; justify-content:space-between; gap:20px; padding:20px 22px; border-bottom:1px solid #30323a; }
+.admin-monitor-modal header p { margin:0 0 5px; color:#ff3038; font-size:10px; font-weight:900; letter-spacing:.15em; }
+.admin-monitor-modal header h2 { margin:0; }
+.admin-monitor-modal header button { border:0; background:transparent; color:#fff; font-size:30px; }
+.admin-monitor-stage { padding:30px 28px; text-align:center; }
+.admin-monitor-shield { width:64px; height:64px; display:grid; place-items:center; margin:0 auto 16px; border:1px solid #ff3038; border-radius:50%; color:#ff3038; background:#2a1115; }
+.admin-monitor-shield .admin-ui-icon { width:30px; height:30px; }
+.admin-monitor-stage h3 { margin:0 0 8px; }
+.admin-monitor-stage > p { max-width:520px; margin:0 auto 24px; color:#a7a9b2; line-height:1.55; }
+.admin-monitor-stage dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; text-align:left; }
+.admin-monitor-stage dl div { padding:14px; border:1px solid #30323a; border-radius:8px; background:#17181e; }
+.admin-monitor-stage dt { color:#858892; font-size:11px; text-transform:uppercase; }
+.admin-monitor-stage dd { margin:5px 0 0; font-weight:800; overflow-wrap:anywhere; }
+.admin-monitor-stage dd.active { color:#35dc80; }.admin-monitor-stage dd.reported { color:#ff555c; }
+.admin-monitor-modal footer { display:flex; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid #30323a; }
+.admin-monitor-modal footer button { padding:11px 16px; border:1px solid #42454f; border-radius:8px; background:#191a20; color:#fff; font-weight:800; }
+.admin-monitor-modal footer button.primary { border-color:#ff3038; background:#e51620; }
 .admin-staff-list i, .admin-health-list i {
   width: 9px; height: 9px; display: block; border-radius: 50%;
 }
