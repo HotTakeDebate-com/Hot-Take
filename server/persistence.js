@@ -105,6 +105,12 @@ export async function markMatchSessionReported(adminReady, payload) {
       reportedAt: admin.firestore.FieldValue.serverTimestamp(),
       reportCount: admin.firestore.FieldValue.increment(1),
       latestReportId: reportId,
+      latestReportCategory: String(report.category || 'other').slice(0, 100),
+      latestReportDetails: String(report.details || '').slice(0, 2000),
+      latestReportStatus: String(report.status || 'open').slice(0, 50),
+      latestReporterUid: reporterUid,
+      latestReportedUserUid: String(report.peerUid || '').slice(0, 128),
+      latestReportCreatedAt: report.createdAt ?? admin.firestore.FieldValue.serverTimestamp(),
     };
     await Promise.all(
       emails.map((email) =>
