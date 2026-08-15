@@ -8,22 +8,22 @@ const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false,
-    manageRoles: false, managePremium: false, editUsers: false, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false,
-    manageRoles: false, managePremium: false, editUsers: false, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   admin: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
-    manageRoles: true, managePremium: true, editUsers: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
-    manageRoles: true, managePremium: true, editUsers: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
@@ -140,6 +140,20 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
     const pageToken = req.query.pageToken ? String(req.query.pageToken) : undefined;
     const result = await admin.auth().listUsers(limit, pageToken);
+    const profileByEmail = new Map();
+    try {
+      const profileRefs = result.users
+        .filter((user) => user.email)
+        .map((user) => admin.firestore().collection('publicProfiles').doc(user.email.toLowerCase()));
+      if (profileRefs.length) {
+        const profileSnaps = await admin.firestore().getAll(...profileRefs);
+        profileSnaps.forEach((profileSnap) => {
+          if (profileSnap.exists) profileByEmail.set(profileSnap.id, profileSnap.data());
+        });
+      }
+    } catch (profileError) {
+      console.warn('[staff] profile pictures could not be loaded', profileError?.message ?? profileError);
+    }
     const users = result.users.map((u) => ({
       uid: u.uid,
       email: u.email || '',
@@ -151,6 +165,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
       lastSignInAt: u.metadata.lastSignInTime,
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
+      avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
     }));
     res.json({ users, pageToken: result.pageToken || null, capabilities: (await permissionConfig())[req.staff.role] || {} });
   });
@@ -160,16 +175,32 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     const target = await admin.auth().getUser(uid);
     const isOwner = target.email?.toLowerCase() === OWNER_EMAIL;
     const targetRole = isOwner ? 'owner' : (target.customClaims?.role || 'user');
-    if (req.staff.role !== 'owner' && ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
+    if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot edit an equal or higher role.' });
     }
     if (isOwner && req.staff.role !== 'owner') {
       return res.status(403).json({ error: 'Owner account is protected.' });
     }
     const requestedDisplayName = String(req.body?.displayName || '').trim().replace(/\s+/g, ' ').slice(0, 100);
-    const wantsProfileChange = requestedDisplayName !== String(target.displayName || '');
-    if (wantsProfileChange && !(await hasPermission(req.staff.role, 'editUsers'))) {
+    const profileRef = target.email
+      ? admin.firestore().collection('publicProfiles').doc(target.email.toLowerCase())
+      : null;
+    const profileSnap = profileRef ? await profileRef.get() : null;
+    const currentAvatarUrl = profileSnap?.exists ? String(profileSnap.data()?.avatarUrl || '') : '';
+    const requestedAvatarUrl = typeof req.body?.avatarUrl === 'string'
+      ? req.body.avatarUrl.trim()
+      : currentAvatarUrl;
+    const avatarChanged = requestedAvatarUrl !== currentAvatarUrl;
+    const validAvatarUrl = !requestedAvatarUrl
+      || (/^data:image\/(?:png|jpeg|webp);base64,/i.test(requestedAvatarUrl) && requestedAvatarUrl.length <= 250000)
+      || (/^https:\/\//i.test(requestedAvatarUrl) && requestedAvatarUrl.length <= 2048);
+    if (!validAvatarUrl) return res.status(400).json({ error: 'Choose a valid JPG, PNG, or WebP profile picture.' });
+    const displayNameChanged = requestedDisplayName !== String(target.displayName || '');
+    if (displayNameChanged && !(await hasPermission(req.staff.role, 'editUsers'))) {
       return res.status(403).json({ error: 'Your role cannot edit user profile details.' });
+    }
+    if (avatarChanged && !(await hasPermission(req.staff.role, 'editAvatars'))) {
+      return res.status(403).json({ error: 'Your role cannot edit profile pictures.' });
     }
     const wantsCredentialChange = (
       (typeof req.body?.email === 'string' && req.body.email.trim().toLowerCase() !== String(target.email || '').toLowerCase())
@@ -199,12 +230,20 @@ export function attachStaffRoutes(app, { isAdminReady }) {
       emailVerified,
     });
     if (emailChanged) await admin.auth().revokeRefreshTokens(uid);
+    const updatedProfileRef = admin.firestore().collection('publicProfiles').doc(requestedEmail);
+    await updatedProfileRef.set({
+      uid,
+      displayName,
+      avatarUrl: requestedAvatarUrl,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
     await audit('user_update', req.staff, uid, {
       displayName,
       emailVerified,
       previousEmail: target.email || null,
       email: updated.email || null,
       emailChanged,
+      avatarChanged,
     });
     res.json({
       ok: true,
@@ -213,6 +252,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
         displayName: updated.displayName || '',
         email: updated.email || '',
         emailVerified: updated.emailVerified,
+        avatarUrl: requestedAvatarUrl,
       },
     });
   });
