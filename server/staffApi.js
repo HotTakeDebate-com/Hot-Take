@@ -163,9 +163,10 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     }
     const displayName = String(req.body?.displayName || '').trim().replace(/\s+/g, ' ').slice(0, 100);
     if (!displayName) return res.status(400).json({ error: 'Display name is required.' });
-    const updated = await admin.auth().updateUser(uid, { displayName });
-    await audit('user_update', req.staff, uid, { displayName, targetEmail: target.email || null });
-    res.json({ ok: true, user: { uid: updated.uid, displayName: updated.displayName || '', email: updated.email || '' } });
+    const emailVerified = typeof req.body?.emailVerified === 'boolean' ? req.body.emailVerified : target.emailVerified;
+    const updated = await admin.auth().updateUser(uid, { displayName, emailVerified });
+    await audit('user_update', req.staff, uid, { displayName, emailVerified, targetEmail: target.email || null });
+    res.json({ ok: true, user: { uid: updated.uid, displayName: updated.displayName || '', email: updated.email || '', emailVerified: updated.emailVerified } });
   });
 
   router.get('/reports', requirePermission('viewReports'), async (req, res) => {

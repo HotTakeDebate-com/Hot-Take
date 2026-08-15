@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from './firebase.js';
 import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
@@ -56,6 +58,9 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [editingUser, setEditingUser] = useState(null);
   const [userDraft, setUserDraft] = useState(null);
   const [savingUser, setSavingUser] = useState(false);
+  const [editorTab, setEditorTab] = useState('details');
+  const [editorMessage, setEditorMessage] = useState('');
+  const [sendingReset, setSendingReset] = useState(false);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,7 +105,9 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   };
   const openUserEditor = (user) => {
     setEditingUser(user);
-    setUserDraft({ displayName: user.displayName || '', role: user.role || 'user', premium: user.premium === true });
+    setUserDraft({ displayName: user.displayName || '', role: user.role || 'user', premium: user.premium === true, emailVerified: user.emailVerified === true });
+    setEditorTab('details');
+    setEditorMessage('');
     setError('');
   };
 
@@ -108,7 +115,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     if (!editingUser || !userDraft) return;
     setSavingUser(true); setError('');
     try {
-      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName });
+      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, emailVerified: userDraft.emailVerified });
       if (userDraft.role !== editingUser.role || userDraft.premium !== editingUser.premium) {
         await staffRole(editingUser.uid, userDraft.role, userDraft.role === 'user' && userDraft.premium);
       }
@@ -117,8 +124,19 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       const updated = nextUsers.find((user) => user.uid === editingUser.uid);
       setUsers(nextUsers);
       setEditingUser(updated || null);
-      if (updated) setUserDraft({ displayName: updated.displayName || '', role: updated.role || 'user', premium: updated.premium === true });
+      if (updated) setUserDraft({ displayName: updated.displayName || '', role: updated.role || 'user', premium: updated.premium === true, emailVerified: updated.emailVerified === true });
+      setEditorMessage('Account changes saved.');
     } catch (e) { setError(e.message); } finally { setSavingUser(false); }
+  };
+
+  const sendReset = async () => {
+    if (!editingUser?.email) return;
+    if (!window.confirm('Send a password reset email to ' + editingUser.email + '?')) return;
+    setSendingReset(true); setEditorMessage(''); setError('');
+    try {
+      await sendPasswordResetEmail(auth, editingUser.email);
+      setEditorMessage('Password reset email sent to ' + editingUser.email + '.');
+    } catch (e) { setError(e.message); } finally { setSendingReset(false); }
   };
 
   const togglePermission = async (targetRole, permission, enabled) => {
@@ -222,32 +240,54 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           <p className="permission-footnote">Owner access and standard debate rights are protected. All other buttons can be changed by Admins and the Owner, and changes are enforced by the staff API.</p>
         </section>}
         {editingUser && userDraft && <div className="user-editor-backdrop" onMouseDown={() => setEditingUser(null)}>
-          <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Edit ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
+          <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Manage ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
             <header className="user-editor-header">
               <div className="user-editor-avatar">{(editingUser.displayName || editingUser.email || '?').charAt(0).toUpperCase()}</div>
-              <div><p>EDIT HOT TAKE USER</p><h2>{editingUser.displayName || 'No display name'}</h2><span>{editingUser.email}</span></div>
+              <div><p>HOT TAKE ACCOUNT MANAGEMENT</p><h2>{editingUser.displayName || 'No display name'}</h2><span>{editingUser.email}</span></div>
               <button type="button" onClick={() => setEditingUser(null)} aria-label="Close user editor">×</button>
             </header>
-            <nav className="user-editor-tabs"><span className="active">User details</span><span>Security & moderation</span></nav>
+            <nav className="user-editor-tabs" aria-label="Account management sections">
+              <button className={editorTab === 'details' ? 'active' : ''} onClick={() => setEditorTab('details')}>User details</button>
+              <button className={editorTab === 'security' ? 'active' : ''} onClick={() => setEditorTab('security')}>Security</button>
+              <button className={editorTab === 'moderation' ? 'active' : ''} onClick={() => setEditorTab('moderation')}>Moderation</button>
+            </nav>
+            {editorMessage && <div className="user-editor-message">✓ {editorMessage}</div>}
             <div className="user-editor-content">
-              <section className="user-editor-section"><h3>Identity</h3>
-                <label><span>Display name</span><input value={userDraft.displayName} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
-                <label><span>Email</span><input value={editingUser.email || ''} readOnly /><small>Read-only to preserve Firebase and Firestore account links.</small></label>
-                <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
-              </section>
-              <section className="user-editor-section"><h3>Access</h3>
-                <label><span>Role</span><select value={userDraft.role} disabled={editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
-                <label className="user-editor-check"><span>Membership</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
-                <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Email verification</span><b>{editingUser.emailVerified ? 'Verified' : 'Not verified'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
-              </section>
-              <section className="user-editor-section danger-zone"><h3>Security & moderation</h3><p>Actions require a reason and are written to the staff audit log.</p>
-                <div className="user-editor-actions">
-                  <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>
-                  <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>
-                  <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button>
-                  {(role === 'admin' || role === 'owner') && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
-                </div>
-              </section>
+              {editorTab === 'details' && <>
+                <section className="user-editor-section"><h3>Identity</h3>
+                  <label><span>Display name</span><input value={userDraft.displayName} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
+                  <label><span>Email address</span><input value={editingUser.email || ''} readOnly /><small>Email changes are restricted to preserve linked account data.</small></label>
+                  <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
+                </section>
+                <section className="user-editor-section"><h3>Role & membership</h3>
+                  <label><span>Primary role</span><select value={userDraft.role} disabled={editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
+                  <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
+                </section>
+              </>}
+              {editorTab === 'security' && <>
+                <section className="user-editor-section"><h3>Sign-in security</h3>
+                  <label className="user-editor-check"><span>Email verification</span><input type="checkbox" checked={userDraft.emailVerified} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, emailVerified: event.target.checked }))} /><b>{userDraft.emailVerified ? 'Email is verified' : 'Email is not verified'}</b><small>Use this override only after independently confirming the address belongs to the user.</small></label>
+                  <div className="user-editor-action-card"><div><strong>Password reset</strong><span>Firebase will email a secure password-reset link to this user.</span></div><button type="button" onClick={sendReset} disabled={sendingReset || !editingUser.email}>{sendingReset ? 'Sending…' : 'Send reset email'}</button></div>
+                  <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
+                </section>
+                <section className="user-editor-section"><h3>Account metadata</h3>
+                  <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Account status</span><b className={editingUser.disabled ? 'status-danger' : 'status-good'}>{editingUser.disabled ? 'Banned / disabled' : 'Active'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
+                </section>
+              </>}
+              {editorTab === 'moderation' && <>
+                <section className="user-editor-section danger-zone"><h3>Moderation actions</h3><p>Every action requires a reason and is recorded in the staff audit log.</p>
+                  <div className="user-editor-actions">
+                    <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>
+                    <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>
+                    <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Revoke sessions</button>
+                    {(role === 'admin' || role === 'owner') && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
+                  </div>
+                </section>
+                <section className="user-editor-section"><h3>Moderation summary</h3>
+                  <div className="user-editor-meta"><div><span>Current status</span><b>{editingUser.disabled ? 'Banned' : 'Active'}</b></div><div><span>Assigned access</span><b>{editingUser.role}{editingUser.premium ? ' + Premium' : ''}</b></div></div>
+                  <p className="user-editor-help">Warnings issued here are delivered to the user and remain available in the staff audit log.</p>
+                </section>
+              </>}
             </div>
             <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingUser.role === 'owner' && role !== 'owner'} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
