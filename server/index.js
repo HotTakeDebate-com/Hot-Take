@@ -179,6 +179,8 @@ io.use(async (socket, next) => {
       if (ban.active === true && ban.permanent !== true) await banRef.delete().catch(() => {});
     }
     socket.data.uid = decoded.uid;
+    socket.data.role = decoded.email?.toLowerCase() === (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase()
+      ? 'owner' : String(decoded.role || 'user');
     socket.data.emailVerified = decoded.email_verified === true;
     socket.data.displayName = cleanDisplayName(decoded.name);
     return next();
@@ -1068,6 +1070,39 @@ io.on('connection', (socket) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     socket.to(roomId).emit('signal', { type, payload, from: socket.id });
+  });
+
+  socket.on('staff-watch-debate', ({ roomId }) => {
+    if (!['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
+    const members = [...(io.sockets.adapter.rooms.get(String(roomId)) || [])]
+      .map((id) => io.sockets.sockets.get(id))
+      .filter((member) => member?.data?.roomId === roomId);
+    if (members.length < 1) return socket.emit('staff-spectator-error', { message: 'That debate is no longer active.' });
+    socket.data.watchingRoomId = roomId;
+    members.forEach((member) => member.emit('staff-spectator-request', { watcherId: socket.id, roomId }));
+  });
+
+  socket.on('staff-spectator-signal', ({ watcherId, roomId, type, payload }) => {
+    if (socket.data.roomId !== roomId) return;
+    const watcher = io.sockets.sockets.get(String(watcherId));
+    if (!watcher || watcher.data.watchingRoomId !== roomId || !['moderator', 'admin', 'owner'].includes(watcher.data.role)) return;
+    watcher.emit('staff-spectator-signal', { participantId: socket.id, roomId, type, payload });
+  });
+
+  socket.on('staff-spectator-return-signal', ({ participantId, roomId, type, payload }) => {
+    if (socket.data.watchingRoomId !== roomId || !['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
+    const participant = io.sockets.sockets.get(String(participantId));
+    if (!participant || participant.data.roomId !== roomId) return;
+    participant.emit('staff-spectator-return-signal', { watcherId: socket.id, roomId, type, payload });
+  });
+
+  socket.on('staff-leave-debate', () => {
+    const roomId = socket.data.watchingRoomId;
+    socket.data.watchingRoomId = null;
+    if (!roomId) return;
+    io.sockets.sockets.forEach((participant) => {
+      if (participant.data.roomId === roomId) participant.emit('staff-spectator-left', { watcherId: socket.id });
+    });
   });
 
   socket.on('mark-debate-reported', async ({ roomId, reportId }) => {
