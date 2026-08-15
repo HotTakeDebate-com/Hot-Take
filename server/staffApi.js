@@ -220,6 +220,17 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
 
   router.get('/me', (req, res) => res.json({ ...req.staff, ownerEmail: OWNER_EMAIL }));
 
+  router.post('/access', async (req, res) => {
+    await admin.firestore().collection('staff_access').doc(req.staff.uid).set({
+      uid: req.staff.uid,
+      email: req.staff.email,
+      role: req.staff.role,
+      lastAccessedAt: admin.firestore.FieldValue.serverTimestamp(),
+      accessCount: admin.firestore.FieldValue.increment(1),
+    }, { merge: true });
+    res.json({ ok: true });
+  });
+
   router.get('/permissions', requireRole('admin'), async (_req, res) => {
     res.json({ permissions: await permissionConfig() });
   });
@@ -273,6 +284,20 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
       console.warn('[staff] ban records could not be loaded', banError?.message ?? banError);
     }
     const nowMs = Date.now();
+    const accessByUid = new Map();
+    try {
+      const staffAccessRefs = result.users
+        .filter((user) => STAFF_ROLES.has(user.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (user.customClaims?.role || 'user')))
+        .map((user) => admin.firestore().collection('staff_access').doc(user.uid));
+      if (staffAccessRefs.length) {
+        const staffAccessSnaps = await admin.firestore().getAll(...staffAccessRefs);
+        staffAccessSnaps.forEach((accessSnap) => {
+          if (accessSnap.exists) accessByUid.set(accessSnap.id, accessSnap.data());
+        });
+      }
+    } catch (accessError) {
+      console.warn('[staff] admin access timestamps could not be loaded', accessError?.message ?? accessError);
+    }
     const users = result.users.map((u) => {
       const ban = banByUid.get(u.uid) || null;
       const banUntilMs = ban?.banUntil?.toMillis?.() || null;
@@ -291,6 +316,7 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
       providers: u.providerData.map((p) => p.providerId),
       createdAt: u.metadata.creationTime,
       lastSignInAt: u.metadata.lastSignInTime,
+      lastAdminAccessAt: accessByUid.get(u.uid)?.lastAccessedAt || null,
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
