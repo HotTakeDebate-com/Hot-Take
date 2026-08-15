@@ -27,7 +27,15 @@
   align-items: center;
   gap: 28px;
 }
-.landing-nav-brand { justify-self: start; line-height: 0; }
+.landing-nav-brand-group {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.landing-nav-brand { line-height: 0; flex: 0 1 auto; min-width: 0; }
+.landing-nav-brand-group .landing-admin-link { margin-left: 2px; }
 .landing-nav-links { display: flex; align-items: center; gap: clamp(30px, 3.1vw, 50px); justify-self: center; }
 .landing-nav-link {
   padding: 0; border: 0; background: none; color: var(--landing-white);

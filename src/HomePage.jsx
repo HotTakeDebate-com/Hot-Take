@@ -219,6 +219,7 @@ export default function HomePage({
   onPickMission,
   onPickSupport,
   onPickHelp,
+  brandExtras,
   navExtras,
 }) {
   const handleQuick = () => {
@@ -241,9 +242,12 @@ export default function HomePage({
   return (
     <div className="landing">
       <header className="landing-nav">
-        <a href="/" className="landing-nav-brand" onClick={(e) => e.preventDefault()}>
-          <HotTakeWordmark variant="nav" />
-        </a>
+        <div className="landing-nav-brand-group">
+          <a href="/" className="landing-nav-brand" onClick={(e) => e.preventDefault()}>
+            <HotTakeWordmark variant="nav" />
+          </a>
+          {brandExtras}
+        </div>
 
         <nav className="landing-nav-links" aria-label="Primary">
           <button type="button" className="landing-nav-link" onClick={onPickMission}>About</button>
