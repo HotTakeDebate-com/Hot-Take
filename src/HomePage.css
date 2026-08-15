@@ -193,27 +193,21 @@
 
 .landing-quotes {
   position: relative;
-  overflow: hidden;
-  margin: 8px 0 42px;
-  padding: clamp(30px, 4vw, 58px);
-  border: 1px solid #2e3037;
-  border-radius: 18px;
+  margin: 18px auto 56px;
+  padding: clamp(42px, 5vw, 72px) clamp(8px, 3vw, 44px);
   background:
-    radial-gradient(circle at 12% 18%, rgba(255, 23, 27, .13), transparent 30%),
-    radial-gradient(circle at 90% 80%, rgba(255, 255, 255, .035), transparent 34%),
-    linear-gradient(135deg, rgba(17,18,22,.96), rgba(4,5,8,.98));
+    radial-gradient(ellipse 46% 44% at 50% 52%, rgba(143, 0, 7, .12), transparent 72%);
 }
-.landing-quotes::after {
-  content: '“';
+.landing-quotes::before {
+  content: '';
   position: absolute;
-  right: clamp(28px,5vw,76px);
-  top: 4px;
-  color: rgba(255,31,36,.08);
-  font-family: Georgia,serif;
-  font-size: clamp(150px,18vw,270px);
-  font-weight: 800;
-  line-height: 1;
-  pointer-events: none;
+  top: 0;
+  left: 50%;
+  width: min(180px, 28vw);
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--landing-red), transparent);
+  box-shadow: 0 0 20px rgba(255, 23, 27, .45);
 }
 .landing-quotes-heading {
   position: relative;
@@ -222,7 +216,8 @@
   align-items: end;
   justify-content: space-between;
   gap: 30px;
-  margin-bottom: 30px;
+  max-width: 1180px;
+  margin: 0 auto 38px;
 }
 .landing-quotes-eyebrow {
   margin: 0 0 8px;
@@ -250,16 +245,15 @@
 .landing-quote-card {
   position: relative;
   z-index: 1;
-  min-height: 330px;
-  padding: clamp(26px,3vw,44px);
-  border: 1px solid #34363e;
-  border-radius: 15px;
-  background: rgba(4,5,8,.72);
-  animation: landing-quote-enter .45s ease both;
+  min-height: 300px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(18px, 2.5vw, 34px) clamp(6px, 2vw, 24px);
+  animation: landing-quote-enter .55s cubic-bezier(.2,.7,.2,1) both;
 }
 @keyframes landing-quote-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px); filter:blur(3px); }
+  to { opacity: 1; transform: translateY(0); filter:blur(0); }
 }
 .landing-quote-category {
   display: flex;
@@ -273,13 +267,16 @@
 }
 .landing-quote-category span { font-size: 9px; }
 .landing-quote-card blockquote {
-  max-width: 1100px;
-  margin: 25px 0 28px;
+  max-width: 1080px;
+  margin: 27px 0 31px;
+  padding-left: clamp(22px, 3vw, 42px);
+  border-left: 3px solid var(--landing-red);
   color: #f5f5f6;
-  font-size: clamp(25px,2.65vw,42px);
+  font-size: clamp(27px,2.8vw,44px);
   font-weight: 680;
   line-height: 1.3;
   letter-spacing: -.025em;
+  text-wrap: balance;
 }
 .landing-quote-card > footer {
   display: flex;
@@ -287,6 +284,7 @@
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 15px;
+  padding-left: clamp(25px, 3vw, 45px);
 }
 .landing-quote-card > footer div { display: grid; gap: 4px; }
 .landing-quote-card > footer strong { color: #fff; font-size: 16px; }
@@ -296,8 +294,11 @@
   font-size: 12px;
   letter-spacing: .08em;
 }
+.landing-quote-source,
+.landing-quote-note {
+  margin-left: clamp(25px, 3vw, 45px);
+}
 .landing-quote-source {
-  margin: 0;
   color: #aaaab1;
   font-size: 13px;
 }
@@ -307,7 +308,8 @@
   align-items: flex-start;
   gap: 9px;
   max-width: 900px;
-  margin: 14px 0 0;
+  margin-top: 14px;
+  margin-bottom: 0;
   color: #aaaab1;
   font-size: 12px;
   line-height: 1.55;
@@ -330,8 +332,10 @@
   z-index: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 13px;
-  margin-top: 20px;
+  max-width: 1180px;
+  margin: 24px auto 0;
 }
 .landing-quote-controls > button {
   display: grid;
@@ -342,7 +346,7 @@
   border: 1px solid #454750;
   border-radius: 50%;
   color: #fff;
-  background: #0b0c10;
+  background: rgba(11,12,16,.72);
   font-size: 18px;
   transition: border-color .2s, background .2s, transform .2s;
 }
@@ -355,6 +359,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 7px;
 }
 .landing-quote-dots button {
@@ -369,22 +374,16 @@
 .landing-quote-dots button.active {
   width: 24px;
   background: var(--landing-red);
-}
-.landing-quote-controls > span {
-  margin-left: auto;
-  color: #777880;
-  font-size: 11px;
-  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(255,23,27,.5);
 }
 @media (max-width: 760px) {
-  .landing-quotes { padding: 25px 20px; }
+  .landing-quotes { padding: 38px 4px 42px; }
   .landing-quotes-heading { display: block; }
   .landing-quotes-heading > p { margin-top: 12px; text-align: left; }
-  .landing-quote-card { min-height: 390px; padding: 24px 20px; }
+  .landing-quote-card { min-height: 390px; padding: 24px 0; }
   .landing-quote-card blockquote { font-size: 24px; }
   .landing-quote-controls { flex-wrap: wrap; }
   .landing-quote-dots { order: 3; width: 100%; }
-  .landing-quote-controls > span { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .landing-quote-card { animation: none; }
