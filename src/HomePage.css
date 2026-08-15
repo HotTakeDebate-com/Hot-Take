@@ -309,18 +309,51 @@
   line-height: 1.6;
   text-align: right;
 }
-.landing-quote-card {
+.landing-quote-stage {
   position: relative;
   z-index: 1;
-  min-height: 300px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: clamp(18px, 2.5vw, 34px) clamp(6px, 2vw, 24px);
-  animation: landing-quote-enter .55s cubic-bezier(.2,.7,.2,1) both;
 }
-@keyframes landing-quote-enter {
-  from { opacity: 0; transform: translateY(14px); filter:blur(3px); }
-  to { opacity: 1; transform: translateY(0); filter:blur(0); }
+.landing-quote-card {
+  position: relative;
+  min-height: 300px;
+  padding: clamp(18px, 2.5vw, 34px) clamp(6px, 2vw, 24px);
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+  transition: opacity .4s ease, filter .4s ease, transform .4s ease;
+}
+.landing-quote-card.is-fading {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateY(8px);
+}
+.landing-quote-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  width: 48px;
+  height: 72px;
+  padding: 0;
+  border: 0;
+  color: rgba(255,255,255,.62);
+  background: transparent;
+  font-size: 32px;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition: color .2s ease, transform .2s ease;
+}
+.landing-quote-arrow--previous { left: -54px; }
+.landing-quote-arrow--next { right: -54px; }
+.landing-quote-arrow:hover,
+.landing-quote-arrow:focus-visible {
+  color: #fff;
+  transform: translateY(-50%) scale(1.08);
+}
+.landing-quote-arrow:focus-visible {
+  outline: 1px solid rgba(255,255,255,.45);
+  outline-offset: 2px;
 }
 .landing-quote-category {
   display: flex;
@@ -404,24 +437,6 @@
   max-width: 1180px;
   margin: 24px auto 0;
 }
-.landing-quote-controls > button {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  border: 1px solid #454750;
-  border-radius: 50%;
-  color: #fff;
-  background: rgba(11,12,16,.72);
-  font-size: 18px;
-  transition: border-color .2s, background .2s, transform .2s;
-}
-.landing-quote-controls > button:hover {
-  border-color: var(--landing-red);
-  background: rgba(255,23,27,.1);
-  transform: translateY(-1px);
-}
 .landing-quote-dots {
   display: flex;
   flex-wrap: wrap;
@@ -449,11 +464,15 @@
   .landing-quotes-heading > p { margin-top: 12px; text-align: left; }
   .landing-quote-card { min-height: 390px; padding: 24px 0; }
   .landing-quote-card blockquote { font-size: 24px; }
+  .landing-quote-arrow { width: 38px; font-size: 26px; }
+  .landing-quote-arrow--previous { left: -4px; }
+  .landing-quote-arrow--next { right: -4px; }
+  .landing-quote-card { padding-left: 36px; padding-right: 36px; }
   .landing-quote-controls { flex-wrap: wrap; }
   .landing-quote-dots { order: 3; width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .landing-quote-card { animation: none; }
+  .landing-quote-card { transition: opacity .15s linear; }
 }
 
 .landing-footer {
