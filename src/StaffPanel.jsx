@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { staffAction, staffAudit, staffReports, staffRespond, staffRole, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
@@ -6,6 +6,43 @@ function dateValue(value) {
   if (typeof value === 'string') return new Date(value).toLocaleString();
   if (value._seconds) return new Date(value._seconds * 1000).toLocaleString();
   return '—';
+}
+
+const SITE_ROLES = [
+  { id: 'user', name: 'User', description: 'Standard member access for debating and community features.' },
+  { id: 'moderator', name: 'Moderator', description: 'Reviews reports and takes day-to-day safety actions.' },
+  { id: 'admin', name: 'Admin', description: 'Full platform administration except the protected Owner account.' },
+  { id: 'owner', name: 'Owner', description: 'Protected highest-level access reserved for the site owner.' },
+];
+
+const ROLE_PERMISSIONS = [
+  { group: 'Debates & account', permissions: [
+    ['Join quick-match debates', true, true, true, true],
+    ['Create and join custom debates', true, true, true, true],
+    ['Use debate text chat', true, true, true, true],
+    ['Edit own display name and bio', true, true, true, true],
+    ['Report a debate or user', true, true, true, true],
+  ]},
+  { group: 'Moderation', permissions: [
+    ['View submitted reports', false, true, true, true],
+    ['Respond to reports and update status', false, true, true, true],
+    ['View member emails and Firebase UIDs', false, true, true, true],
+    ['Issue user warnings', false, true, true, true],
+    ['Ban user accounts', false, true, true, true],
+    ['Revoke active sign-in sessions', false, true, true, true],
+    ['Unban user accounts', false, false, true, true],
+  ]},
+  { group: 'Administration', permissions: [
+    ['View staff audit logs', false, false, true, true],
+    ['Assign User, Moderator, and Admin roles', false, false, true, true],
+    ['Assign or remove Premium membership', false, false, true, true],
+    ['Delete eligible user accounts', false, false, true, true],
+    ['Manage the protected Owner account', false, false, false, true],
+  ]},
+];
+
+function permissionLabel(value) {
+  return value ? 'Yes' : 'No';
 }
 
 export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
@@ -98,7 +135,29 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
 
         {tab === 'reports' && !busy && <section className="staff-grid">{reports.map((r) => <article className="staff-card" key={r.id}><header><strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong><span>{dateValue(r.createdAt)}</span></header><h2>{r.category || 'Report'}</h2><p>{r.details}</p><dl><dt>Report ID</dt><dd>{r.id}</dd><dt>Room</dt><dd>{r.roomId || '—'}</dd><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></dl>{r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}<button onClick={() => respond(r)}>Respond / update status</button></article>)}</section>}
 
-        {(tab === 'users' || tab === 'roles') && !busy && <section><input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" /><div className="staff-table-wrap"><table><thead><tr><th>User</th><th>UID</th><th>Created / last login</th><th>Role</th><th>Membership</th><th>Status</th><th>Actions</th></tr></thead><tbody>{filteredUsers.map((u) => <tr key={u.uid}><td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td><td className="staff-uid">{u.uid}</td><td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td><td>{(role === 'admin' || role === 'owner') && u.role !== 'owner' ? <div className="staff-role"><select value={u.role} onChange={(e) => changeRole(u, e.target.value, e.target.value === 'user' ? u.premium : false)}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></div> : <b>{u.role === 'moderator' ? 'Moderator' : u.role}</b>}</td><td>{u.role === 'user' ? <label className="staff-premium"><input type="checkbox" checked={u.premium} disabled={role !== 'admin' && role !== 'owner'} onChange={(e) => changeRole(u, 'user', e.target.checked)} /> Premium</label> : <span className="staff-not-applicable">Not applicable</span>}</td><td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td><td className="staff-actions"><button onClick={() => act(u, 'warn')}>Warn</button><button onClick={() => act(u, u.disabled ? 'unban' : 'ban')}>{u.disabled ? 'Unban' : 'Ban'}</button><button onClick={() => act(u, 'revoke_sessions')}>Sign out</button>{(role === 'admin' || role === 'owner') && u.role !== 'owner' && <button className="danger" onClick={() => act(u, 'delete')}>Delete</button>}</td></tr>)}</tbody></table></div></section>}
+        {tab === 'users' && !busy && <section><input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" /><div className="staff-table-wrap"><table><thead><tr><th>User</th><th>UID</th><th>Created / last login</th><th>Role</th><th>Membership</th><th>Status</th><th>Actions</th></tr></thead><tbody>{filteredUsers.map((u) => <tr key={u.uid}><td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td><td className="staff-uid">{u.uid}</td><td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td><td>{(role === 'admin' || role === 'owner') && u.role !== 'owner' ? <div className="staff-role"><select value={u.role} onChange={(e) => changeRole(u, e.target.value, e.target.value === 'user' ? u.premium : false)}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></div> : <b>{u.role === 'moderator' ? 'Moderator' : u.role}</b>}</td><td>{u.role === 'user' ? <label className="staff-premium"><input type="checkbox" checked={u.premium} disabled={role !== 'admin' && role !== 'owner'} onChange={(e) => changeRole(u, 'user', e.target.checked)} /> Premium</label> : <span className="staff-not-applicable">Not applicable</span>}</td><td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td><td className="staff-actions"><button onClick={() => act(u, 'warn')}>Warn</button><button onClick={() => act(u, u.disabled ? 'unban' : 'ban')}>{u.disabled ? 'Unban' : 'Ban'}</button><button onClick={() => act(u, 'revoke_sessions')}>Sign out</button>{(role === 'admin' || role === 'owner') && u.role !== 'owner' && <button className="danger" onClick={() => act(u, 'delete')}>Delete</button>}</td></tr>)}</tbody></table></div></section>}
+        {tab === 'roles' && !busy && <section className="role-permissions">
+          <div className="role-permissions-intro">
+            <div><p>These are the only staff roles used by Hot Take. Premium is a membership and is intentionally not a role.</p></div>
+            <span>Fixed platform permissions</span>
+          </div>
+          <div className="role-card-grid">
+            {SITE_ROLES.map((siteRole) => <article key={siteRole.id} className={role === siteRole.id ? 'current' : ''}>
+              <div className={'role-card-icon role-' + siteRole.id}>{siteRole.name.charAt(0)}</div>
+              <div><h2>{siteRole.name}</h2><p>{siteRole.description}</p>{role === siteRole.id && <small>Your current role</small>}</div>
+            </article>)}
+          </div>
+          <div className="permission-table-wrap">
+            <table className="permission-table">
+              <thead><tr><th>Permission</th>{SITE_ROLES.map((siteRole) => <th key={siteRole.id}>{siteRole.name}</th>)}</tr></thead>
+              <tbody>{ROLE_PERMISSIONS.map((section) => <Fragment key={section.group}>
+                <tr className="permission-group"><th colSpan="5">{section.group}</th></tr>
+                {section.permissions.map(([name, ...values]) => <tr key={name}><td>{name}</td>{values.map((value, index) => <td key={SITE_ROLES[index].id}><span className={'permission-value ' + (value ? 'allowed' : 'denied')}>{value ? '✓' : '—'} {permissionLabel(value)}</span></td>)}</tr>)}
+              </Fragment>)}</tbody>
+            </table>
+          </div>
+          <p className="permission-footnote">Owner access is permanently protected. Admins have complete operational access but cannot alter or punish the Owner account.</p>
+        </section>}
         {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
       </main>
     </div>
