@@ -360,7 +360,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
         {tab === 'dashboard' && !busy && <>
-          <div className="admin-notice warning"><b>!</b><span><strong>{openReports} reports require attention.</strong> Review reports and document every moderation action.</span></div>
+          <div className="admin-notice warning"><b className="admin-notice-alert-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5.5v8" /><circle cx="12" cy="17.5" r="1.25" /></svg></b><span><strong>{openReports} reports require attention.</strong> Review reports and document every moderation action.</span></div>
           {bannedUsers > 0 && <div className="admin-notice danger"><b>×</b><span><strong>{bannedUsers} user accounts are currently banned.</strong></span></div>}
           <section className="admin-search-box"><label>Search for users:</label><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Username, email, UID…" /><button onClick={() => setTab('users')}>⌕ Search</button></section>
           <section className="admin-stat-grid">
