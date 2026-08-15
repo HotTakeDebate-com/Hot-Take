@@ -7,22 +7,22 @@ const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
 const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, deleteReports: false, viewUsers: false, warnUsers: false,
-    banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false,
+    banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false, viewPunishments: false,
     manageRoles: false, managePremium: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
-    banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false,
+    banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false, viewPunishments: true,
     manageRoles: false, managePremium: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
   },
   admin: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
-    banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
+    banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
     manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
-    banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
+    banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
     manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
@@ -462,6 +462,52 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
     await admin.auth().revokeRefreshTokens(uid);
     await audit('role_change', req.staff, uid, { role, premium, targetEmail: target.email || null });
     res.json({ ok: true, role, premium });
+  });
+
+  router.get('/punishments', requirePermission('viewPunishments'), async (_req, res) => {
+    const snap = await admin.firestore().collection('staff_audit').orderBy('createdAt', 'desc').get();
+    const events = snap.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((event) => event.action === 'warn' || event.action === 'ban');
+
+    const infractionCounts = new Map();
+    events.forEach((event) => {
+      if (event.targetUid) infractionCounts.set(event.targetUid, (infractionCounts.get(event.targetUid) || 0) + 1);
+    });
+
+    const targetUids = [...new Set(events.map((event) => event.targetUid).filter(Boolean))];
+    const emailByUid = new Map();
+    for (let index = 0; index < targetUids.length; index += 100) {
+      const result = await admin.auth().getUsers(targetUids.slice(index, index + 100).map((uid) => ({ uid })));
+      result.users.forEach((user) => emailByUid.set(user.uid, user.email || ''));
+    }
+
+    const punishments = events.map((event) => {
+      const issuedAtMs = event.createdAt?.toMillis?.() || null;
+      const durationMinutes = event.action === 'ban' && Number.isFinite(Number(event.details?.durationMinutes))
+        ? Number(event.details.durationMinutes)
+        : null;
+      const permanent = event.action === 'ban' && (durationMinutes === null || durationMinutes === 0);
+      const expiresAtMs = event.action === 'ban' && durationMinutes > 0 && issuedAtMs
+        ? issuedAtMs + durationMinutes * 60_000
+        : null;
+      return {
+        id: event.id,
+        type: event.action === 'warn' ? 'warning' : 'ban',
+        issuedByEmail: event.actorEmail || '',
+        issuedByRole: event.actorRole || 'moderator',
+        punishedUid: event.targetUid || '',
+        punishedEmail: event.details?.targetEmail || emailByUid.get(event.targetUid) || '',
+        reason: event.details?.reason || 'No reason recorded.',
+        issuedAt: event.createdAt || null,
+        issuedAtMs,
+        durationMinutes,
+        permanent,
+        expiresAtMs,
+        infractionCount: event.targetUid ? (infractionCounts.get(event.targetUid) || 0) : 0,
+      };
+    });
+    res.json({ punishments, capabilities: (await permissionConfig())[_req.staff.role] || {} });
   });
 
   router.get('/audit', requirePermission('viewAudit'), async (_req, res) => {
