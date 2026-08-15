@@ -243,6 +243,9 @@ export async function submitReport({
     yourSide: yourSide === 'disagree' ? 'disagree' : 'agree',
     category,
     details: text,
+    status: 'open',
+    staffResponse: null,
+    respondedAt: null,
     createdAt: serverTimestamp(),
   };
   if (peerUid && typeof peerUid === 'string') {

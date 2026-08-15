@@ -1905,6 +1905,17 @@
   min-height: 2.5rem;
 }
 
+.report-modal-select {
+  background: #08090c;
+  color: #fff;
+  color-scheme: dark;
+}
+
+.report-modal-select option {
+  background: #08090c;
+  color: #fff;
+}
+
 .report-modal-textarea {
   min-height: 6rem;
 }
