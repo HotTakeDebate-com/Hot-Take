@@ -6,7 +6,7 @@ import { SiteFooter, SiteHeader } from '../SiteChrome.jsx';
 import { contactEmailLabel, contactEmailMailto } from './contactEmail.js';
 import './PrivacyPolicy.css';
 
-function PrivacyIcon({ type }) {
+export function PrivacyIcon({ type }) {
   const paths = {
     user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c.8-4.3 3.5-6.5 8-6.5s7.2 2.2 8 6.5" /></>,
     database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
