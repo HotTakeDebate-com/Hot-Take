@@ -2994,3 +2994,24 @@
   .admin-dashboard-section > header { align-items: flex-start; }
   .admin-dashboard-section > header > span { display: none; }
 }
+
+
+/* Timed ban screen */
+.user-ban-screen {
+  position:fixed; inset:0; z-index:20000; display:grid; place-items:center; padding:24px;
+  background:rgba(2,2,4,.92); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+}
+.user-ban-card {
+  width:min(560px,100%); padding:38px; border:1px solid rgba(255,46,55,.58); border-radius:18px;
+  background:linear-gradient(145deg,rgba(30,9,12,.98),rgba(10,10,13,.98));
+  box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 70px rgba(237,20,30,.12); text-align:center;
+}
+.user-ban-label { color:#ff343d; font-size:11px; font-weight:900; letter-spacing:.18em; }
+.user-ban-card h1 { margin:13px 0 10px; color:#fff; font-size:clamp(30px,6vw,48px); }
+.user-ban-reason { margin:0 auto 24px; max-width:440px; color:#c7c8ce; line-height:1.6; }
+.user-ban-timer { display:grid; gap:2px; margin:0 auto 20px; padding:20px; border:1px solid #3a2024; border-radius:12px; background:rgba(237,20,30,.08); }
+.user-ban-timer strong { color:#fff; font-size:42px; line-height:1; }
+.user-ban-timer span,.user-ban-issued,.user-ban-card small { color:#a8aab3; }
+.user-ban-timer.permanent strong { color:#ff343d; font-size:30px; }
+.user-ban-issued { margin:0 0 10px; font-weight:800; }
+.user-ban-card small { display:block; line-height:1.5; }
