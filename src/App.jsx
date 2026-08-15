@@ -5,7 +5,7 @@ import DebateHistory from './DebateHistory.jsx';
 import ProfilePanel from './ProfilePanel.jsx';
 import SocialFeed from './SocialFeed.jsx';
 import UserSearchPanel from './UserSearchPanel.jsx';
-import { fetchRecentDebates, logDebateSessionEnd, syncUserPresence } from './chitChatFirestore.js';
+import { fetchRecentDebates, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
 import { onIdTokenChanged, signOut } from 'firebase/auth';
 import AuthScreen from './AuthScreen.jsx';
@@ -204,21 +204,9 @@ export default function App() {
     loadHistory();
   };
 
-  const flushDebateLog = useCallback((reason) => {
-    const s = debateSessionRef.current;
-    if (!s) return;
-    logDebateSessionEnd({
-      topicId: s.topicId,
-      yourSide: s.yourSide,
-      roomId: s.roomId,
-      startedAtMs: s.startedAtMs,
-      reason,
-      connectionState: pcRef.current?.connectionState ?? null,
-      peerUid: s.peerUid ?? null,
-      matchMode: s.matchMode ?? null,
-      roomCode: s.roomCode ?? null,
-      statement: s.statement ?? null,
-    });
+  const flushDebateLog = useCallback(() => {
+    // Match history is created once by the server at users/{email}/debates/{roomId}.
+    // The client only clears its local session state so it cannot create a duplicate record.
     debateSessionRef.current = null;
   }, []);
 
