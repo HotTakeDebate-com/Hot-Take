@@ -52,12 +52,35 @@
 
 .whats-hot-feature {
   display: grid;
-  grid-template-columns: minmax(340px, 0.78fr) minmax(520px, 1.22fr);
+  grid-template-columns: minmax(320px, 0.7fr) minmax(560px, 1.3fr);
   gap: clamp(36px, 5vw, 76px);
   align-items: center;
   padding: clamp(30px, 4vw, 54px) 0;
   border-top: 1px solid #2a2b31;
   border-bottom: 1px solid #2a2b31;
+}
+
+.whats-hot-feature-heading {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  padding-bottom: clamp(4px, 1vw, 12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.whats-hot-feature-heading .whats-hot-eyebrow {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.whats-hot-feature-heading > p:last-child {
+  max-width: 430px;
+  margin: 0;
+  color: #858790;
+  line-height: 1.55;
+  text-align: right;
 }
 
 .whats-hot-meta {
@@ -223,6 +246,10 @@
     grid-template-columns: 1fr;
   }
 
+  .whats-hot-feature-heading {
+    order: -2;
+  }
+
   .whats-hot-video {
     order: -1;
   }
@@ -245,6 +272,16 @@
   .whats-hot-feature {
     gap: 28px;
     padding: 24px 0 42px;
+  }
+
+  .whats-hot-feature-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .whats-hot-feature-heading > p:last-child {
+    text-align: left;
   }
 
   .whats-hot-video-frame {
@@ -283,7 +320,7 @@
 
 .whats-hot-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
 }
 
@@ -360,6 +397,12 @@
 
 .whats-hot-card a span {
   color: #ff2631;
+}
+
+@media (max-width: 1100px) {
+  .whats-hot-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
