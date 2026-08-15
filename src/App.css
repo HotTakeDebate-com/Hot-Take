@@ -3015,3 +3015,22 @@
 .user-ban-timer.permanent strong { color:#ff343d; font-size:30px; }
 .user-ban-issued { margin:0 0 10px; font-weight:800; }
 .user-ban-card small { display:block; line-height:1.5; }
+
+
+/* Punishment log */
+.punishment-log { display:grid; gap:18px; }
+.punishment-log-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.punishment-log-summary > div { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:72px; padding:16px 18px; border:1px solid #2d2f36; border-radius:9px; background:#14151a; }
+.punishment-log-summary span { color:#9da0aa; font-size:12px; font-weight:750; }
+.punishment-log-summary strong { color:#ff3038; font-size:25px; }
+.punishment-table table { min-width:1180px; }
+.punishment-table td { vertical-align:middle; }
+.punishment-table td small { display:block; max-width:230px; overflow:hidden; text-overflow:ellipsis; color:#858995; }
+.punishment-type,.punishment-time { display:inline-flex; align-items:center; min-height:25px; padding:0 9px; border:1px solid; border-radius:999px; font-size:10px; font-weight:900; letter-spacing:.08em; white-space:nowrap; }
+.punishment-type.warning { border-color:#e9a51a; background:rgba(233,165,26,.1); color:#ffc04b; }
+.punishment-type.ban,.punishment-time.permanent { border-color:#ff3038; background:rgba(255,48,56,.1); color:#ff5b62; }
+.punishment-time.active { border-color:#e9a51a; background:rgba(233,165,26,.1); color:#ffc04b; }
+.punishment-time.expired,.punishment-time.neutral { border-color:#4a4d57; background:rgba(255,255,255,.03); color:#a7aab3; }
+.punishment-reason { min-width:220px; max-width:360px; white-space:normal; line-height:1.45; }
+.infraction-count { display:inline-grid; place-items:center; width:32px; height:32px; border-radius:50%; background:#2a1014; color:#ff454d; }
+@media(max-width:760px){.punishment-log-summary{grid-template-columns:1fr}.punishment-log-summary>div{min-height:58px}}
