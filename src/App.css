@@ -2412,6 +2412,10 @@
 .admin-notice strong { display:block; margin-bottom:4px; }
 .admin-notice span { color:#b5b7bf; }
 .admin-notice-icon { font-size:28px; }
+.admin-loading-state { display:inline-flex; align-items:center; gap:12px; min-height:44px; padding:10px 14px; margin-bottom:18px; color:#b5b7bf; font-size:14px; font-weight:700; letter-spacing:.01em; }
+.admin-loading-spinner { width:20px; height:20px; flex:0 0 20px; border:2px solid #34363e; border-top-color:#ff252d; border-radius:50%; animation:admin-loading-spin .8s linear infinite; }
+@keyframes admin-loading-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .admin-loading-spinner { animation:none; border-color:#ff252d; } }
 .admin-notice.warning { background:#261c0c; border-color:#d48716; color:#ffb43d; }
 .admin-notice.danger { background:#281013; border-color:#d42b35; color:#ff535b; }
 .admin-search-box { display:grid; grid-template-columns:220px minmax(240px,1fr) 140px; align-items:stretch; margin:26px 0; border:1px solid #30323a; border-radius:8px; overflow:hidden; background:#15161b; }
