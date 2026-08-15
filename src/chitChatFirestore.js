@@ -56,6 +56,12 @@ export async function syncUserPresence() {
   }
 }
 
+function debateCreatedAtDocumentId(timestampMs) {
+  // Firestore document IDs cannot use "/" but support the rest of ISO-8601.
+  // Replace colons so the Firebase Console shows a clean, sortable timestamp.
+  return new Date(timestampMs).toISOString().replace(/:/g, '-');
+}
+
 /**
  * Records one side’s view of a completed debate (for history / analytics).
  * Fails quietly so UI never breaks.
@@ -87,6 +93,7 @@ export async function logDebateSessionEnd({
     reason,
     connectionState: connectionState ?? null,
     createdAt: serverTimestamp(),
+    createdAtIso: new Date(endedAtMs).toISOString(),
   };
   if (peerUid) row.peerUid = peerUid;
   if (matchMode === 'quick' || matchMode === 'custom') row.matchMode = matchMode;
@@ -95,7 +102,8 @@ export async function logDebateSessionEnd({
   const profileId = userProfileDocId(auth.currentUser);
   if (!profileId) return;
   try {
-    await addDoc(collection(db, 'users', profileId, 'debates'), row);
+    const debateId = debateCreatedAtDocumentId(endedAtMs);
+    await setDoc(doc(db, 'users', profileId, 'debates', debateId), row);
   } catch (e) {
     const code = e?.code ?? e?.message;
     console.error('[hot-take] logDebateSessionEnd failed', code, e);
