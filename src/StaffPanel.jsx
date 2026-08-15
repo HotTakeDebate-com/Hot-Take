@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
-import { staffAction, staffAudit, staffDeleteReport, staffPermissions, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
+import { staffAction, staffAudit, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
   if (!value) return '—';
@@ -117,6 +117,7 @@ const ROLE_PERMISSIONS = [
   ]},
   { group: 'Administration', permissions: [
     { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true] },
+    { key: 'viewPunishments', name: 'View the punishment log', values: [false, true, true, true] },
     { key: 'editUsers', name: 'Edit user profile details', values: [false, false, true, true] },
     { key: 'editAvatars', name: 'Edit profile pictures for lower roles', values: [false, true, true, true] },
     { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true] },
@@ -136,6 +137,8 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
+  const [punishments, setPunishments] = useState([]);
+  const [punishmentNow, setPunishmentNow] = useState(Date.now());
   const [permissions, setPermissions] = useState({});
   const [capabilities, setCapabilities] = useState({});
   const [savingPermission, setSavingPermission] = useState('');
@@ -174,9 +177,20 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
+      if (tab === 'punishments') {
+        const punishmentData = await staffPunishments();
+        setPunishments(punishmentData.punishments || []);
+        setCapabilities(punishmentData.capabilities || {});
+        setPunishmentNow(Date.now());
+      }
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
   useEffect(() => { load(); }, [tab]);
+  useEffect(() => {
+    if (tab !== 'punishments') return undefined;
+    const timer = window.setInterval(() => setPunishmentNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [tab]);
 
   const filteredUsers = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -336,11 +350,12 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b>♙</b>Users</button>
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b>♟</b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b>↶</b>Audit logs</button>}
+        <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b>⚖</b>Punishment Log</button>
         <span />
         <button onClick={onBack}><b>←</b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}>↻ Refresh</button></div>
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}>↻ Refresh</button></div>
         {error && <div className="admin-notice error"><b>×</b>{error}</div>}
         {busy && <div className="admin-notice"><b>…</b>Loading administrative data…</div>}
 
@@ -528,6 +543,37 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
             <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingProtected || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium || capabilities.editAvatars)} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
         </div>}
+        {tab === 'punishments' && !busy && <section className="punishment-log">
+          <div className="punishment-log-summary">
+            <div><span>Total recorded infractions</span><strong>{punishments.length}</strong></div>
+            <div><span>Warnings</span><strong>{punishments.filter((item) => item.type === 'warning').length}</strong></div>
+            <div><span>Bans</span><strong>{punishments.filter((item) => item.type === 'ban').length}</strong></div>
+          </div>
+          <div className="staff-table-wrap punishment-table"><table>
+            <thead><tr><th>Issued</th><th>Punishment</th><th>Issued by</th><th>Punished user</th><th>Reason</th><th>Time remaining</th><th>Total infractions</th></tr></thead>
+            <tbody>{punishments.map((item) => {
+              const remainingMinutes = item.expiresAtMs ? Math.max(0, Math.ceil((item.expiresAtMs - punishmentNow) / 60000)) : null;
+              const expired = item.type === 'ban' && !item.permanent && remainingMinutes === 0;
+              return <tr key={item.id}>
+                <td><b>{dateValue(item.issuedAt)}</b></td>
+                <td><span className={'punishment-type ' + item.type}>{item.type === 'warning' ? 'WARNING' : 'BAN'}</span></td>
+                <td><b>{item.issuedByEmail || 'Unknown staff'}</b><small>{item.issuedByRole}</small></td>
+                <td><b>{item.punishedEmail || 'Email unavailable'}</b><small>{item.punishedUid || '—'}</small></td>
+                <td className="punishment-reason">{item.reason}</td>
+                <td>{item.type === 'warning'
+                  ? <span className="punishment-time neutral">No expiration</span>
+                  : item.permanent
+                    ? <span className="punishment-time permanent">Permanent</span>
+                    : expired
+                      ? <span className="punishment-time expired">Expired</span>
+                      : <span className="punishment-time active">{remainingMinutes} minute{remainingMinutes === 1 ? '' : 's'}</span>}</td>
+                <td><strong className="infraction-count">{item.infractionCount}</strong></td>
+              </tr>;
+            })}</tbody>
+          </table></div>
+          {!punishments.length && <div className="admin-notice">No warnings or bans have been issued.</div>}
+        </section>}
+
         {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
       </main>
     </div>
