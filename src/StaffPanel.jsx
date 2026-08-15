@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
-import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebates, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
+import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
 import './WhatsHotAdmin.css';
 import './AdminIcons.css';
 
@@ -286,6 +286,8 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   const [watchingDebate, setWatchingDebate] = useState(null);
   const [spectatorStreams, setSpectatorStreams] = useState({});
   const [spectatorError, setSpectatorError] = useState('');
+  const [debateDetails, setDebateDetails] = useState({ participants: [], messages: [] });
+  const [endingDebate, setEndingDebate] = useState(false);
   const spectatorConnectionsRef = useRef(new Map());
   const [page, setPage] = useState(1);
   const [newsStories, setNewsStories] = useState([]);
@@ -382,11 +384,21 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     socket.on('staff-spectator-error', onError);
     return () => { socket.off('staff-spectator-signal', onSignal); socket.off('staff-spectator-error', onError); };
   }, [socket, rtcConfig]);
+  useEffect(() => {
+    if (!watchingDebate) return undefined;
+    let active = true;
+    const refresh = () => staffDebateDetails(watchingDebate.roomId)
+      .then((details) => { if (active) setDebateDetails(details); })
+      .catch((error) => { if (active) setSpectatorError(error.message); });
+    refresh();
+    const timer = window.setInterval(refresh, 3000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [watchingDebate]);
 
   const enterDebate = (debate) => {
     spectatorConnectionsRef.current.forEach((pc) => pc.close());
     spectatorConnectionsRef.current.clear();
-    setSpectatorStreams({}); setSpectatorError(''); setWatchingDebate(debate);
+    setSpectatorStreams({}); setSpectatorError(''); setDebateDetails({ participants: [], messages: [] }); setWatchingDebate(debate);
     window.setTimeout(() => socket?.emit('staff-watch-debate', { roomId: debate.roomId }), 0);
   };
   const exitDebate = () => {
@@ -394,6 +406,16 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     spectatorConnectionsRef.current.forEach((pc) => pc.close());
     spectatorConnectionsRef.current.clear();
     setSpectatorStreams({}); setWatchingDebate(null);
+  };
+  const endWatchedDebate = async () => {
+    if (!watchingDebate || !window.confirm('End this debate for both participants? This action is recorded in the audit log.')) return;
+    setEndingDebate(true); setSpectatorError('');
+    try {
+      await staffEndDebate(watchingDebate.roomId);
+      exitDebate();
+      setDebateLog((current) => current.map((item) => item.roomId === watchingDebate.roomId ? { ...item, active: false } : item));
+    } catch (error) { setSpectatorError(error.message); }
+    finally { setEndingDebate(false); }
   };
 
   const filteredUsers = useMemo(() => {
@@ -807,7 +829,21 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
 
         {tab === 'audit' && !busy && <section><div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{pageSlice(audit).map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div><Pagination page={page} total={audit.length} onChange={setPage} /></section>}
 
-        {watchingDebate && <div className="admin-monitor-backdrop" onMouseDown={exitDebate}><section className="admin-monitor-modal live" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><header><div><p>LIVE · ANONYMOUS STAFF SPECTATOR</p><h2>{watchingDebate.statement || watchingDebate.topicId || 'Active debate'}</h2></div><button onClick={exitDebate} aria-label="Exit debate">×</button></header><div className="admin-monitor-stage"><div className="admin-spectator-grid">{Object.values(spectatorStreams).map((stream, index) => <SpectatorVideo key={stream.id || index} stream={stream} label={'Debater ' + (index + 1)} />)}{!Object.keys(spectatorStreams).length && <div className="admin-spectator-connecting"><span className="admin-loading-spinner" /><b>Connecting to live debate…</b><small>Waiting for the debaters’ audio and video streams.</small></div>}</div>{spectatorError && <p className="admin-spectator-error">{spectatorError}</p>}<p>You are spectating silently. Your camera and microphone are not connected, and neither debater is notified.</p><dl><div><dt>Status</dt><dd className={watchingDebate.reported ? 'reported' : 'active'}>{watchingDebate.reported ? '⚑ Reported' : '● Active'}</dd></div><div><dt>Room</dt><dd>{watchingDebate.roomId}</dd></div></dl></div><footer><button onClick={exitDebate}>Exit debate</button></footer></section></div>}
+        {watchingDebate && <div className="admin-monitor-backdrop" onMouseDown={exitDebate}>
+          <section className="admin-monitor-modal live" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+            <header><div><p>LIVE · ANONYMOUS STAFF SPECTATOR</p><h2>{watchingDebate.statement || watchingDebate.topicId || 'Active debate'}</h2></div><button onClick={exitDebate} aria-label="Exit debate">×</button></header>
+            <div className="admin-monitor-stage">
+              <div className="admin-spectator-grid">{Object.values(spectatorStreams).map((stream, index) => <SpectatorVideo key={stream.id || index} stream={stream} label={'Debater ' + (index + 1)} />)}{!Object.keys(spectatorStreams).length && <div className="admin-spectator-connecting"><span className="admin-loading-spinner" /><b>Connecting to live debate…</b><small>Waiting for the debaters’ audio and video streams.</small></div>}</div>
+              {spectatorError && <p className="admin-spectator-error">{spectatorError}</p>}
+              <p>You are spectating silently. Your camera and microphone are not connected, and neither debater is notified.</p>
+              <div className="admin-monitor-columns">
+                <section><h3>Connected users</h3>{debateDetails.participants.map((participant) => <div className="admin-monitor-user" key={participant.uid}><b>{participant.email}</b><small>{participant.uid}</small></div>)}</section>
+                <section><h3>Live chat log</h3><div className="admin-monitor-chat">{debateDetails.messages.map((message) => <div key={message.id}><b>{debateDetails.participants.find((participant) => participant.uid === message.authorUid)?.email || 'Debater'}</b><span>{message.text}</span><time>{message.sentAtMs ? new Date(message.sentAtMs).toLocaleTimeString() : ''}</time></div>)}{!debateDetails.messages.length && <p>No chat messages in this debate.</p>}</div></section>
+              </div>
+            </div>
+            <footer><button onClick={exitDebate}>Exit debate</button><button className="danger" disabled={endingDebate} onClick={endWatchedDebate}>{endingDebate ? 'Ending…' : 'End debate for everyone'}</button></footer>
+          </section>
+        </div>}
       </main>
     </div>
   </div>;
