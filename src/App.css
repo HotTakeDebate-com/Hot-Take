@@ -3031,7 +3031,9 @@
 .admin-monitor-user small { margin-top:4px; color:#858892; }
 .admin-monitor-chat { max-height:250px; overflow:auto; }
 .admin-monitor-chat > div { display:grid; grid-template-columns:minmax(120px,.45fr) minmax(0,1fr) auto; gap:10px; padding:10px 14px; border-bottom:1px solid #292b32; align-items:start; }
-.admin-monitor-chat b { color:#ff656c; overflow:hidden; text-overflow:ellipsis; }
+.admin-monitor-chat b { overflow:hidden; text-overflow:ellipsis; }
+.admin-monitor-chat b.chat-user-one { color:#ff656c; }
+.admin-monitor-chat b.chat-user-two { color:#5da9ff; }
 .admin-monitor-chat span { overflow-wrap:anywhere; }
 .admin-monitor-chat time { color:#858892; font-size:10px; }
 .admin-monitor-chat > p { margin:0; padding:20px; color:#858892; text-align:center; }
