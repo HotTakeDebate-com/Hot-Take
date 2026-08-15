@@ -15,6 +15,7 @@ import LegalViewer from './legal/LegalViewer.jsx';
 import MissionPage from './MissionPage.jsx';
 import SupportPage from './SupportPage.jsx';
 import FaqPage from './FaqPage.jsx';
+import WhatsHotPage from './WhatsHotPage.jsx';
 import { auth, isFirebaseConfigured } from './firebase.js';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DeviceSettings from './DeviceSettings.jsx';
@@ -1072,6 +1073,7 @@ export default function App() {
           onPickMission={() => setHeaderOverlay('mission')}
           onPickSupport={() => setHeaderOverlay('faq')}
           onPickHelp={() => setHeaderOverlay('support')}
+          onPickWhatsHot={() => setHeaderOverlay('whats-hot')}
           brandExtras={
             staffRole ? (
               <button type="button" className="landing-admin-link" onClick={() => setStep('admin')}>
@@ -1611,6 +1613,21 @@ export default function App() {
       )}
       {showAppShell && headerOverlay === 'faq' && (
         <FaqPage onBack={() => setHeaderOverlay(null)} onSupport={() => setHeaderOverlay('support')} isSignedIn={isSignedIn} onSignIn={() => openAuth('signin')} onSignUp={() => openAuth('signup')} onSignOut={handleSignOut} onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }} onPickLegal={(id) => setHeaderOverlay(id)} onPickMission={() => setHeaderOverlay('mission')} />
+      )}
+      {showAppShell && headerOverlay === 'whats-hot' && (
+        <WhatsHotPage
+          onBack={() => setHeaderOverlay(null)}
+          isSignedIn={isSignedIn}
+          onSignIn={() => openAuth('signin')}
+          onSignUp={() => openAuth('signup')}
+          onSignOut={handleSignOut}
+          onProfile={() => { setHeaderOverlay(null); setSocialProfileEmail(null); setSocialReturnStep('welcome'); setStep('profile'); }}
+          onPickLegal={(id) => setHeaderOverlay(id)}
+          onPickMission={() => setHeaderOverlay('mission')}
+          onPickFaq={() => setHeaderOverlay('faq')}
+          onPickSupport={() => setHeaderOverlay('support')}
+          onQuickMatch={startQuickMatch}
+        />
       )}
     </>
   );
