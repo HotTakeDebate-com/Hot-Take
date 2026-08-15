@@ -12,6 +12,7 @@ import { setupRedisIfConfigured, allowJoinQueueIp, shutdownRedisClients } from '
 import admin from 'firebase-admin';
 import { persistChatMessage, persistMatchSession } from './persistence.js';
 import { attachModerationRoutes } from './moderationApi.js';
+import { createAnalyticsTracker } from './analytics.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -187,6 +188,12 @@ const queues = new Map();
 const customQueues = new Map();
 /** @type {Map<string, { roomCode: string, statement: string, joinMode: 'open' | 'code', createdAtMs: number, createdBy: string, activeRoomId: string | null }>} */
 const customGames = new Map();
+const analytics = createAnalyticsTracker({
+  io,
+  queues,
+  customQueues,
+  isAdminReady: () => firebaseAdminReady,
+});
 /** Keep periodic timer handle for stale custom lobby cleanup. */
 let customLobbyCleanupTimer = null;
 let metricsLogTimer = null;
@@ -686,6 +693,7 @@ io.on('connection', (socket) => {
     socket.data.displayName = cleanDisplayName(displayName) ?? socket.data.displayName;
     socket.data.topicId = topicId;
     socket.data.side = side;
+    analytics.recordQueueJoin(topicId, side, 'quick');
 
     pruneQuickQueue(topicId);
     const q = getQueue(topicId);
@@ -745,6 +753,7 @@ io.on('connection', (socket) => {
         peerDisplayName: peerSocket.data.displayName ?? null,
       });
       metrics.matches += 1;
+      analytics.recordMatch(topicId, 'quick');
       return;
     }
 
@@ -1144,6 +1153,7 @@ async function startServer() {
 
   const onShutdown = async (signal) => {
     logMetricsOnShutdown(signal);
+    await analytics.shutdown();
     await shutdownRedisClients(redisClients);
     process.exit(0);
   };
