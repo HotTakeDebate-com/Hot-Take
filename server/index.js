@@ -165,6 +165,19 @@ io.use(async (socket, next) => {
     if (decoded.email && decoded.email_verified !== true) {
       return next(new Error('Verify your email before using matchmaking.'));
     }
+    const banRef = admin.firestore().collection('user_bans').doc(decoded.uid);
+    const banSnap = await banRef.get();
+    if (banSnap.exists) {
+      const ban = banSnap.data() || {};
+      const banUntilMs = ban.banUntil?.toMillis?.() || 0;
+      const active = ban.active === true && (ban.permanent === true || banUntilMs > Date.now());
+      if (active) {
+        return next(new Error(ban.permanent === true
+          ? 'This account is permanently banned.'
+          : 'This account is temporarily banned.'));
+      }
+      if (ban.active === true && ban.permanent !== true) await banRef.delete().catch(() => {});
+    }
     socket.data.uid = decoded.uid;
     socket.data.emailVerified = decoded.email_verified === true;
     socket.data.displayName = cleanDisplayName(decoded.name);
@@ -463,7 +476,7 @@ app.delete('/api/account', async (req, res) => {
 });
 
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
-attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady });
+attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady, io });
 attachWarningRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {

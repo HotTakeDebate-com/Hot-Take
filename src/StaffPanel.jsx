@@ -185,11 +185,24 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   }, [users, query]);
 
   const act = async (user, action) => {
+    let durationMinutes = null;
+    if (action === 'ban') {
+      const rawDuration = window.prompt('Ban length in minutes. Enter 0 for a permanent ban:', '60');
+      if (rawDuration === null) return;
+      durationMinutes = Number(rawDuration);
+      if (!Number.isInteger(durationMinutes) || durationMinutes < 0 || durationMinutes > 525600) {
+        setError('Enter 0 for permanent, or a whole number of minutes up to 525600.');
+        return;
+      }
+    }
     const reason = window.prompt('Reason for ' + action + ':');
     if (!reason) return;
-    if (!window.confirm(action.toUpperCase() + ' ' + (user.email || user.uid) + '?')) return;
+    const durationLabel = action === 'ban'
+      ? (durationMinutes === 0 ? ' permanently' : ` for ${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}`)
+      : '';
+    if (!window.confirm(action.toUpperCase() + ' ' + (user.email || user.uid) + durationLabel + '?')) return;
     try {
-      await staffAction(user.uid, action, reason);
+      await staffAction(user.uid, action, reason, durationMinutes);
       const data = await staffUsers();
       const nextUsers = data.users || [];
       setUsers(nextUsers);
@@ -408,7 +421,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               <td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td>
               <td><b>{u.role === 'moderator' ? 'Moderator' : u.role}</b></td>
               <td>{u.role === 'user' && u.premium ? <span className="staff-premium">Premium</span> : <span className="staff-not-applicable">Standard</span>}</td>
-              <td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td>
+              <td>{u.disabled ? <span className="staff-banned">{u.banPermanent ? 'PERMANENTLY BANNED' : `BANNED · ${Math.max(1, Math.ceil((u.banUntilMs - Date.now()) / 60000))}m left`}</span> : 'Active'}</td>
               <td className="staff-actions">
                 {capabilities.warnUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'warn'); }}>Warn</button>}
                 {!u.disabled && capabilities.banUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'ban'); }}>Ban</button>}
@@ -493,7 +506,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                   <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" disabled={!capabilities.revokeSessions || ROLE_RANK[editingUser.role] >= ROLE_RANK[role]} onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
                 </section>
                 <section className="user-editor-section"><h3>Account metadata</h3>
-                  <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Account status</span><b className={editingUser.disabled ? 'status-danger' : 'status-good'}>{editingUser.disabled ? 'Banned / disabled' : 'Active'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
+                  <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Account status</span><b className={editingUser.disabled ? 'status-danger' : 'status-good'}>{editingUser.disabled ? (editingUser.banPermanent ? 'Permanently banned' : `Banned · ${Math.max(1, Math.ceil((editingUser.banUntilMs - Date.now()) / 60000))} minutes left`) : 'Active'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
                 </section>
               </>}
               {editorTab === 'moderation' && <>

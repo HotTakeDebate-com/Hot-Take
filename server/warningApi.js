@@ -20,6 +20,27 @@ export function attachWarningRoutes(app, { isAdminReady }) {
   });
   router.use(requireUser);
 
+  router.get('/ban', async (req, res) => {
+    const ref = admin.firestore().collection('user_bans').doc(req.user.uid);
+    const snap = await ref.get();
+    if (!snap.exists) return res.json({ active: false, serverNowMs: Date.now() });
+    const ban = snap.data() || {};
+    const banUntilMs = ban.banUntil?.toMillis?.() || null;
+    const active = ban.active === true && (ban.permanent === true || Number(banUntilMs) > Date.now());
+    if (!active) {
+      await ref.delete().catch(() => {});
+      return res.json({ active: false, serverNowMs: Date.now() });
+    }
+    res.json({
+      active: true,
+      permanent: ban.permanent === true,
+      banUntilMs,
+      reason: ban.reason || 'a violation of the community guidelines',
+      issuedByRole: ban.issuedByRole || 'moderator',
+      serverNowMs: Date.now(),
+    });
+  });
+
   router.get('/', async (req, res) => {
     const snap = await admin.firestore().collection('user_warnings')
       .where('uid', '==', req.user.uid).limit(50).get();

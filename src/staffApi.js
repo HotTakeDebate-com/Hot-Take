@@ -21,7 +21,7 @@ export const staffReports = () => request('/reports');
 export const staffDeleteReport = (id) => request('/reports/' + encodeURIComponent(id), { method: 'DELETE' });
 export const staffAudit = () => request('/audit');
 export const staffRespond = (id, response, status) => request('/reports/' + encodeURIComponent(id) + '/respond', { method: 'POST', body: JSON.stringify({ response, status }) });
-export const staffAction = (uid, action, reason) => request('/users/' + encodeURIComponent(uid) + '/action', { method: 'POST', body: JSON.stringify({ action, reason }) });
+export const staffAction = (uid, action, reason, durationMinutes = null) => request('/users/' + encodeURIComponent(uid) + '/action', { method: 'POST', body: JSON.stringify({ action, reason, durationMinutes }) });
 export const staffRole = (uid, role, premium) => request('/users/' + encodeURIComponent(uid) + '/role', { method: 'POST', body: JSON.stringify({ role, premium }) });
 
 export const staffPermissions = () => request('/permissions');
