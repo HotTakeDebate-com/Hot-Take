@@ -2541,3 +2541,14 @@
   .app.app--admin .admin-console-body { display:block; }
   .app.app--admin .admin-console-main { padding:24px 15px 50px; }
 }
+
+
+/* Keep Users and Audit table headings attached to their own scroll areas */
+.app.app--admin .staff-table-wrap {
+  position: relative;
+}
+.app.app--admin .staff-table-wrap th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
