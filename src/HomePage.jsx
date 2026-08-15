@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  HeroBubblesVisual,
   HotTakeWordmark,
   IconInstagram,
   IconLightning,
-  IconShield,
   IconReddit,
-  IconUser,
   IconUserPlus,
-  IconVideo,
   IconX,
   IconYouTube,
   StepIconChat,
@@ -270,36 +266,37 @@ export default function HomePage({
         </div>
       </header>
 
-      <section className="landing-hero">
+      <section className="landing-hero landing-hero--versus">
         <div className="landing-hero-copy">
-          <p className="landing-eyebrow">Live 1-on-1 debates</p>
-          <h1 className="landing-headline">Have a take?<br />Put it to <span className="landing-headline-accent">the test.</span></h1>
-          <p className="landing-subhead">Join a live 1-on-1 video debate with someone who sees things differently.</p>
-          <ul className="landing-features">
-            <li><IconUser />Real people</li>
-            <li><IconShield />No filters</li>
-            <li><IconVideo />Just debate</li>
-          </ul>
+          <h1 className="landing-headline">
+            Your opinion
+            <br />
+            <span className="landing-headline-accent">vs. the world.</span>
+          </h1>
+          <p className="landing-subhead">
+            Pick a side. Get matched instantly.
+            <br />
+            Defend your take face-to-face.
+          </p>
+          <div className="landing-hero-actions" aria-label="Start debating">
+            <button type="button" className="landing-btn landing-btn--primary landing-hero-btn" onClick={handleQuick}>
+              <IconLightning />
+              Find my debate
+            </button>
+            <button type="button" className="landing-btn landing-btn--outline landing-hero-btn" onClick={handleCustom}>
+              <span className="landing-hero-plus" aria-hidden="true">+</span>
+              Create a debate room
+            </button>
+          </div>
+          <div className="landing-live-proof" aria-label="Live debates are happening now">
+            <div className="landing-live-avatars" aria-hidden="true">
+              <span /><span /><span /><span /><span />
+            </div>
+            <span className="landing-live-dot" aria-hidden="true" />
+            <p>Real people are debating right now</p>
+            <span className="landing-live-pill">Live</span>
+          </div>
         </div>
-        <div className="landing-hero-visual"><HeroBubblesVisual /></div>
-      </section>
-
-      <section className="landing-cta-row" aria-label="Get started">
-        <article className="landing-cta-card landing-cta-card--primary">
-          <div className="landing-cta-icon landing-cta-icon--red" aria-hidden="true"><IconLightning /></div>
-          <h2 className="landing-cta-title">Quick match</h2>
-          <p className="landing-cta-desc">Get matched instantly with someone who has an opposing take.</p>
-          <button type="button" className="landing-btn landing-btn--primary landing-cta-btn" onClick={handleQuick}>Start quick match</button>
-          <p className="landing-cta-foot">Perfect for jumping in and debating now.</p>
-        </article>
-        <div className="landing-cta-or" aria-hidden="true">or</div>
-        <article className="landing-cta-card">
-          <div className="landing-cta-icon" aria-hidden="true"><IconUserPlus /></div>
-          <h2 className="landing-cta-title">Custom room</h2>
-          <p className="landing-cta-desc">Create your own debate room, set the topic, and invite others.</p>
-          <button type="button" className="landing-btn landing-btn--outline landing-cta-btn" onClick={handleCustom}>Create room</button>
-          <p className="landing-cta-foot">Perfect for friends, communities, or events.</p>
-        </article>
       </section>
 
       <section id="how-it-works" className="landing-how">
