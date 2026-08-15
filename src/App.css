@@ -1893,6 +1893,18 @@
 }
 
 .report-modal-select,
+
+.report-modal-select {
+  background: #08090c;
+  color: #fff;
+  color-scheme: dark;
+}
+
+.report-modal-select option {
+  background: #08090c;
+  color: #fff;
+}
+
 .report-modal-textarea {
   font-family: inherit;
   font-size: 0.95rem;
