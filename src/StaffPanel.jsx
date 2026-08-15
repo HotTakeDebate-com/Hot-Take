@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
@@ -57,6 +57,9 @@ function Pagination({ page, total, onChange }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   if (pages <= 1) return null;
   return <nav className="admin-pagination" aria-label="Pagination"><button disabled={page === 1} onClick={() => onChange(page - 1)}>Previous</button><span>Page {page} of {pages} · {total} items</span><button disabled={page === pages} onClick={() => onChange(page + 1)}>Next</button></nav>;
+}
+function SpectatorVideo({ stream, label }) {
+  return <div className="admin-spectator-feed"><video ref={(element) => { if (element && element.srcObject !== stream) { element.srcObject = stream; void element.play().catch(() => {}); } }} autoPlay playsInline /><span>{label}</span></div>;
 }
 
 
@@ -272,7 +275,7 @@ function NewsManager({ stories, onReload }) {
   );
 }
 
-export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
+export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
   const [tab, setTab] = useState('dashboard');
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
@@ -281,6 +284,9 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [debates, setDebates] = useState([]);
   const [debateLog, setDebateLog] = useState([]);
   const [watchingDebate, setWatchingDebate] = useState(null);
+  const [spectatorStreams, setSpectatorStreams] = useState({});
+  const [spectatorError, setSpectatorError] = useState('');
+  const spectatorConnectionsRef = useRef(new Map());
   const [page, setPage] = useState(1);
   const [newsStories, setNewsStories] = useState([]);
   const [punishmentNow, setPunishmentNow] = useState(Date.now());
@@ -346,6 +352,49 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     const timer = window.setInterval(() => setPunishmentNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, [tab]);
+  useEffect(() => {
+    if (!socket) return undefined;
+    const onSignal = async ({ participantId, roomId, type, payload }) => {
+      let pc = spectatorConnectionsRef.current.get(participantId);
+      if (!pc && type === 'offer') {
+        pc = new RTCPeerConnection(rtcConfig);
+        spectatorConnectionsRef.current.set(participantId, pc);
+        const stream = new MediaStream();
+        pc.ontrack = (event) => {
+          const incoming = event.streams?.[0];
+          if (incoming) setSpectatorStreams((current) => ({ ...current, [participantId]: incoming }));
+          else { stream.addTrack(event.track); setSpectatorStreams((current) => ({ ...current, [participantId]: stream })); }
+        };
+        pc.onicecandidate = (event) => {
+          if (event.candidate) socket.emit('staff-spectator-return-signal', { participantId, roomId, type: 'ice', payload: event.candidate.toJSON() });
+        };
+      }
+      if (!pc) return;
+      if (type === 'offer') {
+        await pc.setRemoteDescription(new RTCSessionDescription(payload));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit('staff-spectator-return-signal', { participantId, roomId, type: 'answer', payload: answer });
+      } else if (type === 'ice' && payload) await pc.addIceCandidate(new RTCIceCandidate(payload)).catch(() => {});
+    };
+    const onError = ({ message }) => setSpectatorError(message || 'The debate could not be monitored.');
+    socket.on('staff-spectator-signal', onSignal);
+    socket.on('staff-spectator-error', onError);
+    return () => { socket.off('staff-spectator-signal', onSignal); socket.off('staff-spectator-error', onError); };
+  }, [socket, rtcConfig]);
+
+  const enterDebate = (debate) => {
+    spectatorConnectionsRef.current.forEach((pc) => pc.close());
+    spectatorConnectionsRef.current.clear();
+    setSpectatorStreams({}); setSpectatorError(''); setWatchingDebate(debate);
+    window.setTimeout(() => socket?.emit('staff-watch-debate', { roomId: debate.roomId }), 0);
+  };
+  const exitDebate = () => {
+    socket?.emit('staff-leave-debate');
+    spectatorConnectionsRef.current.forEach((pc) => pc.close());
+    spectatorConnectionsRef.current.clear();
+    setSpectatorStreams({}); setWatchingDebate(null);
+  };
 
   const filteredUsers = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -595,7 +644,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
 
         {tab === 'debates' && !busy && <section className="admin-debates-log">
           <div className="admin-debate-summary"><span><i className="active" />{debateLog.filter((item) => item.active && !item.reported).length} active</span><span><i className="reported" />{debateLog.filter((item) => item.reported).length} reported</span><span><i className="completed" />{debateLog.filter((item) => !item.active).length} completed</span></div>
-          <div className="staff-table-wrap"><table><thead><tr><th>Status</th><th>Started</th><th>Debate</th><th>Mode</th><th>Reports</th><th>Monitor</th></tr></thead><tbody>{pageSlice(debateLog).map((debate) => <tr key={debate.roomId}><td><span className={'debate-status ' + (debate.reported ? 'reported' : debate.active ? 'active' : 'completed')}>{debate.reported ? '⚑ REPORTED' : debate.active ? 'ACTIVE' : 'COMPLETED'}</span></td><td>{dateValue(debate.startedAt)}</td><td><b>{debate.statement || debate.topicId || 'Debate'}</b><small className="staff-uid">{debate.roomId}</small></td><td>{debate.matchMode}</td><td>{debate.reportCount || 0}</td><td>{debate.active ? <button className="admin-monitor-button" onClick={() => setWatchingDebate(debate)}>Enter anonymously</button> : <span className="staff-not-applicable">Ended</span>}</td></tr>)}</tbody></table></div>
+          <div className="staff-table-wrap"><table><thead><tr><th>Status</th><th>Started</th><th>Debate</th><th>Mode</th><th>Reports</th><th>Monitor</th></tr></thead><tbody>{pageSlice(debateLog).map((debate) => <tr key={debate.roomId}><td><span className={'debate-status ' + (debate.reported ? 'reported' : debate.active ? 'active' : 'completed')}>{debate.reported ? '⚑ REPORTED' : debate.active ? 'ACTIVE' : 'COMPLETED'}</span></td><td>{dateValue(debate.startedAt)}</td><td><b>{debate.statement || debate.topicId || 'Debate'}</b><small className="staff-uid">{debate.roomId}</small></td><td>{debate.matchMode}</td><td>{debate.reportCount || 0}</td><td>{debate.active ? <button className="admin-monitor-button" onClick={() => enterDebate(debate)}>Enter anonymously</button> : <span className="staff-not-applicable">Ended</span>}</td></tr>)}</tbody></table></div>
           {!debateLog.length && <div className="admin-notice">No debates have been recorded yet.</div>}
           <Pagination page={page} total={debateLog.length} onChange={setPage} />
         </section>}
@@ -758,7 +807,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
 
         {tab === 'audit' && !busy && <section><div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{pageSlice(audit).map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div><Pagination page={page} total={audit.length} onChange={setPage} /></section>}
 
-        {watchingDebate && <div className="admin-monitor-backdrop" onMouseDown={() => setWatchingDebate(null)}><section className="admin-monitor-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><header><div><p>ANONYMOUS STAFF MONITOR</p><h2>{watchingDebate.statement || watchingDebate.topicId || 'Active debate'}</h2></div><button onClick={() => setWatchingDebate(null)} aria-label="Close monitor">×</button></header><div className="admin-monitor-stage"><span className="admin-monitor-shield"><AdminIcon type="moderator" /></span><h3>Monitoring in progress</h3><p>Your presence is hidden from both debaters. This read-only view refreshes the debate’s live moderation status every 10 seconds.</p><dl><div><dt>Status</dt><dd className={watchingDebate.reported ? 'reported' : 'active'}>{watchingDebate.reported ? '⚑ Reported' : '● Active'}</dd></div><div><dt>Room</dt><dd>{watchingDebate.roomId}</dd></div><div><dt>Started</dt><dd>{dateValue(watchingDebate.startedAt)}</dd></div><div><dt>Reports</dt><dd>{watchingDebate.reportCount || 0}</dd></div></dl></div><footer><button onClick={() => setWatchingDebate(null)}>Exit monitor</button><button className="primary" onClick={load}>Refresh status</button></footer></section></div>}
+        {watchingDebate && <div className="admin-monitor-backdrop" onMouseDown={exitDebate}><section className="admin-monitor-modal live" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><header><div><p>LIVE · ANONYMOUS STAFF SPECTATOR</p><h2>{watchingDebate.statement || watchingDebate.topicId || 'Active debate'}</h2></div><button onClick={exitDebate} aria-label="Exit debate">×</button></header><div className="admin-monitor-stage"><div className="admin-spectator-grid">{Object.values(spectatorStreams).map((stream, index) => <SpectatorVideo key={stream.id || index} stream={stream} label={'Debater ' + (index + 1)} />)}{!Object.keys(spectatorStreams).length && <div className="admin-spectator-connecting"><span className="admin-loading-spinner" /><b>Connecting to live debate…</b><small>Waiting for the debaters’ audio and video streams.</small></div>}</div>{spectatorError && <p className="admin-spectator-error">{spectatorError}</p>}<p>You are spectating silently. Your camera and microphone are not connected, and neither debater is notified.</p><dl><div><dt>Status</dt><dd className={watchingDebate.reported ? 'reported' : 'active'}>{watchingDebate.reported ? '⚑ Reported' : '● Active'}</dd></div><div><dt>Room</dt><dd>{watchingDebate.roomId}</dd></div></dl></div><footer><button onClick={exitDebate}>Exit debate</button></footer></section></div>}
       </main>
     </div>
   </div>;
