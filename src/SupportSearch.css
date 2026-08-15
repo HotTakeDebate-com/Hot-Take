@@ -1,0 +1,68 @@
+.support-search:focus-within {
+  border-color: #e7474b;
+  box-shadow: 0 0 0 3px rgba(231, 71, 75, .1);
+}
+
+.support-search input::-webkit-search-cancel-button {
+  filter: invert(1);
+  opacity: .65;
+  cursor: pointer;
+}
+
+.support-search-status {
+  margin: -12px 4px 18px !important;
+  color: #85868d !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+.support-no-results {
+  min-height: 280px;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  align-items: center;
+  gap: 20px;
+  padding: 34px;
+  border: 1px dashed #5a3437;
+  border-radius: 12px;
+  background: radial-gradient(circle at 15% 30%, rgba(255, 23, 27, .08), transparent 42%), #0b0c0f;
+}
+
+.support-no-results > span {
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #71383b;
+  border-radius: 50%;
+  color: #ff5d61;
+  background: rgba(255, 23, 27, .06);
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.support-no-results h2 { margin: 0 0 10px; font-size: 25px; }
+.support-no-results p { max-width: 680px; color: #bfc0c5; font-size: 16px; line-height: 1.6; }
+.support-no-results-actions { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.support-no-results-actions a,
+.support-no-results-actions button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.support-no-results-actions a { border: 1px solid #ff272c; background: #e91a1f; color: #fff; }
+.support-no-results-actions button { margin: 0; border: 1px solid #515259; background: transparent; color: #ddd; }
+
+@media (max-width: 680px) {
+  .support-no-results { grid-template-columns: 1fr; padding: 24px; }
+  .support-no-results > span { width: 56px; height: 56px; }
+  .support-no-results-actions { align-items: stretch; flex-direction: column; }
+  .support-no-results-actions a,
+  .support-no-results-actions button { width: 100%; box-sizing: border-box; }
+}
