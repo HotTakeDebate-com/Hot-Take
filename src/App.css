@@ -2724,6 +2724,22 @@
 }
 .user-editor-action-card button:hover,.user-editor-actions button:hover { border-color:#ff343d; color:#ff4a51; }
 .user-editor-action-card button:disabled { opacity:.55; cursor:not-allowed; }
+.user-password-options { display:grid; gap:9px; margin-top:4px; }
+.user-password-options > label {
+  display:grid; grid-template-columns:20px minmax(0,1fr); gap:11px; align-items:start;
+  padding:13px 14px; border:1px solid #30323a; border-radius:8px; background:#111217; cursor:pointer;
+}
+.user-password-options > label.selected { border-color:#ed141e; background:rgba(237,20,30,.08); }
+.user-password-options input[type=radio] { width:17px; height:17px; margin-top:2px; accent-color:#ed141e; }
+.user-password-options label span { display:grid; gap:4px; }
+.user-password-options label strong { color:#fff; font-size:13px; }
+.user-password-options label small { color:#858893; font-size:11px; line-height:1.4; }
+.user-password-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:4px 0 8px 31px; }
+.user-password-fields input {
+  min-height:44px; width:100%; border:1px solid #3b3d46; border-radius:7px; padding:0 12px;
+  background:#0d0e12; color:#fff; font:inherit;
+}
+
 .user-editor-section.danger-zone { border-color:#492026; }
 .user-editor-section.danger-zone p,.user-editor-help { color:#92959e; font-size:12px; line-height:1.55; }
 .user-editor-actions { display:flex; flex-wrap:wrap; gap:9px; }
@@ -2748,6 +2764,7 @@
   .user-editor-check b{grid-column:1;margin:0 0 0 30px;margin-top:-31px}
   .user-editor-meta{grid-template-columns:1fr}
   .user-editor-action-card{align-items:flex-start;flex-direction:column}
+  .user-password-fields{grid-template-columns:1fr;padding-left:0}
   .user-editor-message{margin:16px 18px 0}
   .user-editor-footer{padding:14px 18px}
 }
