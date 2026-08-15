@@ -1,4 +1,8 @@
 .whats-hot-page {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: auto;
   min-height: 100vh;
   color: #f7f7f8;
   background:
