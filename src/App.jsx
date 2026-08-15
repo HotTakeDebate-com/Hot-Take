@@ -967,7 +967,7 @@ export default function App() {
                     {staffRole && (
                       <button
                         type="button"
-                        className={`header-chip header-social-tab ${step === 'admin' ? 'header-social-tab--active' : ''}`}
+                        className={`header-chip header-social-tab header-admin-link ${step === 'admin' ? 'header-social-tab--active' : ''}`}
                         onClick={() => setStep('admin')}
                       >
                         Admin
@@ -1076,7 +1076,7 @@ export default function App() {
             isSignedIn ? (
               <>
                 {staffRole && (
-                  <button type="button" className="landing-btn landing-btn--ghost" onClick={() => setStep('admin')}>
+                  <button type="button" className="landing-admin-link" onClick={() => setStep('admin')}>
                     Admin
                   </button>
                 )}

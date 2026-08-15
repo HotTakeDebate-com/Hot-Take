@@ -38,6 +38,43 @@
 .landing-nav-actions .landing-btn, .landing-nav-actions .landing-nav-menu-trigger { flex-shrink: 0; }
 .header-nav--landing { position: relative; }
 
+/* Staff-only navigation stays intentionally compact so it never crowds Support. */
+.landing-admin-link {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 23, 27, .34);
+  border-radius: 5px;
+  background: rgba(255, 23, 27, .08);
+  color: #ff5a5d;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+.landing-admin-link:hover,
+.landing-admin-link:focus-visible {
+  color: #fff;
+  border-color: var(--landing-red);
+  background: rgba(255, 23, 27, .18);
+  outline: none;
+}
+
+@media (max-width: 1320px) and (min-width: 1101px) {
+  .landing-nav { gap: 18px; }
+  .landing-nav-links { gap: clamp(20px, 2.2vw, 34px); }
+  .landing-nav-actions { gap: 10px; }
+  .landing-nav-actions .landing-btn { padding-inline: 20px; }
+}
+
 .landing-btn {
   min-height: 44px;
   display: inline-flex; align-items: center; justify-content: center;
