@@ -82,7 +82,20 @@ export function attachStaffRoutes(app, { isAdminReady }) {
 
   router.get('/reports', requireRole('moderator'), async (req, res) => {
     const snap = await admin.firestore().collection('reports').orderBy('createdAt', 'desc').limit(200).get();
-    res.json({ reports: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    const reports = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const uids = [...new Set(reports.flatMap((report) => [report.reporterUid, report.peerUid]).filter(Boolean))];
+    const emailByUid = new Map();
+    for (let index = 0; index < uids.length; index += 100) {
+      const batch = await admin.auth().getUsers(uids.slice(index, index + 100).map((uid) => ({ uid })));
+      batch.users.forEach((user) => emailByUid.set(user.uid, user.email || ''));
+    }
+    res.json({
+      reports: reports.map((report) => ({
+        ...report,
+        reporterEmail: report.reporterEmail || emailByUid.get(report.reporterUid) || '',
+        reportedEmail: report.reportedEmail || emailByUid.get(report.peerUid) || '',
+      })),
+    });
   });
 
   router.post('/reports/:id/respond', requireRole('moderator'), async (req, res) => {
@@ -128,7 +141,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     } else if (action === 'revoke_sessions') {
       await admin.auth().revokeRefreshTokens(uid);
     } else if (action === 'delete') {
-      if (req.staff.role !== 'owner') return res.status(403).json({ error: 'Owner access required.' });
+      if (ROLE_LEVEL[req.staff.role] < ROLE_LEVEL.admin) return res.status(403).json({ error: 'Admin access required.' });
       await admin.auth().deleteUser(uid);
     } else {
       return res.status(400).json({ error: 'Invalid action.' });
@@ -137,11 +150,11 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     res.json({ ok: true });
   });
 
-  router.post('/users/:uid/role', requireRole('owner'), async (req, res) => {
+  router.post('/users/:uid/role', requireRole('admin'), async (req, res) => {
     const uid = String(req.params.uid);
     if (uid === req.staff.uid) return res.status(400).json({ error: 'You cannot change your own role.' });
     const role = String(req.body?.role || 'user');
-    const premium = req.body?.premium === true;
+    const premium = role === 'user' && req.body?.premium === true;
     if (!['user', 'moderator', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
     const target = await admin.auth().getUser(uid);
     if (target.email?.toLowerCase() === OWNER_EMAIL) return res.status(400).json({ error: 'Owner role is protected.' });
