@@ -23,6 +23,7 @@ function roleName(role) {
 
 export default function WarningNotice() {
   const [warnings, setWarnings] = useState([]);
+  const [reportResponses, setReportResponses] = useState([]);
   const [ban, setBan] = useState(null);
   const [nowMs, setNowMs] = useState(Date.now());
   const [busy, setBusy] = useState(false);
@@ -30,11 +31,13 @@ export default function WarningNotice() {
   const loadWarnings = useCallback(async () => {
     if (!auth?.currentUser) { setWarnings([]); return; }
     try {
-      const [warningResult, banResult] = await Promise.all([
+      const [warningResult, responseResult, banResult] = await Promise.all([
         warningRequest('/'),
+        warningRequest('/report-responses'),
         warningRequest('/ban'),
       ]);
       setWarnings(warningResult?.warnings || []);
+      setReportResponses(responseResult?.responses || []);
       setBan(banResult?.active ? banResult : null);
       setNowMs(Date.now());
     } catch {
@@ -45,15 +48,15 @@ export default function WarningNotice() {
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, (user) => {
       if (user) loadWarnings();
-      else { setWarnings([]); setBan(null); }
+      else { setWarnings([]); setReportResponses([]); setBan(null); }
     });
     const pollTimer = window.setInterval(loadWarnings, 10000);
     const minuteTimer = window.setInterval(() => setNowMs(Date.now()), 60_000);
     return () => { unsubscribe(); window.clearInterval(pollTimer); window.clearInterval(minuteTimer); };
   }, [loadWarnings]);
 
-  const warning = warnings[0];
-  const isReportResponse = warning?.type === 'report_response';
+  const warning = reportResponses[0] || warnings[0];
+  const isReportResponse = reportResponses.length > 0;
   const minutesRemaining = ban?.permanent ? null : Math.max(0, Math.ceil((Number(ban?.banUntilMs || 0) - nowMs) / 60_000));
   useEffect(() => {
     if (ban && !ban.permanent && minutesRemaining === 0) {
@@ -64,8 +67,13 @@ export default function WarningNotice() {
   const acknowledge = async () => {
     setBusy(true);
     try {
-      await warningRequest('/' + encodeURIComponent(warning.id) + '/acknowledge', { method: 'POST' });
-      setWarnings((current) => current.filter((item) => item.id !== warning.id));
+      if (isReportResponse) {
+        await warningRequest('/report-responses/' + encodeURIComponent(warning.id) + '/acknowledge', { method: 'POST', body: JSON.stringify({ source: warning.source }) });
+        setReportResponses((current) => current.filter((item) => item.id !== warning.id));
+      } else {
+        await warningRequest('/' + encodeURIComponent(warning.id) + '/acknowledge', { method: 'POST' });
+        setWarnings((current) => current.filter((item) => item.id !== warning.id));
+      }
     } finally {
       setBusy(false);
     }
