@@ -10,7 +10,7 @@ import { getRtcConfigForClient } from './rtcConfig.js';
 import { createRateLimiter, getClientIp } from './rateLimit.js';
 import { setupRedisIfConfigured, allowJoinQueueIp, shutdownRedisClients } from './redisOptional.js';
 import admin from 'firebase-admin';
-import { persistChatMessage, persistMatchSession } from './persistence.js';
+import { markMatchSessionReported, persistChatMessage, persistMatchSession } from './persistence.js';
 import { attachModerationRoutes } from './moderationApi.js';
 import { createAnalyticsTracker } from './analytics.js';
 
@@ -1049,6 +1049,19 @@ io.on('connection', (socket) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     socket.to(roomId).emit('signal', { type, payload, from: socket.id });
+  });
+
+  socket.on('mark-debate-reported', async ({ roomId, reportId }) => {
+    if (rejectIfSocketUnverified(socket)) return;
+    if (!roomId || roomId !== socket.data.roomId || !reportId) return;
+    const { agreeUid, disagreeUid } = getRoomAgreeDisagreeUids(roomId);
+    await markMatchSessionReported(firebaseAdminReady, {
+      roomId,
+      reportId: String(reportId).slice(0, 128),
+      reporterUid: socket.data.uid,
+      agreeUid,
+      disagreeUid,
+    });
   });
 
   socket.on('debate-chat', async ({ roomId, text }) => {

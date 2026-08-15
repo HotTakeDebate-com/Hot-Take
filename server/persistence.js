@@ -78,6 +78,46 @@ async function authUidToUserDocEmail(uid) {
   }
 }
 
+export async function markMatchSessionReported(adminReady, payload) {
+  if (!adminReady || !payload?.roomId || !payload?.reportId || !payload?.reporterUid) return false;
+  const { roomId, reportId, reporterUid, agreeUid, disagreeUid } = payload;
+  try {
+    const db = admin.firestore();
+    const reportSnap = await db.collection('reports').doc(reportId).get();
+    if (!reportSnap.exists) return false;
+    const report = reportSnap.data();
+    if (
+      report?.reporterUid !== reporterUid ||
+      report?.roomId !== roomId ||
+      (report?.peerUid !== agreeUid && report?.peerUid !== disagreeUid)
+    ) {
+      return false;
+    }
+
+    const [agreeEmail, disagreeEmail] = await Promise.all([
+      authUidToUserDocEmail(agreeUid),
+      authUidToUserDocEmail(disagreeUid),
+    ]);
+    const emails = [...new Set([agreeEmail, disagreeEmail].filter(Boolean))];
+    const marker = {
+      reported: true,
+      moderationStatus: '🔴 REPORTED',
+      reportedAt: admin.firestore.FieldValue.serverTimestamp(),
+      reportCount: admin.firestore.FieldValue.increment(1),
+      latestReportId: reportId,
+    };
+    await Promise.all(
+      emails.map((email) =>
+        db.collection('users').doc(email).collection('debates').doc(roomId).set(marker, { merge: true })
+      )
+    );
+    return true;
+  } catch (e) {
+    console.warn('[persist] mark reported debate', roomId, e?.message ?? e);
+    return false;
+  }
+}
+
 export async function persistChatMessage(adminReady, payload) {
   if (!adminReady || !payload?.roomId || !payload.text) return;
   const { roomId, authorUid, authorSocketId, text, sentAtMs, agreeUid, disagreeUid } = payload;
