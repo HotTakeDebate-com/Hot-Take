@@ -2564,3 +2564,25 @@
   align-items: center;
   margin: 0 6px 6px 0;
 }
+
+
+/* Report state and separated membership styling */
+.staff-report-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+.staff-report-status.status-open { color:#ff454d; background:rgba(255,35,45,.10); }
+.staff-report-status.status-reviewing { color:#ffb02e; background:rgba(255,176,46,.10); }
+.staff-report-status.status-responded,
+.staff-report-status.status-resolved { color:#35dc80; background:rgba(53,220,128,.10); }
+.staff-report-status.status-closed { color:#a0a3ac; background:rgba(160,163,172,.08); }
+.staff-card dd small { display:block; margin-top:4px; color:#858893; overflow-wrap:anywhere; }
+.staff-premium { display:inline-flex; align-items:center; gap:7px; color:#f2c45c; font-weight:700; }
+.staff-premium input { accent-color:#f2c45c; }
+.staff-not-applicable { color:#757883; font-size:12px; }
