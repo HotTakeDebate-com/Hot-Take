@@ -171,6 +171,7 @@ export default function App() {
   const localVideoRef = useRef(null);
   const roomIdRef = useRef(null);
   const pendingSignalsRef = useRef([]);
+  const spectatorPeerConnectionsRef = useRef(new Map());
   /** Set when a debate session successfully starts (after mic/cam acquired). */
   const debateSessionRef = useRef(null);
   const matchModeRef = useRef(null);
@@ -216,6 +217,8 @@ export default function App() {
   }, []);
 
   const cleanupMedia = useCallback(() => {
+    spectatorPeerConnectionsRef.current.forEach((pc) => pc.close());
+    spectatorPeerConnectionsRef.current.clear();
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
@@ -659,6 +662,32 @@ export default function App() {
       } catch {
         setError('Connection error. Try again.');
       }
+    });
+
+    socket.on('staff-spectator-request', async ({ watcherId, roomId }) => {
+      if (roomId !== roomIdRef.current || !localStreamRef.current) return;
+      spectatorPeerConnectionsRef.current.get(watcherId)?.close();
+      const pc = new RTCPeerConnection(rtcConfigRef.current);
+      spectatorPeerConnectionsRef.current.set(watcherId, pc);
+      addLocalTracksToPeerConnection(pc, localStreamRef.current);
+      pc.onicecandidate = (event) => {
+        if (event.candidate) socket.emit('staff-spectator-signal', { watcherId, roomId, type: 'ice', payload: event.candidate.toJSON() });
+      };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('staff-spectator-signal', { watcherId, roomId, type: 'offer', payload: offer });
+    });
+
+    socket.on('staff-spectator-return-signal', async ({ watcherId, type, payload }) => {
+      const pc = spectatorPeerConnectionsRef.current.get(watcherId);
+      if (!pc) return;
+      if (type === 'answer') await pc.setRemoteDescription(new RTCSessionDescription(payload));
+      if (type === 'ice' && payload) await pc.addIceCandidate(new RTCIceCandidate(payload)).catch(() => {});
+    });
+
+    socket.on('staff-spectator-left', ({ watcherId }) => {
+      spectatorPeerConnectionsRef.current.get(watcherId)?.close();
+      spectatorPeerConnectionsRef.current.delete(watcherId);
     });
 
     socket.on('peer-left', () => {
@@ -1111,6 +1140,8 @@ export default function App() {
       {isSignedIn && step === 'admin' && staffRole && (
         <StaffPanel
           role={staffRole}
+          socket={socketRef.current}
+          rtcConfig={rtcConfigRef.current}
           onBack={() => setStep('welcome')}
           onAbout={() => setHeaderOverlay('mission')}
           onFaq={() => setHeaderOverlay('faq')}
