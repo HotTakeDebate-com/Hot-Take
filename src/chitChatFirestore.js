@@ -271,19 +271,20 @@ export async function fetchPublicProfile(profileEmail) {
   if (!key) return null;
   const snap = await getDoc(doc(db, 'publicProfiles', key));
   if (!snap.exists()) {
-    return { email: key, displayName: '', bio: '', uid: null, updatedAt: null };
+    return { email: key, displayName: '', bio: '', avatarUrl: '', uid: null, updatedAt: null };
   }
   const d = snap.data();
   return {
     email: key,
     displayName: typeof d.displayName === 'string' ? d.displayName : '',
     bio: typeof d.bio === 'string' ? d.bio : '',
+    avatarUrl: typeof d.avatarUrl === 'string' ? d.avatarUrl : '',
     uid: typeof d.uid === 'string' ? d.uid : null,
     updatedAt: d.updatedAt ?? null,
   };
 }
 
-export async function savePublicProfile({ displayName, bio }) {
+export async function savePublicProfile({ displayName, bio, avatarUrl = '' }) {
   if (!isFirebaseConfigured || !db || !auth?.currentUser?.email) {
     throw new Error('Not signed in.');
   }
@@ -291,12 +292,14 @@ export async function savePublicProfile({ displayName, bio }) {
   if (!key) throw new Error('No email on account.');
   const dn = String(displayName ?? '').trim().slice(0, 100);
   const b = String(bio ?? '').trim().slice(0, MAX_BIO_CHARS);
+  const avatar = String(avatarUrl ?? '').trim().slice(0, 250000);
   await setDoc(
     doc(db, 'publicProfiles', key),
     {
       uid: auth.currentUser.uid,
       displayName: dn,
       bio: b,
+      avatarUrl: avatar,
       updatedAt: serverTimestamp(),
     },
     { merge: true }
