@@ -6,22 +6,22 @@ const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
 const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
 const PERMISSION_DEFAULTS = {
   user: {
-    viewReports: false, respondReports: false, viewUsers: false, warnUsers: false,
+    viewReports: false, respondReports: false, deleteReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false,
     manageRoles: false, managePremium: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
-    viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
+    viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false,
     manageRoles: false, managePremium: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
   },
   admin: {
-    viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
+    viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
     manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
-    viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
+    viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
     manageRoles: true, managePremium: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
@@ -292,7 +292,42 @@ export function attachStaffRoutes(app, { isAdminReady }) {
         reporterEmail: report.reporterEmail || emailByUid.get(report.reporterUid) || '',
         reportedEmail: report.reportedEmail || emailByUid.get(report.peerUid) || '',
       })),
+      capabilities: (await permissionConfig())[req.staff.role] || {},
     });
+  });
+
+  router.delete('/reports/:id', requirePermission('deleteReports'), async (req, res) => {
+    const reportId = String(req.params.id || '').trim();
+    if (!reportId) return res.status(400).json({ error: 'Report ID is required.' });
+
+    const reportRef = admin.firestore().collection('reports').doc(reportId);
+    const reportSnap = await reportRef.get();
+    if (!reportSnap.exists) return res.status(404).json({ error: 'Report not found.' });
+    const report = reportSnap.data() || {};
+
+    const auditRef = admin.firestore().collection('staff_audit').doc();
+    const batch = admin.firestore().batch();
+    batch.delete(reportRef);
+    batch.set(auditRef, {
+      action: 'report_deleted',
+      actorUid: req.staff.uid,
+      actorEmail: req.staff.email,
+      actorRole: req.staff.role,
+      targetUid: report.peerUid || null,
+      details: {
+        reportId,
+        category: report.category || null,
+        reporterUid: report.reporterUid || null,
+        reporterEmail: report.reporterEmail || null,
+        reportedUid: report.peerUid || null,
+        reportedEmail: report.reportedEmail || null,
+        roomId: report.roomId || null,
+        previousStatus: report.status || 'open',
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+    res.json({ ok: true, id: reportId });
   });
 
   router.post('/reports/:id/respond', requirePermission('respondReports'), async (req, res) => {
