@@ -104,7 +104,7 @@ async function audit(action, actor, targetUid, details = {}) {
   });
 }
 
-export function attachStaffRoutes(app, { isAdminReady }) {
+export function attachStaffRoutes(app, { isAdminReady, io }) {
   const router = express.Router();
   router.use((req, res, next) => {
     if (!isAdminReady()) return res.status(503).json({ error: 'Firebase Admin not configured.' });
@@ -154,19 +154,42 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     } catch (profileError) {
       console.warn('[staff] profile pictures could not be loaded', profileError?.message ?? profileError);
     }
-    const users = result.users.map((u) => ({
+    const banByUid = new Map();
+    try {
+      const banRefs = result.users.map((user) => admin.firestore().collection('user_bans').doc(user.uid));
+      if (banRefs.length) {
+        const banSnaps = await admin.firestore().getAll(...banRefs);
+        banSnaps.forEach((banSnap) => {
+          if (banSnap.exists) banByUid.set(banSnap.id, banSnap.data());
+        });
+      }
+    } catch (banError) {
+      console.warn('[staff] ban records could not be loaded', banError?.message ?? banError);
+    }
+    const nowMs = Date.now();
+    const users = result.users.map((u) => {
+      const ban = banByUid.get(u.uid) || null;
+      const banUntilMs = ban?.banUntil?.toMillis?.() || null;
+      const timedBanActive = ban?.active === true && ban?.permanent !== true && Number(banUntilMs) > nowMs;
+      return ({
       uid: u.uid,
       email: u.email || '',
       displayName: u.displayName || '',
       emailVerified: u.emailVerified,
-      disabled: u.disabled,
+      disabled: u.disabled || timedBanActive,
+      authDisabled: u.disabled,
+      banPermanent: ban?.permanent === true || (u.disabled && !banUntilMs),
+      banUntilMs,
+      banReason: ban?.reason || '',
+      bannedByRole: ban?.issuedByRole || '',
       providers: u.providerData.map((p) => p.providerId),
       createdAt: u.metadata.creationTime,
       lastSignInAt: u.metadata.lastSignInTime,
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
-    }));
+    });
+    });
     res.json({ users, pageToken: result.pageToken || null, capabilities: (await permissionConfig())[req.staff.role] || {} });
   });
 
@@ -354,6 +377,10 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     const action = String(req.body?.action || '');
     const reason = String(req.body?.reason || '').trim().slice(0, 2000);
     if (!reason) return res.status(400).json({ error: 'A reason is required.' });
+    const durationMinutes = action === 'ban' ? Number(req.body?.durationMinutes ?? 0) : null;
+    if (action === 'ban' && (!Number.isInteger(durationMinutes) || durationMinutes < 0 || durationMinutes > 525600)) {
+      return res.status(400).json({ error: 'Ban length must be 0 (permanent) or a whole number of minutes up to 525600.' });
+    }
     const permissionForAction = {
       warn: 'warnUsers', ban: 'banUsers', unban: 'unbanUsers',
       revoke_sessions: 'revokeSessions', delete: 'deleteUsers',
@@ -373,11 +400,33 @@ export function attachStaffRoutes(app, { isAdminReady }) {
         acknowledged: false, createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } else if (action === 'ban') {
-      await admin.auth().updateUser(uid, { disabled: true });
-      await admin.auth().revokeRefreshTokens(uid);
+      const permanent = durationMinutes === 0;
+      const bannedAtMs = Date.now();
+      const banUntilMs = permanent ? null : bannedAtMs + durationMinutes * 60_000;
+      await admin.firestore().collection('user_bans').doc(uid).set({
+        uid,
+        email: target.email || null,
+        reason,
+        permanent,
+        durationMinutes,
+        active: true,
+        issuedBy: req.staff.email,
+        issuedByRole: req.staff.role,
+        bannedAt: admin.firestore.FieldValue.serverTimestamp(),
+        banUntil: banUntilMs ? admin.firestore.Timestamp.fromMillis(banUntilMs) : null,
+      });
+      await admin.auth().updateUser(uid, { disabled: permanent });
+      if (permanent) await admin.auth().revokeRefreshTokens(uid);
+      io?.sockets?.sockets?.forEach((socket) => {
+        if (socket.data?.uid === uid) {
+          socket.emit('account-banned', { permanent, banUntilMs, reason });
+          socket.disconnect(true);
+        }
+      });
     } else if (action === 'unban') {
       if (ROLE_LEVEL[req.staff.role] < ROLE_LEVEL.admin) return res.status(403).json({ error: 'Admin access required.' });
       await admin.auth().updateUser(uid, { disabled: false });
+      await admin.firestore().collection('user_bans').doc(uid).delete().catch(() => {});
     } else if (action === 'revoke_sessions') {
       await admin.auth().revokeRefreshTokens(uid);
     } else if (action === 'delete') {
@@ -386,7 +435,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     } else {
       return res.status(400).json({ error: 'Invalid action.' });
     }
-    await audit(action, req.staff, uid, { reason, targetEmail: target.email || null });
+    await audit(action, req.staff, uid, { reason, targetEmail: target.email || null, durationMinutes });
     res.json({ ok: true });
   });
 
