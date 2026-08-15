@@ -550,7 +550,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
             <div><span>Bans</span><strong>{punishments.filter((item) => item.type === 'ban').length}</strong></div>
           </div>
           <div className="staff-table-wrap punishment-table"><table>
-            <thead><tr><th>Issued</th><th>Punishment</th><th>Issued by</th><th>Punished user</th><th>Reason</th><th>Time remaining</th><th>Total infractions</th></tr></thead>
+            <thead><tr><th>Issued</th><th>Punishment</th><th>Issued by</th><th>Punished user</th><th>Reason</th><th>Initial duration</th><th>Time remaining</th><th>Total infractions</th></tr></thead>
             <tbody>{punishments.map((item) => {
               const remainingMinutes = item.expiresAtMs ? Math.max(0, Math.ceil((item.expiresAtMs - punishmentNow) / 60000)) : null;
               const expired = item.type === 'ban' && !item.permanent && remainingMinutes === 0;
@@ -560,6 +560,11 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                 <td><b>{item.issuedByEmail || 'Unknown staff'}</b><small>{item.issuedByRole}</small></td>
                 <td><b>{item.punishedEmail || 'Email unavailable'}</b><small>{item.punishedUid || '—'}</small></td>
                 <td className="punishment-reason">{item.reason}</td>
+                <td>{item.type === 'warning'
+                  ? <span className="punishment-time neutral">No expiration</span>
+                  : item.permanent
+                    ? <span className="punishment-time permanent">Permanent</span>
+                    : <span className="punishment-time initial">{item.durationMinutes} minute{item.durationMinutes === 1 ? '' : 's'}</span>}</td>
                 <td>{item.type === 'warning'
                   ? <span className="punishment-time neutral">No expiration</span>
                   : item.permanent
