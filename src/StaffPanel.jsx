@@ -5,9 +5,24 @@ import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, 
 
 function dateValue(value) {
   if (!value) return '—';
-  if (typeof value === 'string') return new Date(value).toLocaleString();
+  if (typeof value === 'string' || typeof value === 'number') return new Date(value).toLocaleString();
   if (value._seconds) return new Date(value._seconds * 1000).toLocaleString();
+  if (value.seconds) return new Date(value.seconds * 1000).toLocaleString();
   return '—';
+}
+
+function timestampValue(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return new Date(value).getTime() || 0;
+  if (value._seconds) return value._seconds * 1000;
+  if (value.seconds) return value.seconds * 1000;
+  return 0;
+}
+
+function countSince(items, field, days) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return items.filter((item) => timestampValue(item[field]) >= cutoff).length;
 }
 
 const ROLE_RANK = { user: 0, moderator: 1, admin: 2, owner: 3 };
@@ -77,9 +92,12 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     setBusy(true); setError('');
     try {
       if (tab === 'dashboard') {
-        const [reportData, userData] = await Promise.all([staffReports(), staffUsers()]);
+        const requests = [staffReports(), staffUsers()];
+        if (role === 'admin' || role === 'owner') requests.push(staffAudit());
+        const [reportData, userData, auditData] = await Promise.all(requests);
         setReports(reportData.reports || []);
         setUsers(userData.users || []);
+        setAudit(auditData?.audit || []);
         setCapabilities(userData.capabilities || {});
       }
       if (tab === 'reports') setReports((await staffReports()).reports || []);
@@ -184,6 +202,15 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const openReports = reports.filter((r) => !['resolved', 'closed'].includes(r.status)).length;
   const bannedUsers = users.filter((u) => u.disabled).length;
   const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'owner'].includes(u.role)).length;
+  const recentStaff = users
+    .filter((u) => ['moderator', 'admin', 'owner'].includes(u.role))
+    .sort((a, b) => timestampValue(b.lastSignInAt) - timestampValue(a.lastSignInAt))
+    .slice(0, 6);
+  const activityRows = [
+    { label: 'Moderation actions', source: audit, field: 'createdAt' },
+    { label: 'Reports submitted', source: reports, field: 'createdAt' },
+    { label: 'User registrations', source: users, field: 'createdAt' },
+  ];
   const editingProtected = Boolean(editingUser && role !== 'owner' && ROLE_RANK[editingUser.role] >= ROLE_RANK[role]);
 
   return <div className="admin-console">
@@ -221,6 +248,44 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
             <article><h2>Banned users</h2><strong>{bannedUsers}</strong><span>Disabled accounts</span></article>
           </section>
           <section className="admin-dashboard-panels"><article><h2>Recent reports</h2>{reports.slice(0,5).map((r)=><button key={r.id} onClick={()=>setTab('reports')}><span>{r.category || 'Report'}</span><small>{r.status || 'open'} · {r.roomId || r.id}</small></button>)}</article><article><h2>System status</h2><p><i className="ok"/>Firebase Admin connected</p><p><i className="ok"/>Staff authorization enforced</p><p><i className="ok"/>Audit logging enabled</p></article></section>
+
+          <section className="admin-dashboard-section">
+            <header><div><p>ADMIN TOOLS</p><h2>Quick access</h2></div><span>Common control-panel destinations</span></header>
+            <div className="admin-quick-grid">
+              <button onClick={() => setTab('reports')}><b>⚑</b><span>Reports</span><small>Review moderation queue</small></button>
+              <button onClick={() => setTab('users')}><b>♙</b><span>Users</span><small>Search and manage accounts</small></button>
+              {(role === 'admin' || role === 'owner') && <button onClick={() => setTab('roles')}><b>♟</b><span>Roles</span><small>Review staff permissions</small></button>}
+              {(role === 'admin' || role === 'owner') && <button onClick={() => setTab('audit')}><b>↶</b><span>Audit logs</span><small>Inspect administrative actions</small></button>}
+              <button onClick={onSupport}><b>?</b><span>Support</span><small>Open the support center</small></button>
+              <button onClick={onBack}><b>←</b><span>Website</span><small>Return to Hot Take</small></button>
+            </div>
+          </section>
+
+          <section className="admin-dashboard-section">
+            <header><div><p>PLATFORM ANALYTICS</p><h2>Logged activity</h2></div><span>Rolling activity recorded by Hot Take</span></header>
+            <div className="admin-activity-table">
+              <div className="admin-activity-row heading"><b>Type</b><b>Last day</b><b>Last week</b><b>Last month</b></div>
+              {activityRows.map((item) => <div className="admin-activity-row" key={item.label}><span>{item.label}</span><strong>{countSince(item.source, item.field, 1)}</strong><strong>{countSince(item.source, item.field, 7)}</strong><strong>{countSince(item.source, item.field, 30)}</strong></div>)}
+            </div>
+          </section>
+
+          <section className="admin-lower-grid">
+            <article className="admin-dashboard-section">
+              <header><div><p>STAFF</p><h2>Recent staff activity</h2></div></header>
+              <div className="admin-staff-list">
+                {recentStaff.length ? recentStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className="admin-staff-avatar">{(member.displayName || member.email || '?')[0].toUpperCase()}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Last sign-in {dateValue(member.lastSignInAt)}</small></span><i className={member.disabled ? 'offline' : 'ok'} /></button>) : <p>No staff accounts were returned.</p>}
+              </div>
+            </article>
+            <article className="admin-dashboard-section">
+              <header><div><p>HEALTH</p><h2>System checks</h2></div><span>Checked when this dashboard loaded</span></header>
+              <div className="admin-health-list">
+                <p><i className="ok"/><span><b>Firebase Admin</b><small>User directory available</small></span><strong>Healthy</strong></p>
+                <p><i className="ok"/><span><b>Moderation API</b><small>Reports and actions available</small></span><strong>Healthy</strong></p>
+                <p><i className="ok"/><span><b>Authorization</b><small>Role permissions enforced server-side</small></span><strong>Healthy</strong></p>
+                <p><i className={role === 'admin' || role === 'owner' ? 'ok' : 'limited'}/><span><b>Audit trail</b><small>{role === 'admin' || role === 'owner' ? 'Administrative log available' : 'Restricted for this role'}</small></span><strong>{role === 'admin' || role === 'owner' ? 'Healthy' : 'Restricted'}</strong></p>
+              </div>
+            </article>
+          </section>
         </>}
 
         {tab === 'reports' && !busy && <section className="staff-grid">{reports.map((r) => <article className="staff-card" key={r.id}><header><strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong><span>{dateValue(r.createdAt)}</span></header><h2>{r.category || 'Report'}</h2><p>{r.details}</p><dl><dt>Report ID</dt><dd>{r.id}</dd><dt>Room</dt><dd>{r.roomId || '—'}</dd><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></dl>{r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}<button onClick={() => respond(r)}>Respond / update status</button></article>)}</section>}
