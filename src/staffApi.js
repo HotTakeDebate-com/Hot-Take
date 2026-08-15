@@ -16,6 +16,7 @@ async function request(path, options = {}) {
   return body;
 }
 export const staffMe = () => request('/me');
+export const staffAccess = () => request('/access', { method: 'POST' });
 export const staffUsers = () => request('/users?limit=500');
 export const staffReports = () => request('/reports');
 export const staffDeleteReport = (id) => request('/reports/' + encodeURIComponent(id), { method: 'DELETE' });
