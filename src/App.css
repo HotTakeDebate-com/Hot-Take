@@ -2621,3 +2621,25 @@
 .permission-value.editable { cursor:pointer; }
 .permission-value.editable:hover { transform:translateY(-1px); filter:brightness(1.16); }
 .permission-value:disabled { opacity:.72; }
+
+/* User warning notification */
+.user-warning-notice {
+  position:fixed; top:92px; right:24px; z-index:10000; width:min(390px,calc(100vw - 32px));
+  display:flex; gap:14px; padding:18px; border:1px solid rgba(255,65,73,.55); border-radius:12px;
+  background:rgba(24,10,13,.88); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.5);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
+.user-warning-icon {
+  flex:0 0 34px; width:34px; height:34px; display:grid; place-items:center; border:2px solid #ff353e;
+  border-radius:50%; color:#ff353e; font-size:20px; font-weight:900;
+}
+.user-warning-copy { min-width:0; flex:1; }
+.user-warning-copy > strong { display:block; margin:2px 0 10px; color:#ff4c53; font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
+.user-warning-copy p { margin:0 0 10px; color:#f1f1f3; line-height:1.5; }
+.user-warning-copy button {
+  margin-top:4px; min-height:38px; padding:0 16px; border:0; border-radius:7px;
+  background:#ed141e; color:#fff; font-weight:800; cursor:pointer;
+}
+.user-warning-copy button:hover { background:#ff2932; }
+.user-warning-copy button:disabled { opacity:.65; cursor:wait; }
+@media(max-width:600px){.user-warning-notice{top:76px;right:16px;}}

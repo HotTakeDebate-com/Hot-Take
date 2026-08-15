@@ -13,6 +13,7 @@ import admin from 'firebase-admin';
 import { markMatchSessionReported, persistChatMessage, persistMatchSession } from './persistence.js';
 import { attachModerationRoutes } from './moderationApi.js';
 import { attachStaffRoutes } from './staffApi.js';
+import { attachWarningRoutes } from './warningApi.js';
 import { createAnalyticsTracker } from './analytics.js';
 
 const joinQueueWindowMs = Math.max(
@@ -461,6 +462,7 @@ app.delete('/api/account', async (req, res) => {
 
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
 attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady });
+attachWarningRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {
   app.use(

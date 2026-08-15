@@ -212,7 +212,8 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     if (action === 'warn') {
       await admin.firestore().collection('user_warnings').add({
         uid, email: target.email || null, reason,
-        issuedBy: req.staff.email, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        issuedBy: req.staff.email, issuedByRole: req.staff.role,
+        acknowledged: false, createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } else if (action === 'ban') {
       await admin.auth().updateUser(uid, { disabled: true });

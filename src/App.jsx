@@ -22,6 +22,7 @@ import DebateChatPanel from './DebateChatPanel.jsx';
 import { getMediaErrorMessage, getUserMediaWithFallback } from './mediaUtils.js';
 import HomePage from './HomePage.jsx';
 import QuickMatchPage from './QuickMatchPage.jsx';
+import WarningNotice from './WarningNotice.jsx';
 import DebateRoomPage from './DebateRoomPage.jsx';
 import StaffPanel from './StaffPanel.jsx';
 import { staffMe } from './staffApi.js';
@@ -1586,6 +1587,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <WarningNotice />
 
       {authModal && (
         <AuthScreen
