@@ -317,7 +317,7 @@ export default function HomePage({
           </div>
           <div className="landing-live-proof" aria-label="Live debates are happening now">
             <div className="landing-live-avatars" aria-hidden="true">
-              <span /><span /><span /><span /><span />
+              <img src="/community-avatars.png" alt="" />
             </div>
             <span className="landing-live-dot" aria-hidden="true" />
             <p>Real people are debating right now</p>
