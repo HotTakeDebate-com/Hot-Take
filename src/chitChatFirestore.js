@@ -251,8 +251,9 @@ export async function submitReport({
   if (matchMode === 'quick' || matchMode === 'custom') {
     doc.matchMode = matchMode;
   }
-  await addDoc(collection(db, 'reports'), doc);
+  const reportRef = await addDoc(collection(db, 'reports'), doc);
   markReportSubmitted();
+  return reportRef.id;
 }
 
 // --- Social: public profiles, follows, feed posts ---
