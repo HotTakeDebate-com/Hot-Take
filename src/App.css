@@ -175,6 +175,19 @@
   background: color-mix(in srgb, var(--accent) 35%, rgba(0, 0, 0, 0.12));
 }
 
+.header-actions .header-admin-link {
+  min-height: 26px;
+  padding: 0.22rem 0.46rem;
+  border-radius: 5px;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent-strong);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 /* Ghost buttons in header: override global dashed / large .btn-ghost */
 .header-actions .btn-ghost.header-chip {
   margin-bottom: 0;
