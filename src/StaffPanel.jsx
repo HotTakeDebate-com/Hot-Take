@@ -357,7 +357,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       <main className="admin-console-main">
         <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}>↻ Refresh</button></div>
         {error && <div className="admin-notice error"><b>×</b>{error}</div>}
-        {busy && <div className="admin-notice"><b>…</b>Loading administrative data…</div>}
+        {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
         {tab === 'dashboard' && !busy && <>
           <div className="admin-notice warning"><b>!</b><span><strong>{openReports} reports require attention.</strong> Review reports and document every moderation action.</span></div>
