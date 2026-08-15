@@ -1,3 +1,5 @@
+import './PrivacyPolicy.css';
+
 export default function LegalDocumentShell({ title, effectiveDate, children, onBack, embedded = false }) {
   const article = (
     <article className={embedded ? 'legal-doc-article legal-doc-article--embedded' : 'legal-doc-article'}>
