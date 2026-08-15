@@ -298,6 +298,9 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
     } catch (accessError) {
       console.warn('[staff] admin access timestamps could not be loaded', accessError?.message ?? accessError);
     }
+    const onlineUids = new Set(
+      [...(io?.sockets?.sockets?.values?.() || [])].map((socket) => socket.data?.uid).filter(Boolean)
+    );
     const users = result.users.map((u) => {
       const ban = banByUid.get(u.uid) || null;
       const banUntilMs = ban?.banUntil?.toMillis?.() || null;
@@ -317,12 +320,27 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
       createdAt: u.metadata.creationTime,
       lastSignInAt: u.metadata.lastSignInTime,
       lastAdminAccessAt: accessByUid.get(u.uid)?.lastAccessedAt || null,
+      online: onlineUids.has(u.uid),
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
     });
     });
     res.json({ users, pageToken: result.pageToken || null, capabilities: (await permissionConfig())[req.staff.role] || {} });
+  });
+
+  router.get('/dashboard-activity', requirePermission('viewUsers'), async (_req, res) => {
+    const snapshot = await admin.firestore().collectionGroup('debates').limit(2000).get();
+    const debatesByRoom = new Map();
+    snapshot.docs.forEach((doc) => {
+      const debate = doc.data() || {};
+      const roomId = String(debate.roomId || doc.id);
+      const startedAtMs = debate.startedAt?.toMillis?.() || 0;
+      if (!startedAtMs) return;
+      const existing = debatesByRoom.get(roomId);
+      if (!existing || startedAtMs < existing.startedAtMs) debatesByRoom.set(roomId, { roomId, startedAtMs });
+    });
+    res.json({ debates: [...debatesByRoom.values()] });
   });
 
   router.post('/users/:uid/update', requirePermission('viewUsers'), async (req, res) => {
