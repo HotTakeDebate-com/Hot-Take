@@ -1,0 +1,22 @@
+.admin-ui-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-console-home .admin-ui-icon { width: 21px; height: 21px; margin: auto; }
+.admin-console-sidebar > button b { display: grid; place-items: center; }
+.admin-console-sidebar > button b .admin-ui-icon { width: 22px; height: 22px; }
+.admin-console-sidebar > button.active b .admin-ui-icon { stroke-width: 2; filter: drop-shadow(0 0 5px rgba(255,255,255,.25)); }
+.admin-console-title > button,
+.admin-search-box > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.admin-console-title > button .admin-ui-icon,
+.admin-search-box > button .admin-ui-icon { width: 17px; height: 17px; stroke-width: 2.1; }
+.admin-notice b .admin-ui-icon { width: 21px; height: 21px; }
+.admin-notice-alert-icon .admin-ui-icon { width: 24px !important; height: 24px !important; }
+.role-card-icon .admin-ui-icon { width: 23px; height: 23px; stroke-width: 1.9; }
