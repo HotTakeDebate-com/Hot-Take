@@ -357,7 +357,29 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </section>
         </>}
 
-        {tab === 'reports' && !busy && <section className="staff-grid">{reports.map((r) => <article className="staff-card" key={r.id}><header><strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong><span>{dateValue(r.createdAt)}</span></header><h2>{r.category || 'Report'}</h2><p>{r.details}</p><dl><dt>Report ID</dt><dd>{r.id}</dd><dt>Room</dt><dd>{r.roomId || '—'}</dd><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></dl>{r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}<button onClick={() => respond(r)}>Respond / update status</button></article>)}</section>}
+        {tab === 'reports' && !busy && <section className="staff-report-list">
+          {reports.length ? reports.map((r) => <details className="staff-report-row" key={r.id}>
+            <summary>
+              <strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong>
+              <span className="staff-report-category">{r.category || 'Report'}</span>
+              <span className="staff-report-users"><b>{r.reporterEmail || 'Unknown reporter'}</b><i>→</i><b>{r.reportedEmail || 'Unknown user'}</b></span>
+              <span className="staff-report-preview">{r.details || 'No details supplied.'}</span>
+              <time>{dateValue(r.createdAt)}</time>
+              <span className="staff-report-toggle" aria-hidden="true">⌄</span>
+            </summary>
+            <div className="staff-report-expanded">
+              <div className="staff-report-description"><span>Report details</span><p>{r.details || 'No details supplied.'}</p></div>
+              <dl>
+                <div><dt>Report ID</dt><dd>{r.id}</dd></div>
+                <div><dt>Room</dt><dd>{r.roomId || '—'}</dd></div>
+                <div><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd></div>
+                <div><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></div>
+              </dl>
+              {r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}
+              <button onClick={() => respond(r)}>Respond / update status</button>
+            </div>
+          </details>) : <div className="admin-notice">No reports found.</div>}
+        </section>}
 
         {tab === 'users' && !busy && <section>
           <input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" />
