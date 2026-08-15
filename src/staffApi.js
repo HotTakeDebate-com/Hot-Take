@@ -19,6 +19,7 @@ export const staffMe = () => request('/me');
 export const staffAccess = () => request('/access', { method: 'POST' });
 export const staffUsers = () => request('/users?limit=500');
 export const staffDashboardActivity = () => request('/dashboard-activity');
+export const staffDebates = () => request('/debates');
 export const staffReports = () => request('/reports');
 export const staffDeleteReport = (id) => request('/reports/' + encodeURIComponent(id), { method: 'DELETE' });
 export const staffAudit = () => request('/audit');
