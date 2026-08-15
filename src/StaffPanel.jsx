@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { staffAction, staffAudit, staffReports, staffRespond, staffRole, staffUsers } from './staffApi.js';
+import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 
 function dateValue(value) {
   if (!value) return '—';
@@ -8,7 +9,7 @@ function dateValue(value) {
   return '—';
 }
 
-export default function StaffPanel({ role, onBack }) {
+export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
   const [tab, setTab] = useState('reports');
   const [reports, setReports] = useState([]);
   const [users, setUsers] = useState([]);
@@ -50,7 +51,19 @@ export default function StaffPanel({ role, onBack }) {
     try { await staffRespond(report.id, response, status); await load(); } catch (e) { setError(e.message); }
   };
 
-  return <main className="staff-panel">
+  return <div className="staff-page">
+    <SiteHeader
+      onHome={onBack}
+      onAbout={onAbout}
+      onTopics={onBack}
+      onFaq={onFaq}
+      onSupport={onSupport}
+      isSignedIn
+      onSignOut={onSignOut}
+      onProfile={onAccount}
+      onPickLegal={onPickLegal}
+    />
+    <main className="staff-panel">
     <div className="staff-heading"><div><p>HOT TAKE STAFF</p><h1>Admin panel<span>.</span></h1><small>Signed in with {role} access</small></div><button onClick={onBack}>Back to site</button></div>
     <nav className="staff-tabs">
       <button className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}>Reports</button>
@@ -74,5 +87,7 @@ export default function StaffPanel({ role, onBack }) {
       <td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td><td className="staff-actions"><button onClick={() => act(u, 'warn')}>Warn</button><button onClick={() => act(u, u.disabled ? 'unban' : 'ban')}>{u.disabled ? 'Unban' : 'Ban'}</button><button onClick={() => act(u, 'revoke_sessions')}>Sign out</button>{role === 'owner' && <button className="danger" onClick={() => act(u, 'delete')}>Delete</button>}</td></tr>)}</tbody></table></div>
     </section>}
     {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
-  </main>;
+    </main>
+    <SiteFooter onHome={onBack} onAbout={onAbout} onFaq={onFaq} onSupport={onSupport} onPickLegal={onPickLegal} />
+  </div>;
 }
