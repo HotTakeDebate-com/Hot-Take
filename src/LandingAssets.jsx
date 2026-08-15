@@ -73,10 +73,11 @@ export function IconLightning() {
 
 export function IconUserPlus() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="10" cy="8" r="4" />
-      <path d="M4 20c0-3.5 2.7-6.5 6-7" strokeLinecap="round" />
-      <path d="M18 8v6M15 11h6" strokeLinecap="round" />
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="7" r="4" />
+      <path d="M2 21v-2a7 7 0 0 1 14 0v2" />
+      <path d="M19 8v6" />
+      <path d="M16 11h6" />
     </svg>
   );
 }
