@@ -8,22 +8,22 @@ const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false,
-    manageRoles: false, managePremium: false, editUsers: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, editUsers: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false,
-    manageRoles: false, managePremium: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, editUsers: false, manageCredentials: false, deleteUsers: false,
   },
   admin: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
-    manageRoles: true, managePremium: true, editUsers: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, editUsers: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
-    manageRoles: true, managePremium: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, editUsers: true, manageCredentials: true, deleteUsers: true,
   },
 };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
@@ -152,17 +152,29 @@ export function attachStaffRoutes(app, { isAdminReady }) {
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
     }));
-    res.json({ users, pageToken: result.pageToken || null });
+    res.json({ users, pageToken: result.pageToken || null, capabilities: (await permissionConfig())[req.staff.role] || {} });
   });
 
-  router.post('/users/:uid/update', requirePermission('editUsers'), async (req, res) => {
+  router.post('/users/:uid/update', requirePermission('viewUsers'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
     const isOwner = target.email?.toLowerCase() === OWNER_EMAIL;
     if (isOwner && req.staff.role !== 'owner') {
       return res.status(403).json({ error: 'Owner account is protected.' });
     }
-    const displayName = String(req.body?.displayName || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+    const requestedDisplayName = String(req.body?.displayName || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+    const wantsProfileChange = requestedDisplayName !== String(target.displayName || '');
+    if (wantsProfileChange && !(await hasPermission(req.staff.role, 'editUsers'))) {
+      return res.status(403).json({ error: 'Your role cannot edit user profile details.' });
+    }
+    const wantsCredentialChange = (
+      (typeof req.body?.email === 'string' && req.body.email.trim().toLowerCase() !== String(target.email || '').toLowerCase())
+      || (typeof req.body?.emailVerified === 'boolean' && req.body.emailVerified !== target.emailVerified)
+    );
+    if (wantsCredentialChange && !(await hasPermission(req.staff.role, 'manageCredentials'))) {
+      return res.status(403).json({ error: 'Your role cannot change email or verification settings.' });
+    }
+    const displayName = requestedDisplayName;
     if (!displayName) return res.status(400).json({ error: 'Display name is required.' });
 
     const requestedEmail = String(req.body?.email || target.email || '').trim().toLowerCase();
@@ -201,7 +213,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     });
   });
 
-  router.post('/users/:uid/password', requirePermission('editUsers'), async (req, res) => {
+  router.post('/users/:uid/password', requirePermission('manageCredentials'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
     const targetRole = target.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (target.customClaims?.role || 'user');

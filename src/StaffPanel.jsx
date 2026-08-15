@@ -10,6 +10,8 @@ function dateValue(value) {
   return '—';
 }
 
+const ROLE_RANK = { user: 0, moderator: 1, admin: 2, owner: 3 };
+
 const SITE_ROLES = [
   { id: 'user', name: 'User', description: 'Standard member access for debating and community features.' },
   { id: 'moderator', name: 'Moderator', description: 'Reviews reports and takes day-to-day safety actions.' },
@@ -36,7 +38,8 @@ const ROLE_PERMISSIONS = [
   ]},
   { group: 'Administration', permissions: [
     { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true] },
-    { key: 'editUsers', name: 'Edit user account details', values: [false, false, true, true] },
+    { key: 'editUsers', name: 'Edit user profile details', values: [false, false, true, true] },
+    { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true] },
     { key: 'manageRoles', name: 'Assign User, Moderator, and Admin roles', values: [false, false, true, true] },
     { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true] },
     { key: 'deleteUsers', name: 'Delete eligible user accounts', values: [false, false, true, true] },
@@ -54,6 +57,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
   const [permissions, setPermissions] = useState({});
+  const [capabilities, setCapabilities] = useState({});
   const [savingPermission, setSavingPermission] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [userDraft, setUserDraft] = useState(null);
@@ -64,6 +68,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [passwordMode, setPasswordMode] = useState('none');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -75,9 +80,10 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         const [reportData, userData] = await Promise.all([staffReports(), staffUsers()]);
         setReports(reportData.reports || []);
         setUsers(userData.users || []);
+        setCapabilities(userData.capabilities || {});
       }
       if (tab === 'reports') setReports((await staffReports()).reports || []);
-      if (tab === 'users') setUsers((await staffUsers()).users || []);
+      if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
     } catch (e) { setError(e.message); } finally { setBusy(false); }
@@ -99,6 +105,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       const data = await staffUsers();
       const nextUsers = data.users || [];
       setUsers(nextUsers);
+      setCapabilities(data.capabilities || {});
       setEditingUser((current) => current?.uid === user.uid ? (nextUsers.find((item) => item.uid === user.uid) || null) : current);
     } catch (e) { setError(e.message); }
   };
@@ -112,6 +119,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     setPasswordMode('none');
     setNewPassword('');
     setConfirmPassword('');
+    setShowPassword(false);
     setEditorTab('details');
     setEditorMessage('');
     setError('');
@@ -139,6 +147,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       const nextUsers = data.users || [];
       const updated = nextUsers.find((user) => user.uid === editingUser.uid);
       setUsers(nextUsers);
+      setCapabilities(data.capabilities || {});
       setEditingUser(updated || null);
       if (updated) setUserDraft({ displayName: updated.displayName || '', email: updated.email || '', role: updated.role || 'user', premium: updated.premium === true, emailVerified: updated.emailVerified === true });
       setPasswordMode('none'); setNewPassword(''); setConfirmPassword('');
@@ -218,14 +227,19 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         {tab === 'users' && !busy && <section>
           <input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" />
           <div className="staff-table-wrap"><table><thead><tr><th>User</th><th>UID</th><th>Created / last login</th><th>Role</th><th>Membership</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>{filteredUsers.map((u) => <tr className="staff-user-row" key={u.uid} onClick={() => (role === 'admin' || role === 'owner') && openUserEditor(u)}>
+            <tbody>{filteredUsers.map((u) => <tr className="staff-user-row" key={u.uid} onClick={() => openUserEditor(u)} tabIndex="0" onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openUserEditor(u)}>
               <td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td>
               <td className="staff-uid">{u.uid}</td>
               <td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td>
               <td><b>{u.role === 'moderator' ? 'Moderator' : u.role}</b></td>
               <td>{u.role === 'user' && u.premium ? <span className="staff-premium">Premium</span> : <span className="staff-not-applicable">Standard</span>}</td>
               <td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td>
-              <td className="staff-actions"><button type="button" onClick={(event) => { event.stopPropagation(); openUserEditor(u); }}>Edit user</button></td>
+              <td className="staff-actions">
+                {capabilities.warnUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'warn'); }}>Warn</button>}
+                {!u.disabled && capabilities.banUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'ban'); }}>Ban</button>}
+                {u.disabled && capabilities.unbanUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'unban'); }}>Unban</button>}
+                {capabilities.revokeSessions && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'revoke_sessions'); }}>Sign out</button>}
+              </td>
             </tr>)}</tbody>
           </table></div>
         </section>}
@@ -269,28 +283,29 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               <button className={editorTab === 'moderation' ? 'active' : ''} onClick={() => setEditorTab('moderation')}>Moderation</button>
             </nav>
             {editorMessage && <div className="user-editor-message">✓ {editorMessage}</div>}
-            <div className="user-editor-content">
+            <div className={'user-editor-content editor-' + editorTab}>
               {editorTab === 'details' && <>
                 <section className="user-editor-section"><h3>Identity</h3>
-                  <label><span>Display name</span><input value={userDraft.displayName} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
-                  <label><span>Email address</span><input type="email" value={userDraft.email} disabled={editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
+                  <label><span>Display name</span><input value={userDraft.displayName} disabled={!capabilities.editUsers || editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
+                  <label><span>Email address</span><input type="email" value={userDraft.email} disabled={!capabilities.manageCredentials || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
                   <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
                 </section>
                 <section className="user-editor-section"><h3>Role & membership</h3>
-                  <label><span>Primary role</span><select value={userDraft.role} disabled={editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
-                  <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
+                  <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
+                  <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={!capabilities.managePremium || userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
                 </section>
               </>}
               {editorTab === 'security' && <>
                 <section className="user-editor-section"><h3>Sign-in security</h3>
-                  <label className="user-editor-check"><span>Email verification</span><input type="checkbox" checked={userDraft.emailVerified} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, emailVerified: event.target.checked }))} /><b>{userDraft.emailVerified ? 'Email is verified' : 'Email is not verified'}</b><small>Use this override only after independently confirming the address belongs to the user.</small></label>
-                  <div className="user-password-options">
+                  <label className="user-editor-check"><span>Email verification</span><input type="checkbox" checked={userDraft.emailVerified} disabled={!capabilities.manageCredentials || editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, emailVerified: event.target.checked }))} /><b>{userDraft.emailVerified ? 'Email is verified' : 'Email is not verified'}</b><small>Use this override only after independently confirming the address belongs to the user.</small></label>
+                  <div className="password-security-note"><strong>Current password unavailable</strong><span>Firebase securely hashes passwords, so the existing password cannot be viewed. You can replace it below.</span></div>
+                  {capabilities.manageCredentials ? <div className="user-password-options">
                     <label className={passwordMode === 'none' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'none'} onChange={() => setPasswordMode('none')} /><span><strong>Do not change</strong><small>Leave the current password untouched.</small></span></label>
                     <label className={passwordMode === 'reset' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'reset'} onChange={() => setPasswordMode('reset')} /><span><strong>Send password reset</strong><small>Firebase emails a secure reset link when you save.</small></span></label>
                     <label className={passwordMode === 'set' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'set'} onChange={() => setPasswordMode('set')} /><span><strong>Set a new password</strong><small>Set a temporary password and sign the user out everywhere.</small></span></label>
-                    {passwordMode === 'set' && <div className="user-password-fields"><input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password (8+ characters)" /><input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirm new password" /></div>}
-                  </div>
-                  <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
+                    {passwordMode === 'set' && <><div className="user-password-fields"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password (8+ characters)" /><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirm new password" /></div><label className="show-new-password"><input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} /> Show the new password while typing</label></>}
+                  </div> : <div className="user-editor-readonly"><strong>Password protected</strong><span>Your role can view account information but cannot reset or replace user passwords.</span></div>}
+                  <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" disabled={!capabilities.revokeSessions || ROLE_RANK[editingUser.role] >= ROLE_RANK[role]} onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
                 </section>
                 <section className="user-editor-section"><h3>Account metadata</h3>
                   <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Account status</span><b className={editingUser.disabled ? 'status-danger' : 'status-good'}>{editingUser.disabled ? 'Banned / disabled' : 'Active'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
@@ -299,10 +314,11 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               {editorTab === 'moderation' && <>
                 <section className="user-editor-section danger-zone"><h3>Moderation actions</h3><p>Every action requires a reason and is recorded in the staff audit log.</p>
                   <div className="user-editor-actions">
-                    <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>
-                    <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>
-                    <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Revoke sessions</button>
-                    {(role === 'admin' || role === 'owner') && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
+                    {capabilities.warnUsers && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>}
+                    {((editingUser.disabled && capabilities.unbanUsers) || (!editingUser.disabled && capabilities.banUsers)) && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>}
+                    {capabilities.revokeSessions && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Revoke sessions</button>}
+                    {capabilities.deleteUsers && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
+                    {ROLE_RANK[editingUser.role] >= ROLE_RANK[role] && <span className="user-editor-protected">Equal and higher roles are protected from moderation actions.</span>}
                   </div>
                 </section>
                 <section className="user-editor-section"><h3>Moderation summary</h3>
@@ -311,7 +327,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                 </section>
               </>}
             </div>
-            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingUser.role === 'owner' && role !== 'owner'} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
+            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium) || editingUser.role === 'owner' && role !== 'owner'} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
         </div>}
         {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
