@@ -3034,3 +3034,64 @@
 .punishment-reason { min-width:220px; max-width:360px; white-space:normal; line-height:1.45; }
 .infraction-count { display:inline-grid; place-items:center; width:32px; height:32px; border-radius:50%; background:#2a1014; color:#ff454d; }
 @media(max-width:760px){.punishment-log-summary{grid-template-columns:1fr}.punishment-log-summary>div{min-height:58px}}
+
+
+/* Punishment Log: fit within the admin content area without lateral scrolling */
+.punishment-table { overflow-x:hidden; }
+.punishment-table table { width:100%; min-width:0 !important; table-layout:fixed; }
+.punishment-table th,
+.punishment-table td { min-width:0; padding:12px 8px; font-size:clamp(10px,.72vw,13px); overflow-wrap:anywhere; }
+.punishment-table th:nth-child(1) { width:13%; }
+.punishment-table th:nth-child(2) { width:8%; }
+.punishment-table th:nth-child(3) { width:15%; }
+.punishment-table th:nth-child(4) { width:16%; }
+.punishment-table th:nth-child(5) { width:14%; }
+.punishment-table th:nth-child(6) { width:12%; }
+.punishment-table th:nth-child(7) { width:12%; }
+.punishment-table th:nth-child(8) { width:10%; }
+.punishment-table td b,
+.punishment-table td small { max-width:100%; overflow-wrap:anywhere; word-break:break-word; }
+.punishment-table .punishment-reason { min-width:0; max-width:none; }
+.punishment-table .punishment-type,
+.punishment-table .punishment-time { max-width:100%; justify-content:center; text-align:center; white-space:normal; line-height:1.2; }
+
+@media(max-width:1200px) {
+  .punishment-table { border:0; background:transparent; box-shadow:none; overflow:hidden; }
+  .punishment-table table,
+  .punishment-table tbody { display:block; width:100%; }
+  .punishment-table thead { display:none; }
+  .punishment-table tbody { display:grid; gap:12px; }
+  .punishment-table tr {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    overflow:hidden;
+    border:1px solid var(--staff-border);
+    border-radius:12px;
+    background:var(--staff-surface);
+  }
+  .punishment-table td {
+    display:grid;
+    grid-template-columns:minmax(105px,.75fr) minmax(0,1.25fr);
+    align-items:center;
+    gap:10px;
+    width:auto !important;
+    padding:10px 12px;
+    border-right:1px solid rgba(255,255,255,.07);
+  }
+  .punishment-table td::before {
+    content:attr(data-label);
+    color:#aeb2bd;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .punishment-table td:nth-child(even) { border-right:0; }
+  .punishment-table td:nth-last-child(-n+2) { border-bottom:0; }
+  .punishment-table .infraction-count { justify-self:start; }
+}
+@media(max-width:680px) {
+  .punishment-table tr { grid-template-columns:1fr; }
+  .punishment-table td { border-right:0; }
+  .punishment-table td:nth-last-child(2) { border-bottom:1px solid rgba(255,255,255,.08); }
+}
