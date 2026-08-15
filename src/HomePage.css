@@ -113,7 +113,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   background:
     linear-gradient(180deg, rgba(3,4,7,.12), transparent 24%, transparent 76%, #030407 100%),
     radial-gradient(ellipse 31% 78% at 50% 46%, rgba(0,0,0,.1), rgba(0,0,0,.52) 82%, transparent 100%);
@@ -175,6 +175,9 @@
 }
 .landing-hero-btn.landing-btn--primary {
   box-shadow: 0 12px 36px rgba(255,23,27,.3);
+}
+.landing-hero-btn.landing-btn--primary svg {
+  fill: #fff;
 }
 .landing-hero-btn svg {
   width: 22px;
