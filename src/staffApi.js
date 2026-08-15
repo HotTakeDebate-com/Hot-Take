@@ -31,3 +31,8 @@ export const staffSetPermission = (role, permission, enabled) => request('/permi
 export const staffUpdateUser = (uid, updates) => request('/users/' + encodeURIComponent(uid) + '/update', { method: 'POST', body: JSON.stringify(updates) });
 
 export const staffSetPassword = (uid, password) => request('/users/' + encodeURIComponent(uid) + '/password', { method: 'POST', body: JSON.stringify({ password }) });
+
+export const staffNews = () => request('/news');
+export const staffSaveNews = (story) => story.id
+  ? request('/news/' + encodeURIComponent(story.id), { method: 'POST', body: JSON.stringify(story) })
+  : request('/news', { method: 'POST', body: JSON.stringify(story) });
