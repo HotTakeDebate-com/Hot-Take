@@ -555,24 +555,24 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               const remainingMinutes = item.expiresAtMs ? Math.max(0, Math.ceil((item.expiresAtMs - punishmentNow) / 60000)) : null;
               const expired = item.type === 'ban' && !item.permanent && remainingMinutes === 0;
               return <tr key={item.id}>
-                <td><b>{dateValue(item.issuedAt)}</b></td>
-                <td><span className={'punishment-type ' + item.type}>{item.type === 'warning' ? 'WARNING' : 'BAN'}</span></td>
-                <td><b>{item.issuedByEmail || 'Unknown staff'}</b><small>{item.issuedByRole}</small></td>
-                <td><b>{item.punishedEmail || 'Email unavailable'}</b><small>{item.punishedUid || '—'}</small></td>
-                <td className="punishment-reason">{item.reason}</td>
-                <td>{item.type === 'warning'
+                <td data-label="Issued"><b>{dateValue(item.issuedAt)}</b></td>
+                <td data-label="Punishment"><span className={'punishment-type ' + item.type}>{item.type === 'warning' ? 'WARNING' : 'BAN'}</span></td>
+                <td data-label="Issued by"><b>{item.issuedByEmail || 'Unknown staff'}</b><small>{item.issuedByRole}</small></td>
+                <td data-label="Punished user"><b>{item.punishedEmail || 'Email unavailable'}</b><small>{item.punishedUid || '—'}</small></td>
+                <td data-label="Reason" className="punishment-reason">{item.reason}</td>
+                <td data-label="Initial duration">{item.type === 'warning'
                   ? <span className="punishment-time neutral">No expiration</span>
                   : item.permanent
                     ? <span className="punishment-time permanent">Permanent</span>
                     : <span className="punishment-time initial">{item.durationMinutes} minute{item.durationMinutes === 1 ? '' : 's'}</span>}</td>
-                <td>{item.type === 'warning'
+                <td data-label="Time remaining">{item.type === 'warning'
                   ? <span className="punishment-time neutral">No expiration</span>
                   : item.permanent
                     ? <span className="punishment-time permanent">Permanent</span>
                     : expired
                       ? <span className="punishment-time expired">Expired</span>
                       : <span className="punishment-time active">{remainingMinutes} minute{remainingMinutes === 1 ? '' : 's'}</span>}</td>
-                <td><strong className="infraction-count">{item.infractionCount}</strong></td>
+                <td data-label="Total infractions"><strong className="infraction-count">{item.infractionCount}</strong></td>
               </tr>;
             })}</tbody>
           </table></div>
