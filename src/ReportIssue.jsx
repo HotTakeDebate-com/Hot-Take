@@ -15,6 +15,7 @@ export default function ReportIssue({
   yourSide,
   peerUid,
   matchMode,
+  onSubmitted,
 }) {
   const [category, setCategory] = useState('other');
   const [details, setDetails] = useState('');
@@ -42,7 +43,7 @@ export default function ReportIssue({
     setError(null);
     setBusy(true);
     try {
-      await submitReport({
+      const reportId = await submitReport({
         topicId,
         roomId,
         yourSide,
@@ -51,6 +52,7 @@ export default function ReportIssue({
         peerUid: peerUid || null,
         matchMode: matchMode || null,
       });
+      onSubmitted?.(reportId);
       setDone(true);
     } catch (err) {
       setError(err?.message ?? 'Could not send report.');
