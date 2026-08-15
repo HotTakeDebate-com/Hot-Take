@@ -12,6 +12,7 @@ import { auth } from './firebase.js';
 import { sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
 import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
+import { prepareProfileImage, profileInitial } from './profileImage.js';
 import './AccountPage.css';
 
 async function fetchLiveRatingSummary(uid) {
@@ -63,6 +64,8 @@ export default function ProfilePanel({
 
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [rating, setRating] = useState({ average: null, count: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,6 +94,7 @@ export default function ProfilePanel({
       const fromAuth = own ? auth.currentUser?.displayName?.trim() ?? '' : '';
       setDisplayName(prof?.displayName?.trim() || fromAuth);
       setBio(prof?.bio ?? '');
+      setAvatarUrl(prof?.avatarUrl ?? '');
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own) setFollowing(await isFollowingUser(resolvedEmail));
@@ -119,13 +123,30 @@ export default function ProfilePanel({
     setError(null);
     setSavedMsg(null);
     try {
-      await savePublicProfile({ displayName, bio });
+      await savePublicProfile({ displayName, bio, avatarUrl });
       setSavedMsg('Account details saved.');
       setRating(await fetchLiveRatingSummary(auth.currentUser?.uid));
     } catch (saveError) {
       setError(saveError?.message ?? 'Could not save your changes.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onAvatarSelected = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setAvatarBusy(true);
+    setError(null);
+    setSavedMsg(null);
+    try {
+      setAvatarUrl(await prepareProfileImage(file));
+      setSavedMsg('Photo ready. Select Save changes to publish it.');
+    } catch (avatarError) {
+      setError(avatarError?.message ?? 'Could not prepare that image.');
+    } finally {
+      setAvatarBusy(false);
     }
   };
 
@@ -210,7 +231,7 @@ export default function ProfilePanel({
         <section className="account-card account-public-card">
           <p className="account-eyebrow">Community profile</p>
           {loading ? <p>Loading profile…</p> : <>
-            <div className="account-avatar">{(displayName || resolvedEmail).slice(0, 1).toUpperCase()}</div>
+            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : profileInitial(displayName, resolvedEmail)}</div>
             <h1>{displayName || 'Hot Take member'}</h1>
             <p>{bio || 'No bio yet.'}</p>
             <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
@@ -254,7 +275,7 @@ export default function ProfilePanel({
           {savedMsg && <div className="account-alert account-alert--success" role="status">{savedMsg}</div>}
 
           <section id="account-overview" className="account-card account-overview">
-            <div className="account-avatar">{(displayName || resolvedEmail).slice(0, 1).toUpperCase()}</div>
+            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : profileInitial(displayName, resolvedEmail)}</div>
             <div>
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'}</h2>
@@ -277,6 +298,20 @@ export default function ProfilePanel({
                 <div><h2>Public profile</h2><p>This information is visible to other Hot Take members.</p></div>
               </div>
               <form className="account-form" onSubmit={onSave}>
+                <div className="account-avatar-editor">
+                  <div className={'account-avatar account-avatar-preview' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="Profile preview" /> : profileInitial(displayName, resolvedEmail)}</div>
+                  <div>
+                    <strong>Profile picture</strong>
+                    <p>JPG, PNG, or WebP. Your image is cropped to a square before it is saved.</p>
+                    <div className="account-avatar-actions">
+                      <label className="account-secondary-button account-file-button">
+                        {avatarBusy ? 'Preparing…' : 'Choose image'}
+                        <input type="file" accept="image/jpeg,image/png,image/webp" disabled={avatarBusy || saving} onChange={onAvatarSelected} />
+                      </label>
+                      {avatarUrl && <button type="button" className="account-secondary-button" disabled={avatarBusy || saving} onClick={() => setAvatarUrl('')}>Remove</button>}
+                    </div>
+                  </div>
+                </div>
                 <label htmlFor="account-display-name">Display name</label>
                 <input id="account-display-name" type="text" maxLength={100} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                 <label htmlFor="account-bio">Bio</label>

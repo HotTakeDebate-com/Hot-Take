@@ -26,6 +26,15 @@
 .account-card { scroll-margin-top: 24px; padding: 28px; border: 1px solid #303139; border-radius: 17px; background: linear-gradient(145deg, rgba(18,19,24,.97), rgba(7,8,11,.97)); box-shadow: 0 22px 70px rgba(0,0,0,.2); }
 .account-overview { display: grid; grid-template-columns: auto 1fr auto; gap: 20px; align-items: center; }
 .account-avatar { display: grid; place-items: center; width: 72px; height: 72px; border: 1px solid #ff262d; border-radius: 50%; color: #fff; background: radial-gradient(circle at 35% 30%, #ff3940, #a50006 70%); box-shadow: 0 0 0 7px rgba(255,32,39,.06), 0 14px 30px rgba(188,0,8,.18); font-size: 1.75rem; font-weight: 850; }
+.account-avatar.has-image { overflow: hidden; padding: 0; background: #090a0e; }
+.account-avatar.has-image img { width: 100%; height: 100%; object-fit: cover; }
+.account-avatar-editor { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; margin: 0 0 12px; padding: 18px; border: 1px solid #303139; border-radius: 13px; background: rgba(255,255,255,.018); }
+.account-avatar-editor .account-avatar-preview { width: 88px; height: 88px; margin: 0; }
+.account-avatar-editor strong { display: block; margin-bottom: 5px; }
+.account-avatar-editor p { margin: 0; color: #92929c; font-size: .82rem; line-height: 1.5; }
+.account-avatar-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.account-file-button { display: inline-flex; align-items: center; justify-content: center; }
+.account-file-button input { position: absolute; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; }
 .account-section-label { margin: 0 0 5px; color: #8e8e98; font-size: .76rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .account-overview h2 { margin: 0 0 5px; font-size: 1.4rem; }
 .account-overview p:not(.account-section-label) { margin: 0; color: #aaaab3; }
@@ -110,6 +119,9 @@
   .account-avatar { margin: 0 auto; }
   .account-status { grid-column: 1; justify-self: center; }
   .account-setting-row, .account-delete-row { grid-template-columns: 1fr; }
+  .account-avatar-editor { grid-template-columns: 1fr; text-align: center; }
+  .account-avatar-editor .account-avatar-preview { margin: 0 auto; }
+  .account-avatar-actions { justify-content: center; }
   .account-setting-row > :last-child { justify-self: start; }
   .account-page .profile-task { min-width: 0; }
   .account-page .profile-task__actions { flex-direction: column; }
