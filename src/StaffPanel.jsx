@@ -25,6 +25,68 @@ function countSince(items, field, days) {
   return items.filter((item) => timestampValue(item[field]) >= cutoff).length;
 }
 
+
+function dailySeries(items, field, days = 30) {
+  const result = [];
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const day = new Date(end);
+    day.setDate(end.getDate() - offset);
+    const next = new Date(day);
+    next.setDate(day.getDate() + 1);
+    const value = items.filter((item) => {
+      const timestamp = timestampValue(item[field]);
+      return timestamp >= day.getTime() && timestamp < next.getTime();
+    }).length;
+    result.push({
+      key: day.toISOString().slice(0, 10),
+      label: day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      value,
+    });
+  }
+  return result;
+}
+
+function ActivityGraph({ users, reports }) {
+  const registrations = dailySeries(users, 'createdAt');
+  const submittedReports = dailySeries(reports, 'createdAt');
+  const maxValue = Math.max(4, ...registrations.map((item) => item.value), ...submittedReports.map((item) => item.value));
+  const width = 960;
+  const height = 300;
+  const left = 52;
+  const right = 18;
+  const top = 24;
+  const bottom = 45;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const x = (index) => left + (index * plotWidth) / Math.max(1, registrations.length - 1);
+  const y = (value) => top + plotHeight - (value / maxValue) * plotHeight;
+  const points = (series) => series.map((item, index) => `${x(index)},${y(item.value)}`).join(' ');
+  const gridValues = Array.from({ length: 5 }, (_, index) => Math.round((maxValue * index) / 4));
+  const labelIndexes = [0, 7, 14, 21, 29];
+
+  return (
+    <section className="admin-dashboard-section admin-chart-section">
+      <header><div><p>STATISTICS</p><h2>30-day platform activity</h2></div><span>Daily registrations and submitted reports</span></header>
+      <div className="admin-chart-wrap">
+        <svg className="admin-activity-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Daily user registrations and submitted reports during the last 30 days">
+          {gridValues.map((value) => <g key={value}>
+            <line x1={left} x2={width - right} y1={y(value)} y2={y(value)} className="admin-chart-grid" />
+            <text x={left - 12} y={y(value) + 4} textAnchor="end" className="admin-chart-axis">{value}</text>
+          </g>)}
+          {labelIndexes.map((index) => <text key={registrations[index].key} x={x(index)} y={height - 13} textAnchor={index === 0 ? 'start' : index === 29 ? 'end' : 'middle'} className="admin-chart-axis">{registrations[index].label}</text>)}
+          <polyline points={points(registrations)} className="admin-chart-line registrations" />
+          <polyline points={points(submittedReports)} className="admin-chart-line reports" />
+          {registrations.map((item, index) => <circle key={'users-' + item.key} cx={x(index)} cy={y(item.value)} r="3" className="admin-chart-point registrations"><title>{item.label}: {item.value} registrations</title></circle>)}
+          {submittedReports.map((item, index) => <circle key={'reports-' + item.key} cx={x(index)} cy={y(item.value)} r="3" className="admin-chart-point reports"><title>{item.label}: {item.value} reports</title></circle>)}
+        </svg>
+        <div className="admin-chart-legend"><span><i className="registrations"/>User registrations</span><span><i className="reports"/>Reports submitted</span></div>
+      </div>
+    </section>
+  );
+}
+
 const ROLE_RANK = { user: 0, moderator: 1, admin: 2, owner: 3 };
 
 const SITE_ROLES = [
@@ -249,17 +311,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </section>
           <section className="admin-dashboard-panels"><article><h2>Recent reports</h2>{reports.slice(0,5).map((r)=><button key={r.id} onClick={()=>setTab('reports')}><span>{r.category || 'Report'}</span><small>{r.status || 'open'} · {r.roomId || r.id}</small></button>)}</article><article><h2>System status</h2><p><i className="ok"/>Firebase Admin connected</p><p><i className="ok"/>Staff authorization enforced</p><p><i className="ok"/>Audit logging enabled</p></article></section>
 
-          <section className="admin-dashboard-section">
-            <header><div><p>ADMIN TOOLS</p><h2>Quick access</h2></div><span>Common control-panel destinations</span></header>
-            <div className="admin-quick-grid">
-              <button onClick={() => setTab('reports')}><b>⚑</b><span>Reports</span><small>Review moderation queue</small></button>
-              <button onClick={() => setTab('users')}><b>♙</b><span>Users</span><small>Search and manage accounts</small></button>
-              {(role === 'admin' || role === 'owner') && <button onClick={() => setTab('roles')}><b>♟</b><span>Roles</span><small>Review staff permissions</small></button>}
-              {(role === 'admin' || role === 'owner') && <button onClick={() => setTab('audit')}><b>↶</b><span>Audit logs</span><small>Inspect administrative actions</small></button>}
-              <button onClick={onSupport}><b>?</b><span>Support</span><small>Open the support center</small></button>
-              <button onClick={onBack}><b>←</b><span>Website</span><small>Return to Hot Take</small></button>
-            </div>
-          </section>
+          <ActivityGraph users={users} reports={reports} />
 
           <section className="admin-dashboard-section">
             <header><div><p>PLATFORM ANALYTICS</p><h2>Logged activity</h2></div><span>Rolling activity recorded by Hot Take</span></header>
