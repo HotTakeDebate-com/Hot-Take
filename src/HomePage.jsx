@@ -202,7 +202,6 @@ function QuoteCarousel() {
           ))}
         </div>
         <button type="button" onClick={() => show(index + 1)} aria-label="Next quote">→</button>
-        <span>{paused ? 'Paused' : 'Changes every 16 seconds'}</span>
       </div>
     </section>
   );
