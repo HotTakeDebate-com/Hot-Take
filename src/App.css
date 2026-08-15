@@ -2452,3 +2452,50 @@
   .admin-search-box label { display:none; }
   .admin-stat-grid { grid-template-columns:1fr 1fr; gap:10px; }
 }
+
+
+/* Component structure bindings */
+.admin-console-topbar { grid-template-columns:44px 205px minmax(220px,1fr) auto; }
+.admin-console-topbar > img { width:190px; height:52px; object-fit:contain; object-position:left center; }
+.admin-console-home { width:40px; height:40px; border:1px solid #383b43; background:#131419; color:#fff; border-radius:7px; font-size:21px; cursor:pointer; }
+.admin-console-home:hover { border-color:#ff252d; color:#ff343c; }
+.admin-console-topbar > strong { font-size:18px; letter-spacing:.02em; }
+.admin-console-topbar > div { display:flex; align-items:center; gap:10px; }
+.admin-console-topbar > div > span { border:1px solid #792229; color:#ff4a51; background:#261014; border-radius:99px; padding:7px 12px; text-transform:uppercase; font-size:11px; font-weight:800; letter-spacing:.09em; }
+.admin-console-topbar > div > button,.admin-console-title > button {
+  border:1px solid #383b43; background:#111217; color:#fff; border-radius:7px; min-height:40px; padding:0 15px; font-weight:700; cursor:pointer;
+}
+.admin-console-topbar > div > button:hover,.admin-console-title > button:hover { border-color:#ff252d; color:#ff3a42; }
+.admin-console-sidebar > button {
+  width:100%; min-height:58px; border:0; border-bottom:1px solid #202127; background:transparent; color:#c8c9cf;
+  display:flex; align-items:center; gap:14px; padding:0 24px; font-size:15px; font-weight:700; text-align:left; cursor:pointer;
+}
+.admin-console-sidebar > button:hover { background:#211014; color:#fff; }
+.admin-console-sidebar > button.active { background:linear-gradient(90deg,#dd101c,#9e0710); color:#fff; }
+.admin-console-sidebar > button b { width:24px; text-align:center; font-size:19px; }
+.admin-console-sidebar > button i { margin-left:auto; min-width:25px; height:25px; padding:0 7px; display:grid; place-items:center; border-radius:99px; background:#ff2029; color:#fff; font-size:11px; font-style:normal; }
+.admin-console-sidebar > span { display:block; height:28px; border-bottom:1px solid #202127; }
+.admin-console-title > div > p { margin:0 0 8px; color:#ff3038; font-size:12px; font-weight:900; letter-spacing:.16em; }
+.admin-console-title > div > h1 { margin:0; }
+.admin-notice > b { flex:0 0 34px; height:34px; display:grid; place-items:center; border:2px solid currentColor; border-radius:50%; font-size:22px; }
+.admin-notice.error { background:#281013; border-color:#d42b35; color:#ff535b; }
+.admin-stat-grid > article { border:1px solid #30323a; border-radius:9px; background:#15161b; padding:20px; }
+.admin-stat-grid > article h2 { margin:0; font-size:14px; color:#a5a8b1; }
+.admin-stat-grid > article strong { display:block; margin:10px 0 7px; font-size:31px; color:#ff3038; }
+.admin-stat-grid > article span { color:#858893; font-size:12px; }
+.admin-dashboard-panels > article { border:1px solid #30323a; border-radius:9px; background:#15161b; overflow:hidden; }
+.admin-dashboard-panels > article > h2 { font-size:17px; margin:0; padding:16px 20px; border-bottom:1px solid #30323a; background:#191a20; }
+.admin-dashboard-panels > article > button { width:100%; border:0; border-bottom:1px solid #272930; background:transparent; color:#fff; padding:14px 20px; text-align:left; cursor:pointer; }
+.admin-dashboard-panels > article > button:hover { background:#211014; }
+.admin-dashboard-panels > article > button span,.admin-dashboard-panels > article > button small { display:block; }
+.admin-dashboard-panels > article > button small { color:#8f929d; margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.admin-dashboard-panels > article > p { margin:0 20px; padding:15px 0; border-bottom:1px solid #292b32; color:#b9bbc2; }
+.admin-dashboard-panels .ok { display:inline-block; width:9px; height:9px; border-radius:50%; background:#35dc80; margin-right:11px; box-shadow:0 0 10px rgba(53,220,128,.5); }
+@media(max-width:760px){
+  .admin-console-topbar { grid-template-columns:1fr auto; }
+  .admin-console-topbar > strong,.admin-console-home,.admin-console-topbar > div > span { display:none; }
+  .admin-console-topbar > div > button:first-of-type { display:none; }
+  .admin-console-sidebar > button { width:auto; min-width:max-content; min-height:50px; padding:0 16px; }
+  .admin-console-sidebar > button b { display:none; }
+  .admin-console-sidebar > span { display:none; }
+}
