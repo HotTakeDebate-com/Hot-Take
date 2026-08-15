@@ -4,6 +4,30 @@ import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
 import { staffAction, staffAudit, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
 import './WhatsHotAdmin.css';
+import './AdminIcons.css';
+
+function AdminIcon({ type }) {
+  const paths = {
+    home: <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v10h13V10M9.5 20v-6h5v6" /></>,
+    dashboard: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
+    reports: <><path d="M5 21V4" /><path d="M5 5h11l-1.5 3L17 12H5" /></>,
+    users: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 21c.4-4.7 2.4-7 6-7s5.6 2.3 6 7M15 15c3.5.1 5.5 2.1 6 6" /></>,
+    roles: <><path d="M12 3 5 6v5c0 4.5 2.7 8 7 10 4.3-2 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-5" /></>,
+    audit: <><path d="M4 5v5h5" /><path d="M5.5 9A8 8 0 1 1 4 14" /><path d="M12 8v5l3 2" /></>,
+    news: <><path d="M13 2 5 14h7l-1 8 8-12h-7l1-8Z" /></>,
+    punishments: <><path d="M12 3v18M6 6h12M4 9l-3 6h6L4 9ZM20 9l-3 6h6l-3-6ZM7 21h10" /></>,
+    back: <><path d="m10 5-7 7 7 7" /><path d="M3 12h18" /></>,
+    refresh: <><path d="M20 7v5h-5" /><path d="M4 17v-5h5" /><path d="M6.1 8A7 7 0 0 1 18.5 6.5L20 12M4 12l1.5 5.5A7 7 0 0 0 17.9 16" /></>,
+    search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></>,
+    alert: <><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v5M12 17.5h.01" /></>,
+    close: <><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6M15 9l-6 6" /></>,
+    member: <><circle cx="12" cy="8" r="4" /><path d="M4.5 21c.8-5 3.3-7.5 7.5-7.5s6.7 2.5 7.5 7.5" /></>,
+    moderator: <><path d="M12 3 5 6v6c0 4.2 2.6 7.3 7 9 4.4-1.7 7-4.8 7-9V6l-7-3Z" /><path d="M9 12h6M12 9v6" /></>,
+    admin: <><path d="m4 8 4 3 4-6 4 6 4-3-2 11H6L4 8Z" /><path d="M6 19h12" /></>,
+    owner: <><path d="m12 3 2.3 4.7 5.2.8-3.8 3.7.9 5.3-4.6-2.5-4.6 2.5.9-5.3-3.8-3.7 5.2-.8L12 3Z" /></>,
+  };
+  return <svg className="admin-ui-icon" viewBox="0 0 24 24" aria-hidden="true">{paths[type]}</svg>;
+}
 
 function dateValue(value) {
   if (!value) return '—';
@@ -442,32 +466,32 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
 
   return <div className="admin-console">
     <header className="admin-console-topbar">
-      <button className="admin-console-home" onClick={onBack} aria-label="Back to Hot Take">⌂</button>
+      <button className="admin-console-home" onClick={onBack} aria-label="Back to Hot Take"><AdminIcon type="home" /></button>
       <img src="/hottake-logo-horizontal.png" alt="Hot Take" />
       <strong>Admin control panel</strong>
       <div><span>{role}</span><button onClick={onAccount}>Account</button><button onClick={onSignOut}>Sign out</button></div>
     </header>
     <div className="admin-console-body">
       <aside className="admin-console-sidebar">
-        <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}><b>⌂</b>Dashboard</button>
-        <button className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}><b>⚑</b>Reports <i>{openReports}</i></button>
-        <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b>♙</b>Users</button>
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b>♟</b>Roles & permissions</button>}
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b>↶</b>Audit logs</button>}
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b>◉</b>What&apos;s Hot</button>}
-        <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b>⚖</b>Punishment Log</button>
+        <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}><b><AdminIcon type="dashboard" /></b>Dashboard</button>
+        <button className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}><b><AdminIcon type="reports" /></b>Reports <i>{openReports}</i></button>
+        <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b><AdminIcon type="users" /></b>Users</button>
+        {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
+        {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
+        {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b><AdminIcon type="news" /></b>What&apos;s Hot</button>}
+        <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b><AdminIcon type="punishments" /></b>Punishment Log</button>
         <span />
-        <button onClick={onBack}><b>←</b>Return to website</button>
+        <button onClick={onBack}><b><AdminIcon type="back" /></b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}>↻ Refresh</button></div>
-        {error && <div className="admin-notice error"><b>×</b>{error}</div>}
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
+        {error && <div className="admin-notice error"><b><AdminIcon type="close" /></b>{error}</div>}
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
         {tab === 'dashboard' && !busy && <>
-          <div className="admin-notice warning"><b className="admin-notice-alert-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5.5v8" /><circle cx="12" cy="17.5" r="1.25" /></svg></b><span><strong>{openReports} reports require attention.</strong> Review reports and document every moderation action.</span></div>
-          {bannedUsers > 0 && <div className="admin-notice danger"><b>×</b><span><strong>{bannedUsers} user accounts are currently banned.</strong></span></div>}
-          <section className="admin-search-box"><label>Search for users:</label><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Username, email, UID…" /><button onClick={() => setTab('users')}>⌕ Search</button></section>
+          <div className="admin-notice warning"><b className="admin-notice-alert-icon"><AdminIcon type="alert" /></b><span><strong>{openReports} reports require attention.</strong> Review reports and document every moderation action.</span></div>
+          {bannedUsers > 0 && <div className="admin-notice danger"><b><AdminIcon type="close" /></b><span><strong>{bannedUsers} user accounts are currently banned.</strong></span></div>}
+          <section className="admin-search-box"><label>Search for users:</label><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Username, email, UID…" /><button onClick={() => setTab('users')}><AdminIcon type="search" /> Search</button></section>
           <section className="admin-stat-grid">
             <article><h2>Total users</h2><strong>{users.length}</strong><span>Loaded Firebase accounts</span></article>
             <article><h2>Open reports</h2><strong>{openReports}</strong><span>Awaiting staff review</span></article>
@@ -558,7 +582,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </div>
           <div className="role-card-grid">
             {SITE_ROLES.map((siteRole) => <article key={siteRole.id} className={role === siteRole.id ? 'current' : ''}>
-              <div className={'role-card-icon role-' + siteRole.id}>{siteRole.name.charAt(0)}</div>
+              <div className={'role-card-icon role-' + siteRole.id}><AdminIcon type={siteRole.id === 'user' ? 'member' : siteRole.id} /></div>
               <div><h2>{siteRole.name}</h2><p>{siteRole.description}</p>{role === siteRole.id && <small>Your current role</small>}</div>
             </article>)}
           </div>
