@@ -13,7 +13,7 @@ const PERMISSION_DEFAULTS = {
   moderator: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false,
-    manageRoles: false, managePremium: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
   },
   admin: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
