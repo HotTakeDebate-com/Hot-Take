@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
-import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
+import { staffAction, staffAudit, staffDeleteReport, staffPermissions, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
   if (!value) return '—';
@@ -108,6 +108,7 @@ const ROLE_PERMISSIONS = [
   { group: 'Moderation', permissions: [
     { key: 'viewReports', name: 'View submitted reports', values: [false, true, true, true] },
     { key: 'respondReports', name: 'Respond to reports and update status', values: [false, true, true, true] },
+    { key: 'deleteReports', name: 'Delete junk or invalid reports', values: [false, true, true, true] },
     { key: 'viewUsers', name: 'View member emails and Firebase UIDs', values: [false, true, true, true] },
     { key: 'warnUsers', name: 'Issue user warnings', values: [false, true, true, true] },
     { key: 'banUsers', name: 'Ban user accounts', values: [false, true, true, true] },
@@ -165,7 +166,11 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         setAudit(auditData?.audit || []);
         setCapabilities(userData.capabilities || {});
       }
-      if (tab === 'reports') setReports((await staffReports()).reports || []);
+      if (tab === 'reports') {
+        const reportData = await staffReports();
+        setReports(reportData.reports || []);
+        setCapabilities(reportData.capabilities || {});
+      }
       if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
@@ -280,6 +285,16 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     try { await staffRespond(report.id, response, status); await load(); } catch (e) { setError(e.message); }
   };
 
+  const deleteReport = async (report) => {
+    const reporter = report.reporterEmail || report.reporterUid || 'an unknown user';
+    if (!window.confirm(`Permanently delete this ${report.category || 'report'} from ${reporter}? This cannot be undone.`)) return;
+    setError('');
+    try {
+      await staffDeleteReport(report.id);
+      setReports((current) => current.filter((item) => item.id !== report.id));
+    } catch (e) { setError(e.message); }
+  };
+
   const openReports = reports.filter((r) => !['resolved', 'closed'].includes(r.status)).length;
   const bannedUsers = users.filter((u) => u.disabled).length;
   const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'owner'].includes(u.role)).length;
@@ -376,7 +391,10 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
                 <div><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></div>
               </dl>
               {r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}
-              <button onClick={() => respond(r)}>Respond / update status</button>
+              <div className="staff-report-actions">
+                <button onClick={() => respond(r)}>Respond / update status</button>
+                {capabilities.deleteReports && <button className="danger" onClick={() => deleteReport(r)}>Delete junk report</button>}
+              </div>
             </div>
           </details>) : <div className="admin-notice">No reports found.</div>}
         </section>}
