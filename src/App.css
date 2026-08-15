@@ -2552,3 +2552,15 @@
   top: 0;
   z-index: 2;
 }
+
+
+/* Preserve the table row divider through the Actions column */
+.app.app--admin .staff-table-wrap td.staff-actions {
+  display: table-cell;
+  white-space: normal;
+}
+.app.app--admin .staff-table-wrap td.staff-actions > button {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 6px 6px 0;
+}
