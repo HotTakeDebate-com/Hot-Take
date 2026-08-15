@@ -25,3 +25,5 @@ export const staffRole = (uid, role, premium) => request('/users/' + encodeURICo
 
 export const staffPermissions = () => request('/permissions');
 export const staffSetPermission = (role, permission, enabled) => request('/permissions', { method: 'POST', body: JSON.stringify({ role, permission, enabled }) });
+
+export const staffUpdateUser = (uid, updates) => request('/users/' + encodeURIComponent(uid) + '/update', { method: 'POST', body: JSON.stringify(updates) });

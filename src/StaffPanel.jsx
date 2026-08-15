@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPermission, staffUsers } from './staffApi.js';
+import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
   if (!value) return '—';
@@ -34,6 +34,7 @@ const ROLE_PERMISSIONS = [
   ]},
   { group: 'Administration', permissions: [
     { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true] },
+    { key: 'editUsers', name: 'Edit user account details', values: [false, false, true, true] },
     { key: 'manageRoles', name: 'Assign User, Moderator, and Admin roles', values: [false, false, true, true] },
     { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true] },
     { key: 'deleteUsers', name: 'Delete eligible user accounts', values: [false, false, true, true] },
@@ -52,6 +53,9 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [audit, setAudit] = useState([]);
   const [permissions, setPermissions] = useState({});
   const [savingPermission, setSavingPermission] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
+  const [userDraft, setUserDraft] = useState(null);
+  const [savingUser, setSavingUser] = useState(false);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -82,12 +86,41 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     const reason = window.prompt('Reason for ' + action + ':');
     if (!reason) return;
     if (!window.confirm(action.toUpperCase() + ' ' + (user.email || user.uid) + '?')) return;
-    try { await staffAction(user.uid, action, reason); await load(); } catch (e) { setError(e.message); }
+    try {
+      await staffAction(user.uid, action, reason);
+      const data = await staffUsers();
+      const nextUsers = data.users || [];
+      setUsers(nextUsers);
+      setEditingUser((current) => current?.uid === user.uid ? (nextUsers.find((item) => item.uid === user.uid) || null) : current);
+    } catch (e) { setError(e.message); }
   };
   const changeRole = async (user, nextRole, premium) => {
     if (!window.confirm('Update roles for ' + (user.email || user.uid) + '?')) return;
     try { await staffRole(user.uid, nextRole, premium); await load(); } catch (e) { setError(e.message); }
   };
+  const openUserEditor = (user) => {
+    setEditingUser(user);
+    setUserDraft({ displayName: user.displayName || '', role: user.role || 'user', premium: user.premium === true });
+    setError('');
+  };
+
+  const saveUser = async () => {
+    if (!editingUser || !userDraft) return;
+    setSavingUser(true); setError('');
+    try {
+      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName });
+      if (userDraft.role !== editingUser.role || userDraft.premium !== editingUser.premium) {
+        await staffRole(editingUser.uid, userDraft.role, userDraft.role === 'user' && userDraft.premium);
+      }
+      const data = await staffUsers();
+      const nextUsers = data.users || [];
+      const updated = nextUsers.find((user) => user.uid === editingUser.uid);
+      setUsers(nextUsers);
+      setEditingUser(updated || null);
+      if (updated) setUserDraft({ displayName: updated.displayName || '', role: updated.role || 'user', premium: updated.premium === true });
+    } catch (e) { setError(e.message); } finally { setSavingUser(false); }
+  };
+
   const togglePermission = async (targetRole, permission, enabled) => {
     const id = targetRole + ':' + permission;
     setSavingPermission(id); setError('');
@@ -147,7 +180,20 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
 
         {tab === 'reports' && !busy && <section className="staff-grid">{reports.map((r) => <article className="staff-card" key={r.id}><header><strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong><span>{dateValue(r.createdAt)}</span></header><h2>{r.category || 'Report'}</h2><p>{r.details}</p><dl><dt>Report ID</dt><dd>{r.id}</dd><dt>Room</dt><dd>{r.roomId || '—'}</dd><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></dl>{r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}<button onClick={() => respond(r)}>Respond / update status</button></article>)}</section>}
 
-        {tab === 'users' && !busy && <section><input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" /><div className="staff-table-wrap"><table><thead><tr><th>User</th><th>UID</th><th>Created / last login</th><th>Role</th><th>Membership</th><th>Status</th><th>Actions</th></tr></thead><tbody>{filteredUsers.map((u) => <tr key={u.uid}><td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td><td className="staff-uid">{u.uid}</td><td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td><td>{(role === 'admin' || role === 'owner') && u.role !== 'owner' ? <div className="staff-role"><select value={u.role} onChange={(e) => changeRole(u, e.target.value, e.target.value === 'user' ? u.premium : false)}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></div> : <b>{u.role === 'moderator' ? 'Moderator' : u.role}</b>}</td><td>{u.role === 'user' ? <label className="staff-premium"><input type="checkbox" checked={u.premium} disabled={role !== 'admin' && role !== 'owner'} onChange={(e) => changeRole(u, 'user', e.target.checked)} /> Premium</label> : <span className="staff-not-applicable">Not applicable</span>}</td><td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td><td className="staff-actions"><button onClick={() => act(u, 'warn')}>Warn</button><button onClick={() => act(u, u.disabled ? 'unban' : 'ban')}>{u.disabled ? 'Unban' : 'Ban'}</button><button onClick={() => act(u, 'revoke_sessions')}>Sign out</button>{(role === 'admin' || role === 'owner') && u.role !== 'owner' && <button className="danger" onClick={() => act(u, 'delete')}>Delete</button>}</td></tr>)}</tbody></table></div></section>}
+        {tab === 'users' && !busy && <section>
+          <input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" />
+          <div className="staff-table-wrap"><table><thead><tr><th>User</th><th>UID</th><th>Created / last login</th><th>Role</th><th>Membership</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>{filteredUsers.map((u) => <tr className="staff-user-row" key={u.uid} onClick={() => (role === 'admin' || role === 'owner') && openUserEditor(u)}>
+              <td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td>
+              <td className="staff-uid">{u.uid}</td>
+              <td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td>
+              <td><b>{u.role === 'moderator' ? 'Moderator' : u.role}</b></td>
+              <td>{u.role === 'user' && u.premium ? <span className="staff-premium">Premium</span> : <span className="staff-not-applicable">Standard</span>}</td>
+              <td>{u.disabled ? <span className="staff-banned">BANNED</span> : 'Active'}</td>
+              <td className="staff-actions"><button type="button" onClick={(event) => { event.stopPropagation(); openUserEditor(u); }}>Edit user</button></td>
+            </tr>)}</tbody>
+          </table></div>
+        </section>}
         {tab === 'roles' && !busy && <section className="role-permissions">
           <div className="role-permissions-intro">
             <div><p>Select Yes or No to give or remove a permission. Changes apply to every account with that role. Premium remains a membership and is not a role.</p></div>
@@ -175,6 +221,37 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </div>
           <p className="permission-footnote">Owner access and standard debate rights are protected. All other buttons can be changed by Admins and the Owner, and changes are enforced by the staff API.</p>
         </section>}
+        {editingUser && userDraft && <div className="user-editor-backdrop" onMouseDown={() => setEditingUser(null)}>
+          <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Edit ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
+            <header className="user-editor-header">
+              <div className="user-editor-avatar">{(editingUser.displayName || editingUser.email || '?').charAt(0).toUpperCase()}</div>
+              <div><p>EDIT HOT TAKE USER</p><h2>{editingUser.displayName || 'No display name'}</h2><span>{editingUser.email}</span></div>
+              <button type="button" onClick={() => setEditingUser(null)} aria-label="Close user editor">×</button>
+            </header>
+            <nav className="user-editor-tabs"><span className="active">User details</span><span>Security & moderation</span></nav>
+            <div className="user-editor-content">
+              <section className="user-editor-section"><h3>Identity</h3>
+                <label><span>Display name</span><input value={userDraft.displayName} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
+                <label><span>Email</span><input value={editingUser.email || ''} readOnly /><small>Read-only to preserve Firebase and Firestore account links.</small></label>
+                <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
+              </section>
+              <section className="user-editor-section"><h3>Access</h3>
+                <label><span>Role</span><select value={userDraft.role} disabled={editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
+                <label className="user-editor-check"><span>Membership</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
+                <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Email verification</span><b>{editingUser.emailVerified ? 'Verified' : 'Not verified'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
+              </section>
+              <section className="user-editor-section danger-zone"><h3>Security & moderation</h3><p>Actions require a reason and are written to the staff audit log.</p>
+                <div className="user-editor-actions">
+                  <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>
+                  <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>
+                  <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button>
+                  {(role === 'admin' || role === 'owner') && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
+                </div>
+              </section>
+            </div>
+            <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingUser.role === 'owner' && role !== 'owner'} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
+          </section>
+        </div>}
         {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
       </main>
     </div>

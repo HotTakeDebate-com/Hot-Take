@@ -8,7 +8,7 @@ const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false,
-    manageRoles: false, managePremium: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, editUsers: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
@@ -18,7 +18,7 @@ const PERMISSION_DEFAULTS = {
   admin: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
-    manageRoles: true, managePremium: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, editUsers: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
@@ -153,6 +153,19 @@ export function attachStaffRoutes(app, { isAdminReady }) {
       premium: u.customClaims?.premium === true,
     }));
     res.json({ users, pageToken: result.pageToken || null });
+  });
+
+  router.post('/users/:uid/update', requirePermission('editUsers'), async (req, res) => {
+    const uid = String(req.params.uid);
+    const target = await admin.auth().getUser(uid);
+    if (target.email?.toLowerCase() === OWNER_EMAIL && req.staff.role !== 'owner') {
+      return res.status(403).json({ error: 'Owner account is protected.' });
+    }
+    const displayName = String(req.body?.displayName || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+    if (!displayName) return res.status(400).json({ error: 'Display name is required.' });
+    const updated = await admin.auth().updateUser(uid, { displayName });
+    await audit('user_update', req.staff, uid, { displayName, targetEmail: target.email || null });
+    res.json({ ok: true, user: { uid: updated.uid, displayName: updated.displayName || '', email: updated.email || '' } });
   });
 
   router.get('/reports', requirePermission('viewReports'), async (req, res) => {
