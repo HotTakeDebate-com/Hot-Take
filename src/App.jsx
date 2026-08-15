@@ -1072,14 +1072,16 @@ export default function App() {
           onPickMission={() => setHeaderOverlay('mission')}
           onPickSupport={() => setHeaderOverlay('faq')}
           onPickHelp={() => setHeaderOverlay('support')}
+          brandExtras={
+            staffRole ? (
+              <button type="button" className="landing-admin-link" onClick={() => setStep('admin')}>
+                Admin
+              </button>
+            ) : null
+          }
           navExtras={
             isSignedIn ? (
               <>
-                {staffRole && (
-                  <button type="button" className="landing-admin-link" onClick={() => setStep('admin')}>
-                    Admin
-                  </button>
-                )}
                 <button
                   type="button"
                   className="landing-btn landing-btn--ghost"
