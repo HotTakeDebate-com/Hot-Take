@@ -4,6 +4,30 @@ import admin from 'firebase-admin';
 const OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
 const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
 const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
+const PERMISSION_DEFAULTS = {
+  user: {
+    viewReports: false, respondReports: false, viewUsers: false, warnUsers: false,
+    banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false,
+    manageRoles: false, managePremium: false, deleteUsers: false,
+  },
+  moderator: {
+    viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
+    banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false,
+    manageRoles: false, managePremium: false, deleteUsers: false,
+  },
+  admin: {
+    viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
+    banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
+    manageRoles: true, managePremium: true, deleteUsers: true,
+  },
+  owner: {
+    viewReports: true, respondReports: true, viewUsers: true, warnUsers: true,
+    banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true,
+    manageRoles: true, managePremium: true, deleteUsers: true,
+  },
+};
+const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
+
 
 function roleOf(claims) {
   if (claims?.email?.toLowerCase() === OWNER_EMAIL) return 'owner';
@@ -39,6 +63,35 @@ function requireRole(minimum) {
   };
 }
 
+async function permissionConfig() {
+  const snap = await admin.firestore().collection('staff_config').doc('role_permissions').get();
+  const stored = snap.exists ? (snap.data()?.roles || {}) : {};
+  return Object.fromEntries(Object.entries(PERMISSION_DEFAULTS).map(([role, defaults]) => [
+    role,
+    { ...defaults, ...(stored[role] || {}), ...(role === 'owner' ? defaults : {}) },
+  ]));
+}
+
+async function hasPermission(role, permission) {
+  if (role === 'owner') return true;
+  const config = await permissionConfig();
+  return config[role]?.[permission] === true;
+}
+
+function requirePermission(permission) {
+  return async (req, res, next) => {
+    try {
+      if (!(await hasPermission(req.staff?.role, permission))) {
+        return res.status(403).json({ error: 'Your role does not have permission to perform this action.' });
+      }
+      next();
+    } catch (e) {
+      console.warn('[staff] permission check failed', e?.message ?? e);
+      res.status(500).json({ error: 'Could not verify staff permissions.' });
+    }
+  };
+}
+
 async function audit(action, actor, targetUid, details = {}) {
   await admin.firestore().collection('staff_audit').add({
     action,
@@ -61,7 +114,29 @@ export function attachStaffRoutes(app, { isAdminReady }) {
 
   router.get('/me', (req, res) => res.json({ ...req.staff, ownerEmail: OWNER_EMAIL }));
 
-  router.get('/users', requireRole('moderator'), async (req, res) => {
+  router.get('/permissions', requireRole('admin'), async (_req, res) => {
+    res.json({ permissions: await permissionConfig() });
+  });
+
+  router.post('/permissions', requireRole('admin'), async (req, res) => {
+    const targetRole = String(req.body?.role || '');
+    const permission = String(req.body?.permission || '');
+    const enabled = req.body?.enabled === true;
+    if (!['moderator', 'admin'].includes(targetRole)) {
+      return res.status(400).json({ error: 'Only Moderator and Admin permissions can be changed.' });
+    }
+    if (!PERMISSION_KEYS.has(permission)) return res.status(400).json({ error: 'Unknown permission.' });
+    const ref = admin.firestore().collection('staff_config').doc('role_permissions');
+    await ref.set({
+      roles: { [targetRole]: { [permission]: enabled } },
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedBy: req.staff.email,
+    }, { merge: true });
+    await audit('permission_change', req.staff, null, { role: targetRole, permission, enabled });
+    res.json({ ok: true, permissions: await permissionConfig() });
+  });
+
+  router.get('/users', requirePermission('viewUsers'), async (req, res) => {
     const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
     const pageToken = req.query.pageToken ? String(req.query.pageToken) : undefined;
     const result = await admin.auth().listUsers(limit, pageToken);
@@ -80,7 +155,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     res.json({ users, pageToken: result.pageToken || null });
   });
 
-  router.get('/reports', requireRole('moderator'), async (req, res) => {
+  router.get('/reports', requirePermission('viewReports'), async (req, res) => {
     const snap = await admin.firestore().collection('reports').orderBy('createdAt', 'desc').limit(200).get();
     const reports = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     const uids = [...new Set(reports.flatMap((report) => [report.reporterUid, report.peerUid]).filter(Boolean))];
@@ -98,7 +173,7 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     });
   });
 
-  router.post('/reports/:id/respond', requireRole('moderator'), async (req, res) => {
+  router.post('/reports/:id/respond', requirePermission('respondReports'), async (req, res) => {
     const response = String(req.body?.response || '').trim().slice(0, 4000);
     const status = String(req.body?.status || 'responded');
     if (!response) return res.status(400).json({ error: 'Response required.' });
@@ -122,6 +197,13 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     const action = String(req.body?.action || '');
     const reason = String(req.body?.reason || '').trim().slice(0, 2000);
     if (!reason) return res.status(400).json({ error: 'A reason is required.' });
+    const permissionForAction = {
+      warn: 'warnUsers', ban: 'banUsers', unban: 'unbanUsers',
+      revoke_sessions: 'revokeSessions', delete: 'deleteUsers',
+    }[action];
+    if (!permissionForAction || !(await hasPermission(req.staff.role, permissionForAction))) {
+      return res.status(403).json({ error: 'Your role does not have permission to perform this action.' });
+    }
     const target = await admin.auth().getUser(uid);
     const targetRole = target.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (target.customClaims?.role || 'user');
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
@@ -158,13 +240,21 @@ export function attachStaffRoutes(app, { isAdminReady }) {
     if (!['user', 'moderator', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
     const target = await admin.auth().getUser(uid);
     if (target.email?.toLowerCase() === OWNER_EMAIL) return res.status(400).json({ error: 'Owner role is protected.' });
+    const currentRole = target.customClaims?.role || 'user';
+    const currentPremium = target.customClaims?.premium === true;
+    if (role !== currentRole && !(await hasPermission(req.staff.role, 'manageRoles'))) {
+      return res.status(403).json({ error: 'Your role cannot manage roles.' });
+    }
+    if (premium !== currentPremium && !(await hasPermission(req.staff.role, 'managePremium'))) {
+      return res.status(403).json({ error: 'Your role cannot manage Premium memberships.' });
+    }
     await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role, premium });
     await admin.auth().revokeRefreshTokens(uid);
     await audit('role_change', req.staff, uid, { role, premium, targetEmail: target.email || null });
     res.json({ ok: true, role, premium });
   });
 
-  router.get('/audit', requireRole('admin'), async (_req, res) => {
+  router.get('/audit', requirePermission('viewAudit'), async (_req, res) => {
     const snap = await admin.firestore().collection('staff_audit').orderBy('createdAt', 'desc').limit(300).get();
     res.json({ audit: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
   });
