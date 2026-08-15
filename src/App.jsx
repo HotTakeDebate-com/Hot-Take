@@ -23,6 +23,8 @@ import { getMediaErrorMessage, getUserMediaWithFallback } from './mediaUtils.js'
 import HomePage from './HomePage.jsx';
 import QuickMatchPage from './QuickMatchPage.jsx';
 import DebateRoomPage from './DebateRoomPage.jsx';
+import StaffPanel from './StaffPanel.jsx';
+import { staffMe } from './staffApi.js';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -105,6 +107,7 @@ export default function App() {
   const [camOn, setCamOn] = useState(true);
   const [connState, setConnState] = useState(null);
   const [firebaseUserId, setFirebaseUserId] = useState(null);
+  const [staffRole, setStaffRole] = useState(null);
   /** Must be true to use the app, Socket.IO, and Firestore (email/password users verify via link). */
   const [authReady, setAuthReady] = useState(false);
   const [videoDeviceId, setVideoDeviceId] = useState('');
@@ -141,7 +144,7 @@ export default function App() {
 
   const isSignedIn = Boolean(firebaseUserId);
   const showHeaderSocialTabs =
-    isSignedIn && ['welcome', 'feed', 'profile', 'search', 'history'].includes(step);
+    isSignedIn && ['welcome', 'feed', 'profile', 'search', 'history', 'admin'].includes(step);
 
   const openAuth = useCallback((mode = 'signin') => {
     setAuthModal(mode === 'signup' ? 'signup' : 'signin');
@@ -278,6 +281,18 @@ export default function App() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!firebaseUserId) {
+      setStaffRole(null);
+      return () => { cancelled = true; };
+    }
+    staffMe()
+      .then((data) => { if (!cancelled) setStaffRole(data.role || null); })
+      .catch(() => { if (!cancelled) setStaffRole(null); });
+    return () => { cancelled = true; };
+  }, [firebaseUserId]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -948,6 +963,15 @@ export default function App() {
                     >
                       Account
                     </button>
+                    {staffRole && (
+                      <button
+                        type="button"
+                        className={`header-chip header-social-tab ${step === 'admin' ? 'header-social-tab--active' : ''}`}
+                        onClick={() => setStep('admin')}
+                      >
+                        Admin
+                      </button>
+                    )}
                   </nav>
                 )}
                 <HeaderNavMenu
@@ -1048,6 +1072,11 @@ export default function App() {
           navExtras={
             isSignedIn ? (
               <>
+                {staffRole && (
+                  <button type="button" className="landing-btn landing-btn--ghost" onClick={() => setStep('admin')}>
+                    Admin
+                  </button>
+                )}
                 <button
                   type="button"
                   className="landing-btn landing-btn--ghost"
@@ -1071,6 +1100,8 @@ export default function App() {
           }
         />
       )}
+
+      {isSignedIn && step === 'admin' && staffRole && <StaffPanel role={staffRole} onBack={() => setStep('welcome')} />}
 
       {isSignedIn && step === 'feed' && (
         <SocialFeed
