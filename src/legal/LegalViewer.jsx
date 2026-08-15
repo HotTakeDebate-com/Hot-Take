@@ -8,7 +8,7 @@ export default function LegalViewer({ documentId, onBack }) {
   const [activeDocumentId, setActiveDocumentId] = useState(documentId);
 
   let content = null;
-  if (activeDocumentId === 'terms') content = <TermsOfService onBack={onBack} />;
+  if (activeDocumentId === 'terms') content = <TermsOfService onBack={onBack} onPickLegal={setActiveDocumentId} />;
   if (activeDocumentId === 'privacy') content = <PrivacyPolicy onBack={onBack} onPickLegal={setActiveDocumentId} />;
   if (activeDocumentId === 'community') content = <CommunityGuidelines onBack={onBack} />;
   if (activeDocumentId === 'recording') content = <RecordingAgreement onBack={onBack} />;
