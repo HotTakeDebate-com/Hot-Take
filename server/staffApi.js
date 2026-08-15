@@ -579,13 +579,30 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
       return res.status(400).json({ error: 'Invalid status.' });
     }
     const ref = admin.firestore().collection('reports').doc(String(req.params.id));
-    if (!(await ref.get()).exists) return res.status(404).json({ error: 'Report not found.' });
-    await ref.set({
+    const reportSnap = await ref.get();
+    if (!reportSnap.exists) return res.status(404).json({ error: 'Report not found.' });
+    const report = reportSnap.data() || {};
+    const batch = admin.firestore().batch();
+    batch.set(ref, {
       status,
       staffResponse: response,
       respondedAt: admin.firestore.FieldValue.serverTimestamp(),
       respondedBy: req.staff.email,
     }, { merge: true });
+    if (report.reporterUid) {
+      const noticeRef = admin.firestore().collection('user_warnings').doc();
+      batch.set(noticeRef, {
+        uid: report.reporterUid,
+        type: 'report_response',
+        reportId: String(req.params.id),
+        message: response,
+        issuedBy: req.staff.email,
+        issuedByRole: req.staff.role,
+        acknowledged: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
     await audit('report_response', req.staff, null, { reportId: req.params.id, status });
     res.json({ ok: true });
   });
