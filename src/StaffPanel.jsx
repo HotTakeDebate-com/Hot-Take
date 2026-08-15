@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
-import { staffAccess, staffAction, staffAudit, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
+import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
 import './WhatsHotAdmin.css';
 import './AdminIcons.css';
 
@@ -74,10 +74,12 @@ function dailySeries(items, field, days = 30) {
   return result;
 }
 
-function ActivityGraph({ users, reports }) {
+function ActivityGraph({ users, reports, debates, punishments }) {
   const registrations = dailySeries(users, 'createdAt');
   const submittedReports = dailySeries(reports, 'createdAt');
-  const maxValue = Math.max(4, ...registrations.map((item) => item.value), ...submittedReports.map((item) => item.value));
+  const startedDebates = dailySeries(debates, 'startedAtMs');
+  const bans = dailySeries(punishments.filter((item) => item.type === 'ban'), 'issuedAt');
+  const maxValue = Math.max(4, ...registrations.map((item) => item.value), ...submittedReports.map((item) => item.value), ...startedDebates.map((item) => item.value), ...bans.map((item) => item.value));
   const width = 960;
   const height = 300;
   const left = 52;
@@ -94,7 +96,7 @@ function ActivityGraph({ users, reports }) {
 
   return (
     <section className="admin-dashboard-section admin-chart-section">
-      <header><div><p>STATISTICS</p><h2>30-day platform activity</h2></div><span>Daily registrations and submitted reports</span></header>
+      <header><div><p>STATISTICS</p><h2>30-day platform activity</h2></div><span>Registrations, reports, debates, and bans by day</span></header>
       <div className="admin-chart-wrap">
         <svg className="admin-activity-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Daily user registrations and submitted reports during the last 30 days">
           {gridValues.map((value) => <g key={value}>
@@ -104,10 +106,14 @@ function ActivityGraph({ users, reports }) {
           {labelIndexes.map((index) => <text key={registrations[index].key} x={x(index)} y={height - 13} textAnchor={index === 0 ? 'start' : index === 29 ? 'end' : 'middle'} className="admin-chart-axis">{registrations[index].label}</text>)}
           <polyline points={points(registrations)} className="admin-chart-line registrations" />
           <polyline points={points(submittedReports)} className="admin-chart-line reports" />
+          <polyline points={points(startedDebates)} className="admin-chart-line debates" />
+          <polyline points={points(bans)} className="admin-chart-line bans" />
           {registrations.map((item, index) => <circle key={'users-' + item.key} cx={x(index)} cy={y(item.value)} r="3" className="admin-chart-point registrations"><title>{item.label}: {item.value} registrations</title></circle>)}
           {submittedReports.map((item, index) => <circle key={'reports-' + item.key} cx={x(index)} cy={y(item.value)} r="3" className="admin-chart-point reports"><title>{item.label}: {item.value} reports</title></circle>)}
+          {startedDebates.map((item, index) => <circle key={'debates-' + item.key} cx={x(index)} cy={y(item.value)} r="3" className="admin-chart-point debates"><title>{item.label}: {item.value} debates</title></circle>)}
+          {bans.map((item, index) => <circle key={'bans-' + item.key} cx={x(index)} cy={y(item.value)} r="3" className="admin-chart-point bans"><title>{item.label}: {item.value} bans</title></circle>)}
         </svg>
-        <div className="admin-chart-legend"><span><i className="registrations"/>User registrations</span><span><i className="reports"/>Reports submitted</span></div>
+        <div className="admin-chart-legend"><span><i className="registrations"/>User registrations</span><span><i className="reports"/>Reports submitted</span><span><i className="debates"/>Debates started</span><span><i className="bans"/>Bans issued</span></div>
       </div>
     </section>
   );
@@ -264,6 +270,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
   const [punishments, setPunishments] = useState([]);
+  const [debates, setDebates] = useState([]);
   const [newsStories, setNewsStories] = useState([]);
   const [punishmentNow, setPunishmentNow] = useState(Date.now());
   const [permissions, setPermissions] = useState({});
@@ -289,11 +296,12 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     try {
       if (tab === 'dashboard') {
         await staffAccess();
-        const requests = [staffReports(), staffUsers()];
-        if (role === 'admin' || role === 'owner') requests.push(staffAudit());
-        const [reportData, userData, auditData] = await Promise.all(requests);
+        const auditRequest = role === 'admin' || role === 'owner' ? staffAudit() : Promise.resolve({ audit: [] });
+        const [reportData, userData, punishmentData, activityData, auditData] = await Promise.all([staffReports(), staffUsers(), staffPunishments(), staffDashboardActivity(), auditRequest]);
         setReports(reportData.reports || []);
         setUsers(userData.users || []);
+        setPunishments(punishmentData.punishments || []);
+        setDebates(activityData.debates || []);
         setAudit(auditData?.audit || []);
         setCapabilities(userData.capabilities || {});
       }
@@ -458,6 +466,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     .filter((u) => ['moderator', 'admin', 'owner'].includes(u.role))
     .sort((a, b) => timestampValue(b.lastAdminAccessAt) - timestampValue(a.lastAdminAccessAt))
     .slice(0, 6);
+  const onlineStaff = users.filter((user) => ['moderator', 'admin', 'owner'].includes(user.role) && user.online);
   const activityRows = [
     { label: 'Moderation actions', source: audit, field: 'createdAt' },
     { label: 'Reports submitted', source: reports, field: 'createdAt' },
@@ -501,7 +510,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </section>
           <section className="admin-dashboard-panels"><article><h2>Recent reports</h2>{reports.slice(0,5).map((r)=><button key={r.id} onClick={()=>setTab('reports')}><span>{r.category || 'Report'}</span><small>{r.status || 'open'} · {r.roomId || r.id}</small></button>)}</article><article><h2>System status</h2><p><i className="ok"/>Firebase Admin connected</p><p><i className="ok"/>Staff authorization enforced</p><p><i className="ok"/>Audit logging enabled</p></article></section>
 
-          <ActivityGraph users={users} reports={reports} />
+          <ActivityGraph users={users} reports={reports} debates={debates} punishments={punishments} />
 
           <section className="admin-dashboard-section">
             <header><div><p>PLATFORM ANALYTICS</p><h2>Logged activity</h2></div><span>Rolling activity recorded by Hot Take</span></header>
@@ -512,10 +521,16 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </section>
 
           <section className="admin-lower-grid">
+            <article className="admin-dashboard-section admin-online-staff">
+              <header><div><p>LIVE</p><h2>Online staff</h2></div><span>{onlineStaff.length} online now</span></header>
+              <div className="admin-staff-list">
+                {onlineStaff.length ? onlineStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className={'admin-staff-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : (member.displayName || member.email || '?')[0].toUpperCase()}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Active now</small></span><i className="ok" /></button>) : <p className="admin-empty-list">No staff members are online right now.</p>}
+              </div>
+            </article>
             <article className="admin-dashboard-section">
               <header><div><p>STAFF</p><h2>Recent staff activity</h2></div></header>
               <div className="admin-staff-list">
-                {recentStaff.length ? recentStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className="admin-staff-avatar">{(member.displayName || member.email || '?')[0].toUpperCase()}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Last admin access {member.lastAdminAccessAt ? dateValue(member.lastAdminAccessAt) : 'Not recorded yet'}</small></span><i className={member.disabled ? 'offline' : 'ok'} /></button>) : <p>No staff accounts were returned.</p>}
+                {recentStaff.length ? recentStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className={'admin-staff-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : (member.displayName || member.email || '?')[0].toUpperCase()}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Last admin access {member.lastAdminAccessAt ? dateValue(member.lastAdminAccessAt) : 'Not recorded yet'}</small></span><i className={member.online ? 'ok' : 'offline'} /></button>) : <p>No staff accounts were returned.</p>}
               </div>
             </article>
             <article className="admin-dashboard-section">
