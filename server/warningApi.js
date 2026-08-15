@@ -46,9 +46,31 @@ export function attachWarningRoutes(app, { isAdminReady }) {
       .where('uid', '==', req.user.uid).limit(50).get();
     const warnings = snap.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((warning) => warning.acknowledged !== true)
+      .filter((warning) => warning.acknowledged !== true && warning.type !== 'report_response')
       .sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0));
     res.json({ warnings });
+  });
+
+  router.get('/report-responses', async (req, res) => {
+    const [responseSnap, legacySnap] = await Promise.all([
+      admin.firestore().collection('user_report_responses').where('uid', '==', req.user.uid).limit(50).get(),
+      admin.firestore().collection('user_warnings').where('uid', '==', req.user.uid).limit(50).get(),
+    ]);
+    const responses = [
+      ...responseSnap.docs.map((doc) => ({ id: doc.id, source: 'response', ...doc.data() })),
+      ...legacySnap.docs.filter((doc) => doc.data()?.type === 'report_response').map((doc) => ({ id: doc.id, source: 'legacy', ...doc.data() })),
+    ].filter((notice) => notice.acknowledged !== true)
+      .sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0));
+    res.json({ responses });
+  });
+
+  router.post('/report-responses/:id/acknowledge', async (req, res) => {
+    const collectionName = req.body?.source === 'legacy' ? 'user_warnings' : 'user_report_responses';
+    const ref = admin.firestore().collection(collectionName).doc(String(req.params.id));
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()?.uid !== req.user.uid) return res.status(404).json({ error: 'Response not found.' });
+    await ref.set({ acknowledged: true, acknowledgedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    res.json({ ok: true });
   });
 
   router.post('/:id/acknowledge', async (req, res) => {
