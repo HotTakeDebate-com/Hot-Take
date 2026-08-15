@@ -246,6 +246,10 @@
     grid-template-columns: 1fr;
   }
 
+  .whats-hot-feature-heading {
+    order: -2;
+  }
+
   .whats-hot-video {
     order: -1;
   }
