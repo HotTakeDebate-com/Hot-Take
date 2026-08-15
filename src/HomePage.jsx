@@ -308,7 +308,7 @@ export default function HomePage({
           <div className="landing-hero-actions" aria-label="Start debating">
             <button type="button" className="landing-btn landing-btn--primary landing-hero-btn" onClick={handleQuick}>
               <IconLightning />
-              Find my debate
+              Quick Match
             </button>
             <button type="button" className="landing-btn landing-btn--outline landing-hero-btn" onClick={handleCustom}>
               <span className="landing-hero-plus" aria-hidden="true">+</span>
