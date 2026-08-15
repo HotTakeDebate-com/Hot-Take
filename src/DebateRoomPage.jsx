@@ -55,7 +55,7 @@ function LeaveDebateModal({ onCancel, onConfirm }) {
   );
 }
 
-export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, kickOpponent, canKick }) {
+export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, onReportSubmitted, kickOpponent, canKick }) {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [opponentRating, setOpponentRating] = useState(null);
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
@@ -109,7 +109,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     </div><div className="live-controls"><button onClick={onToggleMic}><LineIcon type={micOn ? 'mic' : 'micOff'} />{micOn ? 'Mute mic' : 'Unmute mic'}</button><button onClick={onToggleCam}><LineIcon type={camOn ? 'camera' : 'cameraOff'} />{camOn ? 'Camera off' : 'Camera on'}</button><button onClick={onReport}><LineIcon type="flag" />Report issue</button>{canKick && <button onClick={kickOpponent}>Kick opponent</button>}<button className="live-leave" onClick={() => setLeaveConfirmOpen(true)}><LineIcon type="exit" />Leave debate</button></div></section>
       <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} />
     </main>
-    <ReportIssue open={reportOpen} onClose={onCloseReport} topicId={debateInfo.topicId} roomId={debateInfo.roomId} yourSide={debateInfo.yourSide} peerUid={debateInfo.peerUid ?? null} matchMode={debateInfo.matchMode ?? null} />
+    <ReportIssue open={reportOpen} onClose={onCloseReport} topicId={debateInfo.topicId} roomId={debateInfo.roomId} yourSide={debateInfo.yourSide} peerUid={debateInfo.peerUid ?? null} matchMode={debateInfo.matchMode ?? null} onSubmitted={onReportSubmitted} />
     {leaveConfirmOpen && <LeaveDebateModal onCancel={() => setLeaveConfirmOpen(false)} onConfirm={confirmLeave} />}
   </div>;
 }
