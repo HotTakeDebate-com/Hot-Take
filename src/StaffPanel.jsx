@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage, profileInitial } from './profileImage.js';
-import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
+import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebates, staffDeleteReport, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
 import './WhatsHotAdmin.css';
 import './AdminIcons.css';
 
@@ -11,6 +11,7 @@ function AdminIcon({ type }) {
     home: <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v10h13V10M9.5 20v-6h5v6" /></>,
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
     reports: <><path d="M5 21V4" /><path d="M5 5h11l-1.5 3L17 12H5" /></>,
+    debates: <><path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12h5" /></>,
     users: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 21c.4-4.7 2.4-7 6-7s5.6 2.3 6 7M15 15c3.5.1 5.5 2.1 6 6" /></>,
     roles: <><path d="M12 3 5 6v5c0 4.5 2.7 8 7 10 4.3-2 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-5" /></>,
     audit: <><path d="M4 5v5h5" /><path d="M5.5 9A8 8 0 1 1 4 14" /><path d="M12 8v5l3 2" /></>,
@@ -49,6 +50,13 @@ function timestampValue(value) {
 function countSince(items, field, days) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return items.filter((item) => timestampValue(item[field]) >= cutoff).length;
+}
+
+const PAGE_SIZE = 20;
+function Pagination({ page, total, onChange }) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (pages <= 1) return null;
+  return <nav className="admin-pagination" aria-label="Pagination"><button disabled={page === 1} onClick={() => onChange(page - 1)}>Previous</button><span>Page {page} of {pages} · {total} items</span><button disabled={page === pages} onClick={() => onChange(page + 1)}>Next</button></nav>;
 }
 
 
@@ -271,6 +279,9 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [audit, setAudit] = useState([]);
   const [punishments, setPunishments] = useState([]);
   const [debates, setDebates] = useState([]);
+  const [debateLog, setDebateLog] = useState([]);
+  const [watchingDebate, setWatchingDebate] = useState(null);
+  const [page, setPage] = useState(1);
   const [newsStories, setNewsStories] = useState([]);
   const [punishmentNow, setPunishmentNow] = useState(Date.now());
   const [permissions, setPermissions] = useState({});
@@ -311,6 +322,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         setCapabilities(reportData.capabilities || {});
       }
       if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
+      if (tab === 'debates') setDebateLog((await staffDebates()).debates || []);
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
       if (tab === 'news') setNewsStories((await staffNews()).stories || []);
@@ -323,6 +335,12 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
   useEffect(() => { load(); }, [tab]);
+  useEffect(() => { setPage(1); }, [tab, query]);
+  useEffect(() => {
+    if (tab !== 'debates') return undefined;
+    const timer = window.setInterval(() => { staffDebates().then((data) => setDebateLog(data.debates || [])).catch(() => {}); }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [tab]);
   useEffect(() => {
     if (tab !== 'punishments') return undefined;
     const timer = window.setInterval(() => setPunishmentNow(Date.now()), 60_000);
@@ -467,6 +485,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     .sort((a, b) => timestampValue(b.lastAdminAccessAt) - timestampValue(a.lastAdminAccessAt))
     .slice(0, 6);
   const onlineStaff = users.filter((user) => ['moderator', 'admin', 'owner'].includes(user.role) && user.online);
+  const pageSlice = (items) => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activityRows = [
     { label: 'Moderation actions', source: audit, field: 'createdAt' },
     { label: 'Reports submitted', source: reports, field: 'createdAt' },
@@ -485,6 +504,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
       <aside className="admin-console-sidebar">
         <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}><b><AdminIcon type="dashboard" /></b>Dashboard</button>
         <button className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}><b><AdminIcon type="reports" /></b>Reports <i>{openReports}</i></button>
+        <button className={tab === 'debates' ? 'active' : ''} onClick={() => setTab('debates')}><b><AdminIcon type="debates" /></b>Active Debates</button>
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b><AdminIcon type="users" /></b>Users</button>
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
@@ -546,7 +566,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         </>}
 
         {tab === 'reports' && !busy && <section className="staff-report-list">
-          {reports.length ? reports.map((r) => <details className="staff-report-row" key={r.id}>
+          {reports.length ? pageSlice(reports).map((r) => <details className="staff-report-row" key={r.id}>
             <summary>
               <strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong>
               <span className="staff-report-category">{r.category || 'Report'}</span>
@@ -570,12 +590,20 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               </div>
             </div>
           </details>) : <div className="admin-notice">No reports found.</div>}
+          <Pagination page={page} total={reports.length} onChange={setPage} />
+        </section>}
+
+        {tab === 'debates' && !busy && <section className="admin-debates-log">
+          <div className="admin-debate-summary"><span><i className="active" />{debateLog.filter((item) => item.active && !item.reported).length} active</span><span><i className="reported" />{debateLog.filter((item) => item.reported).length} reported</span><span><i className="completed" />{debateLog.filter((item) => !item.active).length} completed</span></div>
+          <div className="staff-table-wrap"><table><thead><tr><th>Status</th><th>Started</th><th>Debate</th><th>Mode</th><th>Reports</th><th>Monitor</th></tr></thead><tbody>{pageSlice(debateLog).map((debate) => <tr key={debate.roomId}><td><span className={'debate-status ' + (debate.reported ? 'reported' : debate.active ? 'active' : 'completed')}>{debate.reported ? '⚑ REPORTED' : debate.active ? 'ACTIVE' : 'COMPLETED'}</span></td><td>{dateValue(debate.startedAt)}</td><td><b>{debate.statement || debate.topicId || 'Debate'}</b><small className="staff-uid">{debate.roomId}</small></td><td>{debate.matchMode}</td><td>{debate.reportCount || 0}</td><td>{debate.active ? <button className="admin-monitor-button" onClick={() => setWatchingDebate(debate)}>Enter anonymously</button> : <span className="staff-not-applicable">Ended</span>}</td></tr>)}</tbody></table></div>
+          {!debateLog.length && <div className="admin-notice">No debates have been recorded yet.</div>}
+          <Pagination page={page} total={debateLog.length} onChange={setPage} />
         </section>}
 
         {tab === 'users' && !busy && <section>
           <input className="staff-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search email, name, UID, or role…" />
           <div className="staff-table-wrap"><table><thead><tr><th>User</th><th>UID</th><th>Created / last login</th><th>Role</th><th>Membership</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>{filteredUsers.map((u) => <tr className="staff-user-row" key={u.uid} onClick={() => openUserEditor(u)} tabIndex="0" onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openUserEditor(u)}>
+            <tbody>{pageSlice(filteredUsers).map((u) => <tr className="staff-user-row" key={u.uid} onClick={() => openUserEditor(u)} tabIndex="0" onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openUserEditor(u)}>
               <td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td>
               <td className="staff-uid">{u.uid}</td>
               <td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td>
@@ -590,6 +618,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               </td>
             </tr>)}</tbody>
           </table></div>
+          <Pagination page={page} total={filteredUsers.length} onChange={setPage} />
         </section>}
         {tab === 'roles' && !busy && <section className="role-permissions">
           <div className="role-permissions-intro">
@@ -698,7 +727,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
           </div>
           <div className="staff-table-wrap punishment-table"><table>
             <thead><tr><th>Issued</th><th>Punishment</th><th>Issued by</th><th>Punished user</th><th>Reason</th><th>Initial duration</th><th>Time remaining</th><th>Total infractions</th></tr></thead>
-            <tbody>{punishments.map((item) => {
+            <tbody>{pageSlice(punishments).map((item) => {
               const remainingMinutes = item.expiresAtMs ? Math.max(0, Math.ceil((item.expiresAtMs - punishmentNow) / 60000)) : null;
               const expired = item.type === 'ban' && !item.permanent && remainingMinutes === 0;
               return <tr key={item.id}>
@@ -724,9 +753,12 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
             })}</tbody>
           </table></div>
           {!punishments.length && <div className="admin-notice">No warnings or bans have been issued.</div>}
+          <Pagination page={page} total={punishments.length} onChange={setPage} />
         </section>}
 
-        {tab === 'audit' && !busy && <div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div>}
+        {tab === 'audit' && !busy && <section><div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{pageSlice(audit).map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div><Pagination page={page} total={audit.length} onChange={setPage} /></section>}
+
+        {watchingDebate && <div className="admin-monitor-backdrop" onMouseDown={() => setWatchingDebate(null)}><section className="admin-monitor-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><header><div><p>ANONYMOUS STAFF MONITOR</p><h2>{watchingDebate.statement || watchingDebate.topicId || 'Active debate'}</h2></div><button onClick={() => setWatchingDebate(null)} aria-label="Close monitor">×</button></header><div className="admin-monitor-stage"><span className="admin-monitor-shield"><AdminIcon type="moderator" /></span><h3>Monitoring in progress</h3><p>Your presence is hidden from both debaters. This read-only view refreshes the debate’s live moderation status every 10 seconds.</p><dl><div><dt>Status</dt><dd className={watchingDebate.reported ? 'reported' : 'active'}>{watchingDebate.reported ? '⚑ Reported' : '● Active'}</dd></div><div><dt>Room</dt><dd>{watchingDebate.roomId}</dd></div><div><dt>Started</dt><dd>{dateValue(watchingDebate.startedAt)}</dd></div><div><dt>Reports</dt><dd>{watchingDebate.reportCount || 0}</dd></div></dl></div><footer><button onClick={() => setWatchingDebate(null)}>Exit monitor</button><button className="primary" onClick={load}>Refresh status</button></footer></section></div>}
       </main>
     </div>
   </div>;
