@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   HotTakeWordmark,
   IconInstagram,
@@ -131,25 +131,51 @@ const HOME_QUOTES = [
   },
 ];
 
-const QUOTE_DURATION_MS = 16000;
+const QUOTE_DURATION_MS = 15000;
+const QUOTE_FADE_MS = 400;
 
 function QuoteCarousel() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isFading, setIsFading] = useState(false);
+  const transitionTimerRef = useRef(null);
+  const isTransitioningRef = useRef(false);
   const quote = HOME_QUOTES[index];
+
+  const show = (nextIndex) => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+    setIsFading(true);
+    transitionTimerRef.current = window.setTimeout(() => {
+      setIndex((nextIndex + HOME_QUOTES.length) % HOME_QUOTES.length);
+      setIsFading(false);
+      isTransitioningRef.current = false;
+      transitionTimerRef.current = null;
+    }, QUOTE_FADE_MS);
+  };
 
   useEffect(() => {
     if (paused) return undefined;
     const timer = window.setInterval(
-      () => setIndex((current) => (current + 1) % HOME_QUOTES.length),
+      () => {
+        if (isTransitioningRef.current) return;
+        isTransitioningRef.current = true;
+        setIsFading(true);
+        transitionTimerRef.current = window.setTimeout(() => {
+          setIndex((current) => (current + 1) % HOME_QUOTES.length);
+          setIsFading(false);
+          isTransitioningRef.current = false;
+          transitionTimerRef.current = null;
+        }, QUOTE_FADE_MS);
+      },
       QUOTE_DURATION_MS
     );
     return () => window.clearInterval(timer);
   }, [paused]);
 
-  const show = (nextIndex) => {
-    setIndex((nextIndex + HOME_QUOTES.length) % HOME_QUOTES.length);
-  };
+  useEffect(() => () => {
+    if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
+  }, []);
 
   return (
     <section
@@ -168,22 +194,25 @@ function QuoteCarousel() {
         <p>Words on disagreement, truth, freedom, and moral courage.</p>
       </div>
 
-      <article className="landing-quote-card" key={index} aria-live="polite">
-        <div className="landing-quote-category"><span aria-hidden="true">◆</span>{quote.category}</div>
-        <blockquote>“{quote.quote}”</blockquote>
-        <footer>
-          <div>
-            <strong>— {quote.author}</strong>
-            <span>{quote.date}</span>
-          </div>
-          <span className="landing-quote-count">{String(index + 1).padStart(2, '0')} / {HOME_QUOTES.length}</span>
-        </footer>
-        {quote.source && <p className="landing-quote-source">Source: <cite>{quote.source}</cite></p>}
-        {quote.note && <p className="landing-quote-note"><span aria-hidden="true">!</span>{quote.note}</p>}
-      </article>
+      <div className="landing-quote-stage">
+        <button className="landing-quote-arrow landing-quote-arrow--previous" type="button" onClick={() => show(index - 1)} aria-label="Previous quote">←</button>
+        <article className={`landing-quote-card${isFading ? ' is-fading' : ''}`} aria-live="polite">
+          <div className="landing-quote-category"><span aria-hidden="true">◆</span>{quote.category}</div>
+          <blockquote>“{quote.quote}”</blockquote>
+          <footer>
+            <div>
+              <strong>— {quote.author}</strong>
+              <span>{quote.date}</span>
+            </div>
+            <span className="landing-quote-count">{String(index + 1).padStart(2, '0')} / {HOME_QUOTES.length}</span>
+          </footer>
+          {quote.source && <p className="landing-quote-source">Source: <cite>{quote.source}</cite></p>}
+          {quote.note && <p className="landing-quote-note"><span aria-hidden="true">!</span>{quote.note}</p>}
+        </article>
+        <button className="landing-quote-arrow landing-quote-arrow--next" type="button" onClick={() => show(index + 1)} aria-label="Next quote">→</button>
+      </div>
 
       <div className="landing-quote-controls">
-        <button type="button" onClick={() => show(index - 1)} aria-label="Previous quote">←</button>
         <div className="landing-quote-dots" aria-label="Choose a quote">
           {HOME_QUOTES.map((item, itemIndex) => (
             <button
@@ -196,7 +225,6 @@ function QuoteCarousel() {
             />
           ))}
         </div>
-        <button type="button" onClick={() => show(index + 1)} aria-label="Next quote">→</button>
       </div>
     </section>
   );
