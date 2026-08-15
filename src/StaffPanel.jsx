@@ -41,6 +41,10 @@ const ROLE_PERMISSIONS = [
   ]},
 ];
 
+function permissionLabel(value) {
+  return value ? 'Yes' : 'No';
+}
+
 export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
   const [tab, setTab] = useState('dashboard');
   const [reports, setReports] = useState([]);
