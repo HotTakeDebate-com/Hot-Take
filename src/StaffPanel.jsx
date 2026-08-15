@@ -309,8 +309,6 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b>♟</b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b>↶</b>Audit logs</button>}
         <span />
-        <button onClick={onAbout}><b>ⓘ</b>About Hot Take</button>
-        <button onClick={onSupport}><b>?</b>Support</button>
         <button onClick={onBack}><b>←</b>Return to website</button>
       </aside>
       <main className="admin-console-main">
