@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
-import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
+import { staffAction, staffAudit, staffPermissions, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers } from './staffApi.js';
 
 function dateValue(value) {
   if (!value) return '—';
@@ -61,6 +61,9 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   const [editorTab, setEditorTab] = useState('details');
   const [editorMessage, setEditorMessage] = useState('');
   const [sendingReset, setSendingReset] = useState(false);
+  const [passwordMode, setPasswordMode] = useState('none');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -105,7 +108,10 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
   };
   const openUserEditor = (user) => {
     setEditingUser(user);
-    setUserDraft({ displayName: user.displayName || '', role: user.role || 'user', premium: user.premium === true, emailVerified: user.emailVerified === true });
+    setUserDraft({ displayName: user.displayName || '', email: user.email || '', role: user.role || 'user', premium: user.premium === true, emailVerified: user.emailVerified === true });
+    setPasswordMode('none');
+    setNewPassword('');
+    setConfirmPassword('');
     setEditorTab('details');
     setEditorMessage('');
     setError('');
@@ -115,18 +121,29 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
     if (!editingUser || !userDraft) return;
     setSavingUser(true); setError('');
     try {
-      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, emailVerified: userDraft.emailVerified });
+      if (passwordMode === 'set') {
+        if (newPassword.length < 8) throw new Error('The new password must be at least 8 characters.');
+        if (newPassword !== confirmPassword) throw new Error('The new passwords do not match.');
+      }
+      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, email: userDraft.email, emailVerified: userDraft.emailVerified });
       if (userDraft.role !== editingUser.role || userDraft.premium !== editingUser.premium) {
         await staffRole(editingUser.uid, userDraft.role, userDraft.role === 'user' && userDraft.premium);
+      }
+      if (passwordMode === 'reset') {
+        setSendingReset(true);
+        await sendPasswordResetEmail(auth, userDraft.email);
+      } else if (passwordMode === 'set') {
+        await staffSetPassword(editingUser.uid, newPassword);
       }
       const data = await staffUsers();
       const nextUsers = data.users || [];
       const updated = nextUsers.find((user) => user.uid === editingUser.uid);
       setUsers(nextUsers);
       setEditingUser(updated || null);
-      if (updated) setUserDraft({ displayName: updated.displayName || '', role: updated.role || 'user', premium: updated.premium === true, emailVerified: updated.emailVerified === true });
-      setEditorMessage('Account changes saved.');
-    } catch (e) { setError(e.message); } finally { setSavingUser(false); }
+      if (updated) setUserDraft({ displayName: updated.displayName || '', email: updated.email || '', role: updated.role || 'user', premium: updated.premium === true, emailVerified: updated.emailVerified === true });
+      setPasswordMode('none'); setNewPassword(''); setConfirmPassword('');
+      setEditorMessage(passwordMode === 'reset' ? 'Account saved and password reset email sent.' : passwordMode === 'set' ? 'Account saved and a new password was set. All existing sessions were signed out.' : 'Account changes saved.');
+    } catch (e) { setError(e.message); } finally { setSavingUser(false); setSendingReset(false); }
   };
 
   const sendReset = async () => {
@@ -256,7 +273,7 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               {editorTab === 'details' && <>
                 <section className="user-editor-section"><h3>Identity</h3>
                   <label><span>Display name</span><input value={userDraft.displayName} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
-                  <label><span>Email address</span><input value={editingUser.email || ''} readOnly /><small>Email changes are restricted to preserve linked account data.</small></label>
+                  <label><span>Email address</span><input type="email" value={userDraft.email} disabled={editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
                   <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
                 </section>
                 <section className="user-editor-section"><h3>Role & membership</h3>
@@ -267,7 +284,12 @@ export default function StaffPanel({ role, onBack, onAbout, onFaq, onSupport, on
               {editorTab === 'security' && <>
                 <section className="user-editor-section"><h3>Sign-in security</h3>
                   <label className="user-editor-check"><span>Email verification</span><input type="checkbox" checked={userDraft.emailVerified} disabled={editingUser.role === 'owner' && role !== 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, emailVerified: event.target.checked }))} /><b>{userDraft.emailVerified ? 'Email is verified' : 'Email is not verified'}</b><small>Use this override only after independently confirming the address belongs to the user.</small></label>
-                  <div className="user-editor-action-card"><div><strong>Password reset</strong><span>Firebase will email a secure password-reset link to this user.</span></div><button type="button" onClick={sendReset} disabled={sendingReset || !editingUser.email}>{sendingReset ? 'Sending…' : 'Send reset email'}</button></div>
+                  <div className="user-password-options">
+                    <label className={passwordMode === 'none' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'none'} onChange={() => setPasswordMode('none')} /><span><strong>Do not change</strong><small>Leave the current password untouched.</small></span></label>
+                    <label className={passwordMode === 'reset' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'reset'} onChange={() => setPasswordMode('reset')} /><span><strong>Send password reset</strong><small>Firebase emails a secure reset link when you save.</small></span></label>
+                    <label className={passwordMode === 'set' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'set'} onChange={() => setPasswordMode('set')} /><span><strong>Set a new password</strong><small>Set a temporary password and sign the user out everywhere.</small></span></label>
+                    {passwordMode === 'set' && <div className="user-password-fields"><input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password (8+ characters)" /><input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirm new password" /></div>}
+                  </div>
                   <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
                 </section>
                 <section className="user-editor-section"><h3>Account metadata</h3>

@@ -158,15 +158,67 @@ export function attachStaffRoutes(app, { isAdminReady }) {
   router.post('/users/:uid/update', requirePermission('editUsers'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
-    if (target.email?.toLowerCase() === OWNER_EMAIL && req.staff.role !== 'owner') {
+    const isOwner = target.email?.toLowerCase() === OWNER_EMAIL;
+    if (isOwner && req.staff.role !== 'owner') {
       return res.status(403).json({ error: 'Owner account is protected.' });
     }
     const displayName = String(req.body?.displayName || '').trim().replace(/\s+/g, ' ').slice(0, 100);
     if (!displayName) return res.status(400).json({ error: 'Display name is required.' });
-    const emailVerified = typeof req.body?.emailVerified === 'boolean' ? req.body.emailVerified : target.emailVerified;
-    const updated = await admin.auth().updateUser(uid, { displayName, emailVerified });
-    await audit('user_update', req.staff, uid, { displayName, emailVerified, targetEmail: target.email || null });
-    res.json({ ok: true, user: { uid: updated.uid, displayName: updated.displayName || '', email: updated.email || '', emailVerified: updated.emailVerified } });
+
+    const requestedEmail = String(req.body?.email || target.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+      return res.status(400).json({ error: 'Enter a valid email address.' });
+    }
+    const emailChanged = requestedEmail !== String(target.email || '').toLowerCase();
+    if (isOwner && emailChanged) {
+      return res.status(400).json({ error: 'The protected Owner email cannot be changed here.' });
+    }
+    const emailVerified = emailChanged
+      ? false
+      : (typeof req.body?.emailVerified === 'boolean' ? req.body.emailVerified : target.emailVerified);
+
+    const updated = await admin.auth().updateUser(uid, {
+      displayName,
+      email: requestedEmail,
+      emailVerified,
+    });
+    if (emailChanged) await admin.auth().revokeRefreshTokens(uid);
+    await audit('user_update', req.staff, uid, {
+      displayName,
+      emailVerified,
+      previousEmail: target.email || null,
+      email: updated.email || null,
+      emailChanged,
+    });
+    res.json({
+      ok: true,
+      user: {
+        uid: updated.uid,
+        displayName: updated.displayName || '',
+        email: updated.email || '',
+        emailVerified: updated.emailVerified,
+      },
+    });
+  });
+
+  router.post('/users/:uid/password', requirePermission('editUsers'), async (req, res) => {
+    const uid = String(req.params.uid);
+    const target = await admin.auth().getUser(uid);
+    const targetRole = target.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (target.customClaims?.role || 'user');
+    if (targetRole === 'owner') {
+      return res.status(403).json({ error: 'The protected Owner password cannot be changed from the Admin panel.' });
+    }
+    if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
+      return res.status(403).json({ error: 'You cannot change the password of an equal or higher role.' });
+    }
+    const password = String(req.body?.password || '');
+    if (password.length < 8 || password.length > 128) {
+      return res.status(400).json({ error: 'The new password must be between 8 and 128 characters.' });
+    }
+    await admin.auth().updateUser(uid, { password });
+    await admin.auth().revokeRefreshTokens(uid);
+    await audit('password_set', req.staff, uid, { targetEmail: target.email || null });
+    res.json({ ok: true });
   });
 
   router.get('/reports', requirePermission('viewReports'), async (req, res) => {
