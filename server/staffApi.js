@@ -371,6 +371,46 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
     res.json({ debates });
   });
 
+  router.get('/debates/:roomId/details', requirePermission('viewReports'), async (req, res) => {
+    const roomId = String(req.params.roomId || '');
+    const debateSnapshot = await admin.firestore().collectionGroup('debates').limit(2000).get();
+    const debateDocs = debateSnapshot.docs.filter((doc) => String(doc.data()?.roomId || doc.id) === roomId);
+    if (!debateDocs.length) return res.status(404).json({ error: 'Debate not found.' });
+    const debate = debateDocs[0].data() || {};
+    const participantUids = [...new Set([debate.agreeUid, debate.disagreeUid].filter(Boolean))];
+    const participantResult = participantUids.length
+      ? await admin.auth().getUsers(participantUids.map((uid) => ({ uid })))
+      : { users: [] };
+    const participants = participantResult.users.map((user) => ({ uid: user.uid, email: user.email || 'Email unavailable' }));
+    const messageSnapshot = await admin.firestore().collectionGroup('chat_messages').limit(2000).get();
+    const rawMessages = messageSnapshot.docs
+      .filter((doc) => doc.ref.parent.parent?.id === roomId)
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => Number(a.sentAtMs || 0) - Number(b.sentAtMs || 0));
+    const messages = [...new Map(rawMessages.map((message) => [
+      `${message.authorUid || message.authorSocketId}:${message.sentAtMs}:${message.text}`,
+      message,
+    ])).values()];
+    res.json({ participants, messages });
+  });
+
+  router.post('/debates/:roomId/end', requirePermission('viewReports'), async (req, res) => {
+    const roomId = String(req.params.roomId || '');
+    const members = [...(io?.sockets?.adapter?.rooms?.get(roomId) || [])]
+      .map((id) => io.sockets.sockets.get(id))
+      .filter((member) => member?.data?.roomId === roomId);
+    if (!members.length) return res.status(409).json({ error: 'That debate is no longer active.' });
+    members.forEach((member) => {
+      member.emit('peer-left', { endedByStaff: true });
+      member.leave(roomId);
+      member.data.roomId = null;
+      member.data.topicId = null;
+      member.data.side = null;
+    });
+    await audit('debate_ended', req.staff, null, { roomId, participantCount: members.length });
+    res.json({ ok: true });
+  });
+
   router.post('/users/:uid/update', requirePermission('viewUsers'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
