@@ -18,6 +18,7 @@ async function request(path, options = {}) {
 export const staffMe = () => request('/me');
 export const staffUsers = () => request('/users?limit=500');
 export const staffReports = () => request('/reports');
+export const staffDeleteReport = (id) => request('/reports/' + encodeURIComponent(id), { method: 'DELETE' });
 export const staffAudit = () => request('/audit');
 export const staffRespond = (id, response, status) => request('/reports/' + encodeURIComponent(id) + '/respond', { method: 'POST', body: JSON.stringify({ response, status }) });
 export const staffAction = (uid, action, reason) => request('/users/' + encodeURIComponent(uid) + '/action', { method: 'POST', body: JSON.stringify({ action, reason }) });
