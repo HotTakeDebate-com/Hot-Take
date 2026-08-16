@@ -955,7 +955,7 @@ export default function App() {
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && step !== 'custom' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -1043,6 +1043,7 @@ export default function App() {
           step === 'debate' && 'app--debate-room',
           step === 'profile' && 'app--account',
           step === 'admin' && 'app--admin',
+          step === 'custom' && 'app--custom-rooms',
           !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
         ]
           .filter(Boolean)
@@ -1073,7 +1074,8 @@ export default function App() {
         step !== 'feed' &&
         step !== 'profile' &&
         step !== 'search' &&
-        step !== 'admin' && (
+        step !== 'admin' &&
+        step !== 'custom' && (
         <details className="device-details" open>
           <summary className="device-details-summary">
             Camera &amp; microphone
