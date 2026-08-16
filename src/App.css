@@ -26,6 +26,9 @@
   min-height: 100vh;
 }
 .app.app--custom-rooms { max-width:none; margin:0; padding:0; min-height:100vh; background:#050609; }
+.custom-room-page { min-height:100vh; padding:0 clamp(28px,5.45vw,84px) 28px; background:radial-gradient(circle at 85% 18%,rgba(92,5,8,.18),transparent 27%),#050609; }
+.custom-room-page > .landing-nav { width:100%; }
+.custom-room-page > .site-shared-footer { width:100%; margin-top:48px; }
 
 .app.app--debate-room{max-width:none;margin:0;padding:0;min-height:100vh}
 
