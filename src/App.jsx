@@ -954,6 +954,16 @@ export default function App() {
 
   const showAppShell = authReady && isFirebaseConfigured;
 
+  if (typeof window !== 'undefined') {
+    window.__hotTakeAdminAction = staffRole
+      ? () => {
+          setHeaderOverlay(null);
+          setSocialProfileEmail(null);
+          setStep('admin');
+        }
+      : null;
+  }
+
   return (
     <>
       {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && step !== 'custom' && (
