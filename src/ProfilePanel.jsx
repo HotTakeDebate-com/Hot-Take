@@ -12,7 +12,8 @@ import { auth } from './firebase.js';
 import { sendHotTakePasswordResetEmail } from './firebaseEmailVerification.js';
 import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
-import { prepareProfileImage, profileInitial } from './profileImage.js';
+import { prepareProfileImage } from './profileImage.js';
+import GenericAvatar from './GenericAvatar.jsx';
 import './AccountPage.css';
 
 async function fetchLiveRatingSummary(uid) {
@@ -231,7 +232,7 @@ export default function ProfilePanel({
         <section className="account-card account-public-card">
           <p className="account-eyebrow">Community profile</p>
           {loading ? <p>Loading profile…</p> : <>
-            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : profileInitial(displayName, resolvedEmail)}</div>
+            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
             <h1>{displayName || 'Hot Take member'}</h1>
             <p>{bio || 'No bio yet.'}</p>
             <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
@@ -275,7 +276,7 @@ export default function ProfilePanel({
           {savedMsg && <div className="account-alert account-alert--success" role="status">{savedMsg}</div>}
 
           <section id="account-overview" className="account-card account-overview">
-            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : profileInitial(displayName, resolvedEmail)}</div>
+            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
             <div>
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'}</h2>
@@ -299,7 +300,7 @@ export default function ProfilePanel({
               </div>
               <form className="account-form" onSubmit={onSave}>
                 <div className="account-avatar-editor">
-                  <div className={'account-avatar account-avatar-preview' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="Profile preview" /> : profileInitial(displayName, resolvedEmail)}</div>
+                  <div className={'account-avatar account-avatar-preview' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="Profile preview" /> : <GenericAvatar />}</div>
                   <div>
                     <strong>Profile picture</strong>
                     <p>JPG, PNG, or WebP. Your image is cropped to a square before it is saved.</p>
