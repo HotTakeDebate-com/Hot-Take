@@ -12,7 +12,7 @@ import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
-import { networkDirectMessages, networkFollow, networkFollowStatus, networkIdentity, networkSendDirectMessage, networkUnfollow } from './networkApi.js';
+import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowStatus, networkIdentity, networkSendDirectMessage, networkUnfollow } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
 
@@ -80,6 +80,7 @@ export default function ProfilePanel({
   const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
   const [activity, setActivity] = useState({ key: 'offline', label: 'Offline' });
   const [directMessages, setDirectMessages] = useState([]);
+  const [messageRequestPending, setMessageRequestPending] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
   const [messageBusy, setMessageBusy] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
@@ -116,6 +117,7 @@ export default function ProfilePanel({
         setFollowing(follow.following === true);
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
+        setMessageRequestPending(conversation.pendingForRecipient === true);
         setRating(await fetchLiveRatingSummary(targetUid));
         return;
       }
@@ -160,6 +162,7 @@ export default function ProfilePanel({
         ]);
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
+        setMessageRequestPending(conversation.pendingForRecipient === true);
       } catch {
         // Keep the last successful profile state during a brief network interruption.
       }
@@ -274,8 +277,30 @@ export default function ProfilePanel({
       setMessageDraft('');
       const conversation = await networkDirectMessages(networkIdentityState.uid);
       setDirectMessages(conversation.messages || []);
+      setMessageRequestPending(conversation.pendingForRecipient === true);
     } catch (messageError) {
       setError(messageError?.message || 'Could not send that message.');
+    } finally {
+      setMessageBusy(false);
+    }
+  };
+
+  const decideMessageRequest = async (decision) => {
+    if (!networkIdentityState.uid) return;
+    setMessageBusy(true);
+    setError(null);
+    try {
+      await networkDecideDirectMessage(networkIdentityState.uid, decision);
+      setMessageRequestPending(false);
+      if (decision === 'accept') {
+        const conversation = await networkDirectMessages(networkIdentityState.uid);
+        setDirectMessages(conversation.messages || []);
+      } else {
+        setMessageOpen(false);
+        setDirectMessages([]);
+      }
+    } catch (requestError) {
+      setError(requestError?.message || 'Could not update that message request.');
     } finally {
       setMessageBusy(false);
     }
@@ -342,12 +367,18 @@ export default function ProfilePanel({
             </section>}
             {messageOpen && <section className="public-profile-messages" aria-label="Direct messages" role="dialog" aria-modal="false">
               <header><div><span>Direct messages</span><h2>Message {displayName || 'this member'}</h2><small>Private conversation</small></div><button type="button" className="public-profile-message-close" onClick={() => setMessageOpen(false)} aria-label="Close messages">×</button></header>
-              <div className="public-profile-message-list">
+              {messageRequestPending ? <div className="public-profile-message-request">
+                <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
+                <span>Message request</span>
+                <h3>Accept DMs from {displayName || 'this member'}?</h3>
+                <p>The first message is hidden until you accept this request.</p>
+                <div><button type="button" onClick={() => decideMessageRequest('decline')} disabled={messageBusy}>Decline</button><button type="button" className="is-accept" onClick={() => decideMessageRequest('accept')} disabled={messageBusy}>{messageBusy ? 'Updating…' : 'Accept DMs'}</button></div>
+              </div> : <><div className="public-profile-message-list">
                 {directMessages.length ? directMessages.map((message) => <article key={message.id} className={message.senderUid === auth.currentUser?.uid ? 'is-mine' : ''}>
                   <p>{message.text}</p><time>{message.createdAtMs ? new Date(message.createdAtMs).toLocaleString() : 'Just now'}</time>
                 </article>) : <p className="public-profile-message-empty">No messages yet. Start the conversation.</p>}
               </div>
-              <form onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} maxLength={1000} placeholder="Write a private message…" required /><div><small>{messageDraft.length}/1000</small><button type="submit" disabled={messageBusy || !messageDraft.trim()}>{messageBusy ? 'Sending…' : 'Send message'}</button></div></form>
+              <form onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} maxLength={1000} placeholder="Write a private message…" required /><div><small>{messageDraft.length}/1000</small><button type="submit" disabled={messageBusy || !messageDraft.trim()}>{messageBusy ? 'Sending…' : 'Send message'}</button></div></form></>}
             </section>}
           </>}
           {error && <div className="account-alert account-alert--error">{error}</div>}
