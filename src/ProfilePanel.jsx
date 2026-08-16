@@ -71,7 +71,7 @@ export default function ProfilePanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
-  const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', verifiedDebater: false });
+  const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
   const [followBusy, setFollowBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
@@ -101,11 +101,11 @@ export default function ProfilePanel({
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own && prof?.uid) {
         const [{ identity }, follow] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid)]);
-        setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', verifiedDebater: false });
+        setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
       } else if (own && auth.currentUser?.uid) {
         const { identity } = await networkIdentity(auth.currentUser.uid);
-        setNetworkIdentityState(identity || { uid: auth.currentUser.uid, role: 'user', verifiedDebater: false });
+        setNetworkIdentityState(identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
       }
     } catch (loadError) {
       setError(loadError?.message ?? 'Could not load account.');
@@ -241,7 +241,7 @@ export default function ProfilePanel({
           <p className="account-eyebrow">Community profile</p>
           {loading ? <p>Loading profile…</p> : <>
             <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
-            <h1>{displayName || 'Hot Take member'} <IdentityBadges verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
+            <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
             <p>{bio || 'No bio yet.'}</p>
             <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
               <div style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)' }}>Debate rating</div>
@@ -287,7 +287,7 @@ export default function ProfilePanel({
             <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
             <div>
               <p className="account-section-label">Signed in as</p>
-              <h2>{displayName || 'Hot Take member'}</h2>
+              <h2>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h2>
               <p>{resolvedEmail}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '.38rem', marginTop: '.65rem', fontSize: '.95rem' }} aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
                 <span style={{ color: '#ff2b2b', lineHeight: 1 }} aria-hidden="true">★</span>

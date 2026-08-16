@@ -1,9 +1,12 @@
 import './DebateNetwork.css';
 
-export default function IdentityBadges({ verified = false, role = 'user', compact = false }) {
+export default function IdentityBadges({ verified = false, premium = false, role = 'user', compact = false }) {
   const staffRole = ['moderator', 'admin', 'owner'].includes(role) ? role : null;
-  if (!verified && !staffRole) return null;
+  if (!premium && !verified && !staffRole) return null;
   return <span className={`identity-badges${compact ? ' identity-badges--compact' : ''}`} aria-label="Account badges">
+    {premium && <span className="identity-badge identity-badge--premium" title="Premium member" aria-label="Premium member">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.2 7.1 7.7 11l4.3-7 4.3 7 4.5-3.9-1.7 11.2H4.9L3.2 7.1Z" /><path d="M5.2 20h13.6" /></svg>
+    </span>}
     {verified && <span className="identity-badge identity-badge--verified" title="Verified debater" aria-label="Verified debater">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4.5 12.5 4.4 4.4L19.5 6.8" /></svg>
     </span>}

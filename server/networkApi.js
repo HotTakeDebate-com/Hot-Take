@@ -46,6 +46,7 @@ async function publicIdentity(uid) {
     avatarUrl: String(profile.avatarUrl || ''),
     bio: String(profile.bio || ''),
     role: STAFF_ROLES.has(role) ? role : 'user',
+    premium: user.customClaims?.premium === true,
     verifiedDebater: user.customClaims?.verifiedDebater === true,
   };
 }
