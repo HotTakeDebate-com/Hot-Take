@@ -1,6 +1,7 @@
 import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
+import DirectMessageCenter from './DirectMessageCenter.jsx';
 
 export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   const globalAdminAction = typeof window !== 'undefined' ? window.__hotTakeAdminAction : null;
@@ -21,6 +22,7 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras,
     </nav>
     <div className="landing-nav-actions">
       {isSignedIn ? <>
+        <DirectMessageCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} />
         <NotificationCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} onJoinRoom={typeof window !== 'undefined' ? window.__hotTakeJoinNetworkRoom : null} />
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onProfile}>Account</button>
         <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickSupport={onSupport} />

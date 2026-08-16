@@ -18,6 +18,7 @@ export const networkFollowStatus = (uid) => networkRequest('/follow/' + encodeUR
 export const networkFollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'POST' });
 export const networkUnfollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'DELETE' });
 export const networkDirectMessages = (uid) => networkRequest('/messages/' + encodeURIComponent(uid));
+export const networkDirectConversations = () => networkRequest('/messages');
 export const networkSendDirectMessage = (uid, text) => networkRequest('/messages/' + encodeURIComponent(uid), { method: 'POST', body: JSON.stringify({ text }) });
 export const networkDecideDirectMessage = (uid, decision) => networkRequest('/messages/' + encodeURIComponent(uid) + '/decision', { method: 'POST', body: JSON.stringify({ decision }) });
 export const networkNotifications = () => networkRequest('/notifications');
