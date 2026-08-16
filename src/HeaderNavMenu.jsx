@@ -45,6 +45,10 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSuppor
     onPickSupport();
     close();
   };
+  const pickVerification = () => {
+    window.__hotTakeOpenVerification?.();
+    close();
+  };
 
   const triggerClass =
     variant === 'landing'
@@ -89,8 +93,12 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSuppor
           <button type="button" className="header-nav-item" role="menuitem" onClick={pickSupport}>
             Support
           </button>
+          {typeof window !== 'undefined' && window.__hotTakeOpenVerification && <button type="button" className="header-nav-item header-nav-item--verification" role="menuitem" onClick={pickVerification}>
+            Apply for verified status
+          </button>}
         </div>
       )}
     </div>
   );
 }
+

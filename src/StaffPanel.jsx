@@ -3,7 +3,9 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
-import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
+import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews, staffVerificationApplications, staffReviewVerification } from './staffApi.js';
+import IdentityBadges from './IdentityBadges.jsx';
+import './DebateNetwork.css';
 import './WhatsHotAdmin.css';
 import './AdminIcons.css';
 
@@ -17,6 +19,7 @@ function AdminIcon({ type }) {
     roles: <><path d="M12 3 5 6v5c0 4.5 2.7 8 7 10 4.3-2 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-5" /></>,
     audit: <><path d="M4 5v5h5" /><path d="M5.5 9A8 8 0 1 1 4 14" /><path d="M12 8v5l3 2" /></>,
     news: <><path d="M13 2 5 14h7l-1 8 8-12h-7l1-8Z" /></>,
+    verification: <><path d="M12 3 5 6v6c0 4.2 2.6 7.3 7 9 4.4-1.7 7-4.8 7-9V6l-7-3Z" /><path d="m9 12 2 2 4-5" /></>,
     punishments: <><path d="M12 3v18M6 6h12M4 9l-3 6h6L4 9ZM20 9l-3 6h6l-3-6ZM7 21h10" /></>,
     back: <><path d="m10 5-7 7 7 7" /><path d="M3 12h18" /></>,
     refresh: <><path d="M20 11a8 8 0 1 1-2.35-5.65L20 8" /><path d="M20 3v5h-5" /></>,
@@ -163,6 +166,8 @@ const ROLE_PERMISSIONS = [
     { key: 'unbanUsers', name: 'Unban user accounts', values: [false, false, true, true] },
   ]},
   { group: 'Administration', permissions: [
+    { key: 'viewVerification', name: 'View verified-debater applications', values: [false, true, true, true] },
+    { key: 'manageVerification', name: 'Approve, deny, and revoke verified status', values: [false, false, true, true] },
     { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true] },
     { key: 'viewPunishments', name: 'View the punishment log', values: [false, true, true, true] },
     { key: 'editUsers', name: 'Edit user profile details', values: [false, false, true, true] },
@@ -296,6 +301,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   const spectatorConnectionsRef = useRef(new Map());
   const [page, setPage] = useState(1);
   const [newsStories, setNewsStories] = useState([]);
+  const [verificationApplications, setVerificationApplications] = useState([]);
   const [punishmentNow, setPunishmentNow] = useState(Date.now());
   const [permissions, setPermissions] = useState({});
   const [capabilities, setCapabilities] = useState({});
@@ -339,6 +345,11 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
       if (tab === 'news') setNewsStories((await staffNews()).stories || []);
+      if (tab === 'verification') {
+        const data = await staffVerificationApplications();
+        setVerificationApplications(data.applications || []);
+        setCapabilities(data.capabilities || {});
+      }
       if (tab === 'punishments') {
         const punishmentData = await staffPunishments();
         setPunishments(punishmentData.punishments || []);
@@ -553,6 +564,18 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     } catch (e) { setError(e.message); }
   };
 
+  const reviewVerification = async (application, action) => {
+    const labels = { approve: 'approve', deny: 'deny', request_info: 'request more information from', revoke: 'revoke verification for' };
+    if (!window.confirm(`Are you sure you want to ${labels[action]} ${application.email || application.uid}?`)) return;
+    const note = action === 'approve' ? '' : (window.prompt('Staff note (shown in the application record):', application.staffNote || '') || '');
+    setError('');
+    try {
+      await staffReviewVerification(application.uid, action, note);
+      const data = await staffVerificationApplications();
+      setVerificationApplications(data.applications || []);
+    } catch (e) { setError(e.message); }
+  };
+
   const openReports = reports.filter((r) => !['resolved', 'closed'].includes(r.status)).length;
   const bannedUsers = users.filter((u) => u.disabled).length;
   const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'owner'].includes(u.role)).length;
@@ -585,12 +608,13 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b><AdminIcon type="news" /></b>What&apos;s Hot</button>}
+        <button className={tab === 'verification' ? 'active' : ''} onClick={() => setTab('verification')}><b><AdminIcon type="verification" /></b>Verification {verificationApplications.filter((item) => item.status === 'pending').length > 0 && <i>{verificationApplications.filter((item) => item.status === 'pending').length}</i>}</button>
         <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b><AdminIcon type="punishments" /></b>Punishment Log</button>
         <span />
         <button onClick={onBack}><b><AdminIcon type="back" /></b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
         {error && <div className="admin-notice error"><b><AdminIcon type="close" /></b>{error}</div>}
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
@@ -794,6 +818,17 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             <footer className="user-editor-footer"><button type="button" onClick={() => setEditingUser(null)}>Cancel</button><button type="button" className="primary" disabled={savingUser || editingProtected || !(capabilities.editUsers || capabilities.manageCredentials || capabilities.manageRoles || capabilities.managePremium || capabilities.editAvatars)} onClick={saveUser}>{savingUser ? 'Saving…' : 'Save changes'}</button></footer>
           </section>
         </div>}
+        {tab === 'verification' && !busy && <section className="verification-admin-list">
+          <div className="verification-admin-summary"><strong>{verificationApplications.filter((item) => item.status === 'pending').length}</strong><span>applications awaiting review</span><small>Moderators can review evidence. Only Admins and the Owner can change verification status.</small></div>
+          {verificationApplications.length ? verificationApplications.map((application) => <article className="verification-admin-card" key={application.uid}>
+            <header><div><h2>{application.displayName || application.email}<IdentityBadges verified={application.verifiedDebater} /></h2><p>{application.email}</p></div><span className={'verification-status status-' + application.status}>{String(application.status || 'pending').replace('_', ' ')}</span></header>
+            <div className="verification-admin-evidence"><dl><div><dt>Platform</dt><dd>{application.platform || '—'}</dd></div><div><dt>Audience</dt><dd>{Number(application.followerCount || 0).toLocaleString()}</dd></div><div><dt>Submitted</dt><dd>{application.submittedAtMs ? new Date(application.submittedAtMs).toLocaleString() : '—'}</dd></div></dl><a href={application.profileUrl} target="_blank" rel="noreferrer">Open public profile ↗</a></div>
+            <p className="verification-admin-explanation">{application.explanation || 'No explanation supplied.'}</p>
+            {application.supportingLinks?.length > 0 && <div className="verification-admin-links">{application.supportingLinks.map((link) => <a key={link} href={link} target="_blank" rel="noreferrer">Supporting evidence ↗</a>)}</div>}
+            {application.staffNote && <blockquote><b>Staff note:</b> {application.staffNote}</blockquote>}
+            {capabilities.manageVerification && <footer><button className="approve" onClick={() => reviewVerification(application, 'approve')}>Approve</button><button onClick={() => reviewVerification(application, 'request_info')}>Request information</button><button onClick={() => reviewVerification(application, 'deny')}>Deny</button>{application.verifiedDebater && <button className="danger" onClick={() => reviewVerification(application, 'revoke')}>Revoke</button>}</footer>}
+          </article>) : <div className="admin-notice">No verification applications found.</div>}
+        </section>}
         {tab === 'news' && !busy && <NewsManager stories={newsStories} onReload={load} />}
 
         {tab === 'punishments' && !busy && <section className="punishment-log">
@@ -854,3 +889,4 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     </div>
   </div>;
 }
+
