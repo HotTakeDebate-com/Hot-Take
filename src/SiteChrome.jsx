@@ -1,12 +1,13 @@
 import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from './LandingAssets.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 
-export function SiteHeader({ onHome, onAbout, onTopics, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, whatsHotActive = false, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   return <header className="landing-nav">
     <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
     <nav className="landing-nav-links" aria-label="Primary">
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
       <button type="button" className="landing-nav-link" onClick={onTopics}>Quick match</button>
+      {onWhatsHot && <button type="button" className={'landing-nav-link' + (whatsHotActive ? ' landing-nav-link--active' : '')} onClick={onWhatsHot}>What&apos;s Hot</button>}
       <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
       <button type="button" className="landing-nav-link" onClick={onSupport}>Support</button>
     </nav>
