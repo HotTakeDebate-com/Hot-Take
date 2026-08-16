@@ -11,6 +11,7 @@
 .live-search-mini i:nth-child(2),.live-search-label-dots i:nth-child(2){animation-delay:.18s}
 .live-search-mini i:nth-child(3),.live-search-label-dots i:nth-child(3){animation-delay:.36s}
 .live-video--searching video{opacity:.16}
+.live-video--searching .live-video-label{z-index:3}
 .live-searching-overlay{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;text-align:center;background:radial-gradient(circle at 50% 50%,rgba(43,10,13,.34),rgba(8,9,11,.52) 48%,rgba(8,9,11,.76) 100%);box-sizing:border-box}
 .live-searching-overlay h2{margin:26px 0 10px;color:#fff;font-size:clamp(24px,2.2vw,34px);letter-spacing:-.025em}
 .live-searching-overlay h2 span{color:#ff1d22}
