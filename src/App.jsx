@@ -1193,11 +1193,12 @@ export default function App() {
       )}
 
       {isSignedIn && step === 'custom' && (
-        <div className="panel custom-browser">
-          <h2>Custom debates</h2>
-          <p style={{ color: 'var(--muted)', marginTop: '-0.5rem' }}>
-            Create a statement to start a live debate, or join a statement you disagree with.
-          </p>
+        <div className="custom-browser custom-browser-v2">
+          <header className="custom-browser-hero">
+            <button type="button" className="custom-browser-back" onClick={() => setStep('welcome')} aria-label="Back">←</button>
+            <div><p>CHOOSE THE CONVERSATION</p><h1>Debate rooms<span>.</span></h1><small>Publish a take and defend it, or step into an open challenge.</small></div>
+            <div className="custom-browser-live"><i />LIVE ROOMS</div>
+          </header>
           <div className="custom-browser-tabs" role="tablist" aria-label="Custom debate modes">
             <button
               type="button"
@@ -1206,7 +1207,7 @@ export default function App() {
               aria-selected={customTab === 'join'}
               onClick={() => setCustomTab('join')}
             >
-              Join servers
+              <span>01</span> Find a debate
             </button>
             <button
               type="button"
@@ -1215,7 +1216,7 @@ export default function App() {
               aria-selected={customTab === 'create'}
               onClick={() => setCustomTab('create')}
             >
-              Create server
+              <span>02</span> Create a room
             </button>
           </div>
 
@@ -1227,46 +1228,26 @@ export default function App() {
 
           {customTab === 'create' && (
             <div className="custom-tab-panel">
-              <h3 className="custom-subtitle">Create server</h3>
-              <div className="custom-toolbar">
-                <label className="custom-visibility-label" htmlFor="customJoinMode">
-                  Join access
-                </label>
-                <select
-                  id="customJoinMode"
-                  className="auth-input custom-visibility-select"
-                  value={customJoinMode}
-                  onChange={(e) => setCustomJoinMode(e.target.value === 'code' ? 'code' : 'open')}
-                >
-                  <option value="open">Open lobby (shows in Join servers list)</option>
-                  <option value="code">Code-only (hidden from list)</option>
-                </select>
-              </div>
-              <div className="custom-toolbar">
-                <input
+              <div className="custom-create-heading"><p>BUILD YOUR ROOM</p><h2>What&apos;s your hot take?</h2><span>You&apos;ll argue in favor. The person joining will take the opposing side.</span></div>
+              <label className="custom-statement-field" htmlFor="statementInput">
+                <span>Debate statement</span>
+                <textarea
                   id="statementInput"
-                  type="text"
-                  className="auth-input custom-search"
-                  placeholder="Your statement (example: Vegetables are bad for humans)"
+                  placeholder="Example: Social media does more harm than good."
                   value={customStatement}
                   onChange={(e) => setCustomStatement(e.target.value)}
                   maxLength={240}
                   autoComplete="off"
                 />
+                <i>{customStatement.trim().length}/240</i>
+              </label>
+              <div className="custom-access-section"><span className="custom-field-label">Who can join?</span><div className="custom-access-grid">
                 <button
                   type="button"
-                  className="btn btn-primary custom-create-btn"
-                  onClick={createCustomGame}
-                  disabled={customStatement.trim().length < 8}
-                  title={
-                    customStatement.trim().length < 8
-                      ? 'Type at least 8 characters to publish your lobby'
-                      : undefined
-                  }
-                >
-                  Publish statement
-                </button>
-              </div>
+                  className={customJoinMode === 'open' ? 'selected' : ''}
+                  onClick={() => setCustomJoinMode('open')}><b>Public room</b><small>Visible to everyone browsing open debates.</small><i>{customJoinMode === 'open' ? '✓' : ''}</i></button>
+                <button type="button" className={customJoinMode === 'code' ? 'selected' : ''} onClick={() => setCustomJoinMode('code')}><b>Private room</b><small>Hidden from the list. Invite someone with a code.</small><i>{customJoinMode === 'code' ? '✓' : ''}</i></button>
+              </div></div>
               <p className="custom-statement-hint" aria-live="polite">
                 {customStatement.trim().length < 8 ? (
                   <>
@@ -1281,32 +1262,33 @@ export default function App() {
                   </span>
                 )}
               </p>
+              <button type="button" className="custom-publish-button" onClick={createCustomGame} disabled={customStatement.trim().length < 8}><span>Publish room</span><b>→</b></button>
             </div>
           )}
 
           {customTab === 'join' && (
             <div className="custom-tab-panel">
-              <h3 className="custom-subtitle">Join servers</h3>
-              <div className="custom-toolbar">
+              <div className="custom-create-heading"><p>OPEN CHALLENGES</p><h2>Find your opposition.</h2><span>Browse public rooms or enter a private invitation code.</span></div>
+              <div className="custom-code-join">
                 <input
                   id="roomCodeInput"
                   type="text"
                   className="auth-input custom-room-code"
-                  placeholder="Join by room code"
+                  placeholder="ENTER ROOM CODE"
                   value={customRoomCode}
                   onChange={(e) => setCustomRoomCode(e.target.value.toUpperCase())}
                   maxLength={24}
                 />
-                <button type="button" className="btn custom-create-btn" onClick={joinByCode}>
-                  Join by code
+                <button type="button" onClick={joinByCode}>
+                  Join private room →
                 </button>
               </div>
-              <div className="custom-toolbar">
+              <div className="custom-room-filter">
                 <input
                   id="customSearchInput"
                   type="text"
                   className="auth-input custom-search"
-                  placeholder="Filter live statements"
+                  placeholder="Search open debate statements…"
                   value={customSearch}
                   onChange={(e) => setCustomSearch(e.target.value)}
                   maxLength={120}
@@ -1314,7 +1296,7 @@ export default function App() {
               </div>
               <div className="custom-table-wrap" role="region" aria-label="Custom room list">
                 <table className="custom-table">
-                  <thead>
+                  <thead className="custom-table-head">
                     <tr>
                       <th>Room</th>
                       <th>Statement</th>
@@ -1336,14 +1318,14 @@ export default function App() {
                         <tr key={g.roomCode}>
                           <td>{g.roomCode}</td>
                           <td>{g.statement}</td>
-                          <td>Waiting</td>
+                          <td><span className="custom-waiting-status"><i />Waiting</span></td>
                           <td>
                             <button
                               type="button"
-                              className="btn custom-join-btn"
+                              className="custom-join-btn"
                               onClick={() => joinCustomGame(g.roomCode)}
                             >
-                              Join & disagree
+                              Take the opposing side →
                             </button>
                           </td>
                         </tr>
