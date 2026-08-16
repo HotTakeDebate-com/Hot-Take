@@ -82,6 +82,7 @@ export default function ProfilePanel({
   const [directMessages, setDirectMessages] = useState([]);
   const [messageDraft, setMessageDraft] = useState('');
   const [messageBusy, setMessageBusy] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
@@ -143,6 +144,11 @@ export default function ProfilePanel({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setMessageOpen(false);
+    setMessageDraft('');
+  }, [targetUid, resolvedEmail]);
 
   useEffect(() => {
     if (own || !targetUid) return undefined;
@@ -316,9 +322,14 @@ export default function ProfilePanel({
                 <span style={{ color: 'var(--muted)', fontSize: '.85rem' }}>{ratingCountLabel}</span>
               </div>
             </div>
-            <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
-              {followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}
-            </button>
+            <div className="public-profile-actions">
+              <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
+                {followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}
+              </button>
+              <button type="button" className="public-profile-message-button" onClick={() => setMessageOpen((open) => !open)} aria-expanded={messageOpen}>
+                {messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}
+              </button>
+            </div>
             {hostedRoom && <section className="public-profile-live-room" aria-label="Live public debate room">
               <div className="public-profile-live-room-copy">
                 <span className="public-profile-live-kicker"><i aria-hidden="true" /> Hosting now</span>
@@ -329,7 +340,7 @@ export default function ProfilePanel({
                 ? <button type="button" className="public-profile-join-room" onClick={() => onJoinHostedRoom(hostedRoom.roomCode)}>Join debate →</button>
                 : <span className="public-profile-your-room">Your room</span>}
             </section>}
-            <section className="public-profile-messages" aria-label="Direct messages">
+            {messageOpen && <section className="public-profile-messages" aria-label="Direct messages">
               <header><div><span>Direct messages</span><h2>Message {displayName || 'this member'}</h2></div><small>Private conversation</small></header>
               <div className="public-profile-message-list">
                 {directMessages.length ? directMessages.map((message) => <article key={message.id} className={message.senderUid === auth.currentUser?.uid ? 'is-mine' : ''}>
@@ -337,7 +348,7 @@ export default function ProfilePanel({
                 </article>) : <p className="public-profile-message-empty">No messages yet. Start the conversation.</p>}
               </div>
               <form onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} maxLength={1000} placeholder="Write a private message…" required /><div><small>{messageDraft.length}/1000</small><button type="submit" disabled={messageBusy || !messageDraft.trim()}>{messageBusy ? 'Sending…' : 'Send message'}</button></div></form>
-            </section>
+            </section>}
           </>}
           {error && <div className="account-alert account-alert--error">{error}</div>}
         </section>
