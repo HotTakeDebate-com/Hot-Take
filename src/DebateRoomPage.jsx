@@ -4,6 +4,7 @@ import DebateChatPanel from './DebateChatPanel.jsx';
 import ReportIssue from './ReportIssue.jsx';
 import { auth } from './firebase.js';
 import GenericAvatar from './GenericAvatar.jsx';
+import IdentityBadges from './IdentityBadges.jsx';
 import './debateRatingCapture.js';
 
 async function fetchLiveRatingSummary(uid) {
@@ -56,7 +57,7 @@ function LeaveDebateModal({ onCancel, onConfirm }) {
   );
 }
 
-export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', isSearching = false, connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, onReportSubmitted, kickOpponent, canKick }) {
+export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', opponentRole = 'user', opponentVerified = false, isSearching = false, connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, onReportSubmitted, kickOpponent, canKick }) {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [opponentRating, setOpponentRating] = useState(null);
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
@@ -100,7 +101,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
     <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className={`live-opponent-name ${isSearching ? 'live-opponent-name--searching' : ''}`} role="status" aria-live="polite" aria-label={isSearching ? 'Finding you a match' : `Debating: ${opponentName}`}>
-      {isSearching ? <><span className="live-search-mini" aria-hidden="true"><i /><i /><i /></span><span>Finding you a match<strong>...</strong></span></> : <><span className={'live-opponent-avatar' + (debateInfo.peerAvatarUrl ? ' has-image' : '')}>{debateInfo.peerAvatarUrl ? <img src={debateInfo.peerAvatarUrl} alt="" /> : <GenericAvatar />}</span><span>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span className="live-opponent-rating">★ {opponentRating.toFixed(2)}</span>}</span></>}
+      {isSearching ? <><span className="live-search-mini" aria-hidden="true"><i /><i /><i /></span><span>Finding you a match<strong>...</strong></span></> : <><span className={'live-opponent-avatar' + (debateInfo.peerAvatarUrl ? ' has-image' : '')}>{debateInfo.peerAvatarUrl ? <img src={debateInfo.peerAvatarUrl} alt="" /> : <GenericAvatar />}</span><span>Debating: <strong>{opponentName}</strong><IdentityBadges compact verified={opponentVerified} role={opponentRole} />{opponentRating != null && <span className="live-opponent-rating">★ {opponentRating.toFixed(2)}</span>}</span></>}
     </div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video">
@@ -116,3 +117,4 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     {leaveConfirmOpen && <LeaveDebateModal onCancel={() => setLeaveConfirmOpen(false)} onConfirm={confirmLeave} />}
   </div>;
 }
+

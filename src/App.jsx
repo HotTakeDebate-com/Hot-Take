@@ -28,6 +28,9 @@ import DebateRoomPage from './DebateRoomPage.jsx';
 import StaffPanel from './StaffPanel.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { staffMe } from './staffApi.js';
+import VerificationApplicationPage from './VerificationApplicationPage.jsx';
+import IdentityBadges from './IdentityBadges.jsx';
+import NotificationCenter from './NotificationCenter.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -147,7 +150,7 @@ export default function App() {
 
   const isSignedIn = Boolean(firebaseUserId);
   const showHeaderSocialTabs =
-    isSignedIn && ['welcome', 'feed', 'profile', 'search', 'history', 'admin'].includes(step);
+    isSignedIn && ['welcome', 'feed', 'profile', 'search', 'history', 'admin', 'verification'].includes(step);
 
   const openAuth = useCallback((mode = 'signin') => {
     setAuthModal(mode === 'signup' ? 'signup' : 'signin');
@@ -462,6 +465,8 @@ export default function App() {
         peerUid: payload.peerUid ?? null,
         peerDisplayName: payload.peerDisplayName ?? null,
         peerAvatarUrl: payload.peerAvatarUrl ?? '',
+        peerRole: payload.peerRole ?? 'user',
+        peerVerified: payload.peerVerified === true,
       });
       setStep('debate');
 
@@ -984,11 +989,14 @@ export default function App() {
 
   if (typeof window !== 'undefined') {
     window.__hotTakeAdminAction = staffRole ? openAdminPanel : null;
+    window.__hotTakeNetworkSocket = socketRef.current;
+    window.__hotTakeOpenVerification = isSignedIn ? (() => { setHeaderOverlay(null); setStep('verification'); }) : null;
+    window.__hotTakeJoinNetworkRoom = isSignedIn ? ((roomCode) => { setStep('custom'); setCustomTab('join'); joinCustomGame(roomCode); }) : null;
   }
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && step !== 'custom' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && step !== 'custom' && step !== 'verification' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -1076,6 +1084,7 @@ export default function App() {
           step === 'debate' && 'app--debate-room',
           step === 'profile' && 'app--account',
           step === 'admin' && 'app--admin',
+          step === 'verification' && 'app--verification',
           step === 'custom' && 'app--custom-rooms',
           !isSignedIn && showAppShell && step !== 'welcome' && 'app--guest',
         ]
@@ -1108,6 +1117,7 @@ export default function App() {
         step !== 'profile' &&
         step !== 'search' &&
         step !== 'admin' &&
+        step !== 'verification' &&
         step !== 'custom' && (
         <details className="device-details" open>
           <summary className="device-details-summary">
@@ -1148,6 +1158,10 @@ export default function App() {
           navExtras={
             isSignedIn ? (
               <>
+                <NotificationCenter
+                  socket={socketRef.current}
+                  onJoinRoom={(roomCode) => window.__hotTakeJoinNetworkRoom?.(roomCode)}
+                />
                 <button
                   type="button"
                   className="landing-btn landing-btn--ghost"
@@ -1186,6 +1200,19 @@ export default function App() {
           onPickLegal={(id) => setHeaderOverlay(id)}
         />
       )}
+
+      {isSignedIn && step === 'verification' && <VerificationApplicationPage
+        onHome={goHome}
+        onBack={goHome}
+        onAbout={() => setHeaderOverlay('mission')}
+        onQuickMatch={startQuickMatch}
+        onWhatsHot={() => setHeaderOverlay('whats-hot')}
+        onFaq={() => setHeaderOverlay('faq')}
+        onSupport={() => setHeaderOverlay('support')}
+        onProfile={() => setStep('profile')}
+        onSignOut={handleSignOut}
+        onPickLegal={(id) => setHeaderOverlay(id)}
+      />}
 
       {isSignedIn && step === 'feed' && (
         <SocialFeed
@@ -1371,7 +1398,7 @@ export default function App() {
                             </span>
                             <span className="custom-room-creator-copy">
                               <small>Hosted by</small>
-                              <strong>{g.creatorDisplayName || 'Hot Take member'}</strong>
+                              <strong>{g.creatorDisplayName || 'Hot Take member'} <IdentityBadges compact verified={g.creatorVerified} role={g.creatorRole} /></strong>
                             </span>
                           </td>
                           <td>{g.statement}</td>
@@ -1504,7 +1531,7 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
 
       {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
@@ -1711,3 +1738,4 @@ export default function App() {
     </>
   );
 }
+

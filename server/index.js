@@ -14,6 +14,7 @@ import { markMatchSessionReported, persistChatMessage, persistMatchSession } fro
 import { attachModerationRoutes } from './moderationApi.js';
 import { attachStaffRoutes } from './staffApi.js';
 import { attachWarningRoutes } from './warningApi.js';
+import { attachNetworkRoutes, notifyFollowersRoomCreated } from './networkApi.js';
 import { createAnalyticsTracker } from './analytics.js';
 
 const joinQueueWindowMs = Math.max(
@@ -181,6 +182,7 @@ io.use(async (socket, next) => {
     socket.data.uid = decoded.uid;
     socket.data.role = decoded.email?.toLowerCase() === (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase()
       ? 'owner' : String(decoded.role || 'user');
+    socket.data.verifiedDebater = decoded.verifiedDebater === true;
     socket.data.emailVerified = decoded.email_verified === true;
     socket.data.displayName = cleanDisplayName(decoded.name);
     socket.data.avatarUrl = '';
@@ -485,6 +487,7 @@ app.delete('/api/account', async (req, res) => {
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
 attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady, io, customGames });
 attachWarningRoutes(app, { isAdminReady: () => firebaseAdminReady });
+attachNetworkRoutes(app, { isAdminReady: () => firebaseAdminReady, io });
 
 if (existsSync(dist)) {
   app.use(
@@ -552,8 +555,11 @@ function listCustomGames() {
         statement: g.statement,
         joinMode: g.joinMode,
         createdAtMs: g.createdAtMs,
-        creatorDisplayName: creator?.data?.displayName || 'Hot Take member',
-        creatorAvatarUrl: creator?.data?.avatarUrl || '',
+        creatorUid: g.creatorUid || creator?.data?.uid || null,
+        creatorDisplayName: g.creatorDisplayName || creator?.data?.displayName || 'Hot Take member',
+        creatorAvatarUrl: g.creatorAvatarUrl || creator?.data?.avatarUrl || '',
+        creatorRole: g.creatorRole || creator?.data?.role || 'user',
+        creatorVerified: g.creatorVerified === true || creator?.data?.verifiedDebater === true,
       };
     });
 }
@@ -630,6 +636,8 @@ if (!metricsLogTimer) {
 }
 
 io.on('connection', (socket) => {
+  if (socket.data.uid) socket.join(`user:${socket.data.uid}`);
+  if (['moderator', 'admin', 'owner'].includes(socket.data.role)) socket.join('staff:verification');
   const hasConcurrentSessionForUid = () => {
     const uid = socket.data.uid;
     if (!uid) return false;
@@ -774,6 +782,8 @@ io.on('connection', (socket) => {
         peerUid: socket.data.uid ?? null,
         peerDisplayName: socket.data.displayName ?? null,
         peerAvatarUrl: socket.data.avatarUrl ?? '',
+        peerRole: socket.data.role ?? 'user',
+        peerVerified: socket.data.verifiedDebater === true,
       });
 
       socket.emit('matched', {
@@ -784,6 +794,8 @@ io.on('connection', (socket) => {
         peerUid: peerSocket.data.uid ?? null,
         peerDisplayName: peerSocket.data.displayName ?? null,
         peerAvatarUrl: peerSocket.data.avatarUrl ?? '',
+        peerRole: peerSocket.data.role ?? 'user',
+        peerVerified: peerSocket.data.verifiedDebater === true,
       });
       metrics.matches += 1;
       analytics.recordMatch(topicId, 'quick');
@@ -841,6 +853,11 @@ io.on('connection', (socket) => {
       createdAtMs: Date.now(),
       createdBy: socket.id,
       activeRoomId: null,
+      creatorUid: socket.data.uid ?? null,
+      creatorDisplayName: socket.data.displayName ?? cleanDisplayName(displayName),
+      creatorAvatarUrl: socket.data.avatarUrl ?? '',
+      creatorRole: socket.data.role ?? 'user',
+      creatorVerified: socket.data.verifiedDebater === true,
     });
 
     socket.data.matchType = 'custom';
@@ -862,6 +879,14 @@ io.on('connection', (socket) => {
       matchMode: 'custom',
     });
     emitCustomGamesUpdate();
+    void notifyFollowersRoomCreated({
+      isAdminReady: () => firebaseAdminReady,
+      io,
+      hostUid: socket.data.uid,
+      roomCode,
+      statement: cleanStatement,
+      joinMode: normalizedJoinMode,
+    });
   });
 
   socket.on('join-custom-room', async ({ side, roomCode, displayName }) => {
@@ -960,6 +985,8 @@ io.on('connection', (socket) => {
         peerUid: socket.data.uid ?? null,
         peerDisplayName: socket.data.displayName ?? null,
         peerAvatarUrl: socket.data.avatarUrl ?? '',
+        peerRole: socket.data.role ?? 'user',
+        peerVerified: socket.data.verifiedDebater === true,
       });
 
       socket.emit('matched', {
@@ -973,6 +1000,8 @@ io.on('connection', (socket) => {
         peerUid: peerSocket.data.uid ?? null,
         peerDisplayName: peerSocket.data.displayName ?? null,
         peerAvatarUrl: peerSocket.data.avatarUrl ?? '',
+        peerRole: peerSocket.data.role ?? 'user',
+        peerVerified: peerSocket.data.verifiedDebater === true,
       });
       metrics.matches += 1;
       game.activeRoomId = roomId;
@@ -1246,3 +1275,4 @@ startServer().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+

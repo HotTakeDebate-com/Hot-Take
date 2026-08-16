@@ -2,10 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import {
   fetchPublicProfile,
-  followUser,
-  isFollowingUser,
   savePublicProfile,
-  unfollowUser,
   userProfileDocId,
 } from './chitChatFirestore.js';
 import { auth } from './firebase.js';
@@ -14,6 +11,9 @@ import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
+import IdentityBadges from './IdentityBadges.jsx';
+import { networkFollow, networkFollowStatus, networkIdentity, networkUnfollow } from './networkApi.js';
+import './DebateNetwork.css';
 import './AccountPage.css';
 
 async function fetchLiveRatingSummary(uid) {
@@ -71,6 +71,7 @@ export default function ProfilePanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', verifiedDebater: false });
   const [followBusy, setFollowBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
@@ -98,7 +99,14 @@ export default function ProfilePanel({
       setAvatarUrl(prof?.avatarUrl ?? '');
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
-      if (!own) setFollowing(await isFollowingUser(resolvedEmail));
+      if (!own && prof?.uid) {
+        const [{ identity }, follow] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid)]);
+        setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', verifiedDebater: false });
+        setFollowing(follow.following === true);
+      } else if (own && auth.currentUser?.uid) {
+        const { identity } = await networkIdentity(auth.currentUser.uid);
+        setNetworkIdentityState(identity || { uid: auth.currentUser.uid, role: 'user', verifiedDebater: false });
+      }
     } catch (loadError) {
       setError(loadError?.message ?? 'Could not load account.');
     } finally {
@@ -192,10 +200,10 @@ export default function ProfilePanel({
     setError(null);
     try {
       if (following) {
-        await unfollowUser(resolvedEmail);
+        await networkUnfollow(networkIdentityState.uid);
         setFollowing(false);
       } else {
-        await followUser(resolvedEmail);
+        await networkFollow(networkIdentityState.uid);
         setFollowing(true);
       }
     } catch (followError) {
@@ -233,7 +241,7 @@ export default function ProfilePanel({
           <p className="account-eyebrow">Community profile</p>
           {loading ? <p>Loading profile…</p> : <>
             <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
-            <h1>{displayName || 'Hot Take member'}</h1>
+            <h1>{displayName || 'Hot Take member'} <IdentityBadges verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
             <p>{bio || 'No bio yet.'}</p>
             <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
               <div style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)' }}>Debate rating</div>
@@ -353,3 +361,4 @@ export default function ProfilePanel({
     <SiteFooter onHome={onHome || onBack} onAbout={onAbout} onFaq={onFaq} onSupport={onSupport} onPickLegal={onPickLegal} />
   </div>;
 }
+

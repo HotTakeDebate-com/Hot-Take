@@ -8,22 +8,22 @@ const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, deleteReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false, viewPunishments: false,
-    manageRoles: false, managePremium: false, manageNews: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, manageNews: false, viewVerification: false, manageVerification: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false, viewPunishments: true,
-    manageRoles: false, managePremium: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, managePremium: false, viewVerification: true, manageVerification: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
   },
   admin: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, manageNews: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, manageNews: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
@@ -722,6 +722,63 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     res.json({ ok: true, role, premium });
   });
 
+  router.get('/verification-applications', requirePermission('viewVerification'), async (req, res) => {
+    const snapshot = await admin.firestore().collection('verification_applications').limit(500).get();
+    const applications = [];
+    for (const document of snapshot.docs) {
+      const data = document.data() || {};
+      let account = null;
+      try { account = await admin.auth().getUser(document.id); } catch { /* deleted account */ }
+      applications.push({
+        id: document.id,
+        ...data,
+        uid: document.id,
+        email: data.email || account?.email || '',
+        displayName: account?.displayName || data.email?.split('@')[0] || 'Hot Take member',
+        verifiedDebater: account?.customClaims?.verifiedDebater === true,
+        submittedAtMs: data.submittedAt?.toMillis?.() || null,
+        updatedAtMs: data.updatedAt?.toMillis?.() || null,
+      });
+    }
+    applications.sort((a, b) => (b.submittedAtMs || 0) - (a.submittedAtMs || 0));
+    res.json({ applications, capabilities: (await permissionConfig())[req.staff.role] || {} });
+  });
+
+  router.post('/verification-applications/:uid', requirePermission('manageVerification'), async (req, res) => {
+    const uid = String(req.params.uid || '');
+    const action = String(req.body?.action || '');
+    const note = String(req.body?.note || '').trim().slice(0, 2000);
+    const statuses = { approve: 'approved', deny: 'denied', request_info: 'info_requested', revoke: 'revoked' };
+    if (!statuses[action]) return res.status(400).json({ error: 'Invalid verification action.' });
+    const ref = admin.firestore().collection('verification_applications').doc(uid);
+    const application = await ref.get();
+    if (!application.exists && action !== 'revoke') return res.status(404).json({ error: 'Application not found.' });
+    const account = await admin.auth().getUser(uid);
+    const verifiedDebater = action === 'approve';
+    if (action === 'approve' || action === 'revoke') {
+      await admin.auth().setCustomUserClaims(uid, { ...(account.customClaims || {}), verifiedDebater });
+      await admin.auth().revokeRefreshTokens(uid);
+      if (account.email) {
+        await admin.firestore().collection('publicProfiles').doc(account.email.toLowerCase()).set({
+          verifiedDebater,
+          verificationUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+    }
+    await ref.set({
+      uid,
+      email: application.data()?.email || account.email || '',
+      status: statuses[action],
+      staffNote: note,
+      reviewedBy: req.staff.email,
+      reviewedByRole: req.staff.role,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    await audit('verification_' + action, req.staff, uid, { note, targetEmail: account.email || null });
+    io?.to?.(`user:${uid}`)?.emit?.('verification-status-updated', { status: statuses[action], verifiedDebater });
+    res.json({ ok: true, status: statuses[action], verifiedDebater });
+  });
+
   router.get('/punishments', requirePermission('viewPunishments'), async (_req, res) => {
     const snap = await admin.firestore().collection('staff_audit').orderBy('createdAt', 'desc').get();
     const events = snap.docs
@@ -832,3 +889,4 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
 
   app.use('/api/staff', router);
 }
+

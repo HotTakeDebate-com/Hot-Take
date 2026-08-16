@@ -157,5 +157,14 @@ service cloud.firestore {
       allow delete: if isOwnUserEmailDoc(userKey);
       allow update: if false;
     }
+
+    // The debate-network graph, alerts, and verification records are managed by
+    // authenticated server APIs so clients cannot forge followers or badges.
+    match /followers/{document=**} { allow read, write: if false; }
+    match /following/{document=**} { allow read, write: if false; }
+    match /user_notifications/{document=**} { allow read, write: if false; }
+    match /notification_preferences/{document=**} { allow read, write: if false; }
+    match /verification_applications/{document=**} { allow read, write: if false; }
   }
 }
+
