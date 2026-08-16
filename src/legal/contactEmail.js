@@ -1,14 +1,14 @@
-/** Public contact for privacy/legal requests; set `VITE_CONTACT_EMAIL` in `.env`. */
+/** Canonical public contact used across Support, FAQ, Privacy, and Recording pages. */
+const SUPPORT_EMAIL = 'support@hottakedebate.com';
+
 export function getContactEmail() {
-  const v = import.meta.env.VITE_CONTACT_EMAIL;
-  return typeof v === 'string' ? v.trim() : '';
+  return SUPPORT_EMAIL;
 }
 
 export function contactEmailLabel() {
-  return getContactEmail() || '[Insert Contact Email]';
+  return SUPPORT_EMAIL;
 }
 
 export function contactEmailMailto() {
-  const e = getContactEmail();
-  return e.includes('@') ? `mailto:${e}` : null;
+  return `mailto:${SUPPORT_EMAIL}`;
 }
