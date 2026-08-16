@@ -559,6 +559,7 @@ function listCustomGames() {
         creatorDisplayName: g.creatorDisplayName || creator?.data?.displayName || 'Hot Take member',
         creatorAvatarUrl: g.creatorAvatarUrl || creator?.data?.avatarUrl || '',
         creatorRole: g.creatorRole || creator?.data?.role || 'user',
+        creatorPremium: g.creatorPremium === true || creator?.data?.premium === true,
         creatorVerified: g.creatorVerified === true || creator?.data?.verifiedDebater === true,
       };
     });
@@ -857,6 +858,7 @@ io.on('connection', (socket) => {
       creatorDisplayName: socket.data.displayName ?? cleanDisplayName(displayName),
       creatorAvatarUrl: socket.data.avatarUrl ?? '',
       creatorRole: socket.data.role ?? 'user',
+      creatorPremium: socket.data.premium === true,
       creatorVerified: socket.data.verifiedDebater === true,
     });
 

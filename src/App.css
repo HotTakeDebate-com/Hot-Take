@@ -3284,6 +3284,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.custom-room-host-name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: .35rem;
+  overflow: visible;
+}
+.custom-room-host-name .identity-badges {
+  margin-left: 0;
+  overflow: visible;
+}
 @media(max-width:720px) {
   .custom-browser-v2 .custom-table tr {
     grid-template-columns: minmax(0, 1fr) minmax(120px, auto);
@@ -3296,3 +3307,4 @@
     grid-row: 1;
   }
 }
+
