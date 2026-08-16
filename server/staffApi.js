@@ -387,23 +387,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
         active: activeRoomIds.has(roomId),
       });
     });
-    const waitingRooms = [...(customGames?.values?.() || [])]
-      .filter((game) => !game.activeRoomId)
-      .map((game) => ({
-        roomId: `lobby:${game.roomCode}`,
-        roomCode: game.roomCode,
-        topicId: 'custom',
-        statement: game.statement,
-        matchMode: 'custom',
-        joinMode: game.joinMode,
-        startedAt: game.createdAtMs,
-        reported: false,
-        reportCount: 0,
-        active: false,
-        waiting: true,
-      }));
-    const debates = [...waitingRooms, ...debatesByRoom.values()].sort((a, b) => {
-      if (a.waiting !== b.waiting) return a.waiting ? -1 : 1;
+    const debates = [...debatesByRoom.values()].sort((a, b) => {
       if (a.active !== b.active) return a.active ? -1 : 1;
       const time = (value) => value?.toMillis?.() || Number(value || 0);
       return time(b.startedAt) - time(a.startedAt);
