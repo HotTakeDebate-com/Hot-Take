@@ -25,6 +25,7 @@
   padding: 0;
   min-height: 100vh;
 }
+.app.app--custom-rooms { max-width:none; margin:0; padding:0; min-height:100vh; background:#050609; }
 
 .app.app--debate-room{max-width:none;margin:0;padding:0;min-height:100vh}
 
@@ -3021,10 +3022,12 @@
 .admin-debate-summary span { display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid #30323a; border-radius:999px; background:#15161b; font-weight:800; }
 .admin-debate-summary i { width:9px; height:9px; border-radius:50%; }
 .admin-debate-summary i.active { background:#35dc80; box-shadow:0 0 10px rgba(53,220,128,.5); }
+.admin-debate-summary i.waiting { background:#ffae32; box-shadow:0 0 10px rgba(255,174,50,.45); }
 .admin-debate-summary i.reported { background:#ff3038; box-shadow:0 0 10px rgba(255,48,56,.5); }
 .admin-debate-summary i.completed { background:#737680; }
 .debate-status { display:inline-flex; align-items:center; padding:7px 10px; border-radius:999px; font-size:11px; font-weight:900; letter-spacing:.06em; }
 .debate-status.active { color:#63eba0; background:#10291d; border:1px solid #236c44; }
+.debate-status.waiting { color:#ffc668; background:#2b2010; border:1px solid #805718; }
 .debate-status.reported { color:#fff; background:#a70c14; border:1px solid #ff3038; }
 .debate-status.completed { color:#b3b5bd; background:#24252b; border:1px solid #464852; }
 .admin-monitor-button { white-space:nowrap; padding:9px 12px; border:1px solid #ff3038; border-radius:7px; color:#fff; background:#721017; font-weight:800; }
