@@ -344,6 +344,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       online: onlineUids.has(u.uid),
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
+      verifiedDebater: u.customClaims?.verifiedDebater === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
       starAverage: rating.count ? Number((rating.sum / rating.count).toFixed(2)) : null,
       starCount: rating.count,
@@ -474,6 +475,13 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     if (wantsCredentialChange && !(await hasPermission(req.staff.role, 'manageCredentials'))) {
       return res.status(403).json({ error: 'Your role cannot change email or verification settings.' });
     }
+    const verifiedDebater = typeof req.body?.verifiedDebater === 'boolean'
+      ? req.body.verifiedDebater
+      : target.customClaims?.verifiedDebater === true;
+    const verificationChanged = verifiedDebater !== (target.customClaims?.verifiedDebater === true);
+    if (verificationChanged && !(await hasPermission(req.staff.role, 'manageVerification'))) {
+      return res.status(403).json({ error: 'Only Admins and the Owner can change verified-debater status.' });
+    }
     const displayName = requestedDisplayName;
     if (!displayName) return res.status(400).json({ error: 'Display name is required.' });
 
@@ -494,12 +502,18 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       email: requestedEmail,
       emailVerified,
     });
+    if (verificationChanged) {
+      await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), verifiedDebater });
+      await admin.auth().revokeRefreshTokens(uid);
+    }
     if (emailChanged) await admin.auth().revokeRefreshTokens(uid);
     const updatedProfileRef = admin.firestore().collection('publicProfiles').doc(requestedEmail);
     await updatedProfileRef.set({
       uid,
       displayName,
       avatarUrl: requestedAvatarUrl,
+      verifiedDebater,
+      ...(verificationChanged ? { verificationUpdatedAt: admin.firestore.FieldValue.serverTimestamp() } : {}),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
     await audit('user_update', req.staff, uid, {
@@ -509,7 +523,19 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       email: updated.email || null,
       emailChanged,
       avatarChanged,
+      verifiedDebater,
+      verificationChanged,
     });
+    if (verificationChanged) {
+      await audit(verifiedDebater ? 'verification_direct_grant' : 'verification_direct_revoke', req.staff, uid, {
+        targetEmail: updated.email || null,
+        source: 'user_details',
+      });
+      io?.to?.(`user:${uid}`)?.emit?.('verification-status-updated', {
+        status: verifiedDebater ? 'approved' : 'revoked',
+        verifiedDebater,
+      });
+    }
     res.json({
       ok: true,
       user: {
@@ -518,6 +544,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
         email: updated.email || '',
         emailVerified: updated.emailVerified,
         avatarUrl: requestedAvatarUrl,
+        verifiedDebater,
       },
     });
   });

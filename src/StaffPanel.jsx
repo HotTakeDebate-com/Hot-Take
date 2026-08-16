@@ -472,7 +472,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   };
   const openUserEditor = (user) => {
     setEditingUser(user);
-    setUserDraft({ displayName: user.displayName || '', email: user.email || '', role: user.role || 'user', premium: user.premium === true, emailVerified: user.emailVerified === true, avatarUrl: user.avatarUrl || '' });
+    setUserDraft({ displayName: user.displayName || '', email: user.email || '', role: user.role || 'user', premium: user.premium === true, verifiedDebater: user.verifiedDebater === true, emailVerified: user.emailVerified === true, avatarUrl: user.avatarUrl || '' });
     setPasswordMode('none');
     setNewPassword('');
     setConfirmPassword('');
@@ -506,7 +506,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         if (newPassword.length < 8) throw new Error('The new password must be at least 8 characters.');
         if (newPassword !== confirmPassword) throw new Error('The new passwords do not match.');
       }
-      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, email: userDraft.email, emailVerified: userDraft.emailVerified, avatarUrl: userDraft.avatarUrl || '' });
+      await staffUpdateUser(editingUser.uid, { displayName: userDraft.displayName, email: userDraft.email, emailVerified: userDraft.emailVerified, verifiedDebater: userDraft.verifiedDebater, avatarUrl: userDraft.avatarUrl || '' });
       if (userDraft.role !== editingUser.role || userDraft.premium !== editingUser.premium) {
         await staffRole(editingUser.uid, userDraft.role, userDraft.role === 'user' && userDraft.premium);
       }
@@ -522,7 +522,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
       setUsers(nextUsers);
       setCapabilities(data.capabilities || {});
       setEditingUser(updated || null);
-      if (updated) setUserDraft({ displayName: updated.displayName || '', email: updated.email || '', role: updated.role || 'user', premium: updated.premium === true, emailVerified: updated.emailVerified === true });
+      if (updated) setUserDraft({ displayName: updated.displayName || '', email: updated.email || '', role: updated.role || 'user', premium: updated.premium === true, verifiedDebater: updated.verifiedDebater === true, emailVerified: updated.emailVerified === true, avatarUrl: updated.avatarUrl || '' });
       setPasswordMode('none'); setNewPassword(''); setConfirmPassword('');
       setEditorMessage(passwordMode === 'reset' ? 'Account saved and password reset email sent.' : passwordMode === 'set' ? 'Account saved and a new password was set. All existing sessions were signed out.' : 'Account changes saved.');
     } catch (e) { setError(e.message); } finally { setSavingUser(false); setSendingReset(false); }
@@ -781,6 +781,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                 <section className="user-editor-section"><h3>Role & membership</h3>
                   <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
                   <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={!capabilities.managePremium || editingProtected || userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
+                  <label className="user-editor-check"><span>Verified debater</span><input type="checkbox" checked={userDraft.verifiedDebater === true} disabled={!capabilities.manageVerification || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, verifiedDebater: event.target.checked }))} /><b>{userDraft.verifiedDebater ? 'Verified status granted' : 'Not a verified debater'}</b><small>Admins and the Owner can grant or revoke this status directly without an application.</small></label>
                 </section>
               </>}
               {editorTab === 'security' && <>
