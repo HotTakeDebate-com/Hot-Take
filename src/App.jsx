@@ -1657,6 +1657,13 @@ export default function App() {
           onPickFaq={() => setHeaderOverlay('faq')}
           onPickSupport={() => setHeaderOverlay('support')}
           onQuickMatch={startQuickMatch}
+          brandExtras={
+            staffRole ? (
+              <button type="button" className="landing-admin-link" onClick={() => { setHeaderOverlay(null); setStep('admin'); }}>
+                Admin
+              </button>
+            ) : null
+          }
         />
       )}
     </>
