@@ -7,7 +7,7 @@ import SocialFeed from './SocialFeed.jsx';
 import UserSearchPanel from './UserSearchPanel.jsx';
 import { fetchRecentDebates, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
-import { onIdTokenChanged, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, onIdTokenChanged, reauthenticateWithPopup, signOut } from 'firebase/auth';
 import AuthScreen from './AuthScreen.jsx';
 import BrandLogo from './BrandLogo.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
@@ -881,6 +881,33 @@ export default function App() {
     }
   };
 
+  const openAdminPanel = async () => {
+    const currentUser = auth?.currentUser;
+    if (!staffRole || !currentUser) return;
+    const expectedUid = currentUser.uid;
+    const expectedEmail = currentUser.email?.trim().toLowerCase() || '';
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account', login_hint: currentUser.email || '' });
+    try {
+      const hasGoogleProvider = currentUser.providerData.some((entry) => entry.providerId === 'google.com');
+      if (!hasGoogleProvider) throw new Error('This staff account must be linked to Google before it can access the Admin panel.');
+      const result = await reauthenticateWithPopup(currentUser, provider);
+      const verifiedEmail = result.user.email?.trim().toLowerCase() || '';
+      if (result.user.uid !== expectedUid || (expectedEmail && verifiedEmail !== expectedEmail)) {
+        throw new Error('The Google account must match your signed-in staff account.');
+      }
+      setError(null);
+      setHeaderOverlay(null);
+      setSocialProfileEmail(null);
+      setStep('admin');
+    } catch (adminAuthError) {
+      if (adminAuthError?.code === 'auth/popup-closed-by-user' || adminAuthError?.code === 'auth/cancelled-popup-request') return;
+      const message = adminAuthError?.message || 'Google verification is required to access the Admin panel.';
+      setError(message);
+      window.alert(message);
+    }
+  };
+
   const endDebate = () => {
     setDebateChatMessages([]);
     setDebateChatDraft('');
@@ -955,13 +982,7 @@ export default function App() {
   const showAppShell = authReady && isFirebaseConfigured;
 
   if (typeof window !== 'undefined') {
-    window.__hotTakeAdminAction = staffRole
-      ? () => {
-          setHeaderOverlay(null);
-          setSocialProfileEmail(null);
-          setStep('admin');
-        }
-      : null;
+    window.__hotTakeAdminAction = staffRole ? openAdminPanel : null;
   }
 
   return (
@@ -1009,7 +1030,7 @@ export default function App() {
                       <button
                         type="button"
                         className={`header-chip header-social-tab header-admin-link ${step === 'admin' ? 'header-social-tab--active' : ''}`}
-                        onClick={() => setStep('admin')}
+                        onClick={openAdminPanel}
                       >
                         Admin
                       </button>
@@ -1118,7 +1139,7 @@ export default function App() {
           onPickWhatsHot={() => setHeaderOverlay('whats-hot')}
           brandExtras={
             staffRole ? (
-              <button type="button" className="landing-admin-link" onClick={() => setStep('admin')}>
+              <button type="button" className="landing-admin-link" onClick={openAdminPanel}>
                 Admin
               </button>
             ) : null
@@ -1669,7 +1690,7 @@ export default function App() {
           onQuickMatch={startQuickMatch}
           brandExtras={
             staffRole ? (
-              <button type="button" className="landing-admin-link" onClick={() => { setHeaderOverlay(null); setStep('admin'); }}>
+              <button type="button" className="landing-admin-link" onClick={openAdminPanel}>
                 Admin
               </button>
             ) : null
