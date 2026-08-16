@@ -126,8 +126,8 @@ export default function DirectMessageCenter({ socket }) {
   const deleted = profile.deleted === true;
 
   return <div className="dm-center" ref={rootRef}>
-    <button type="button" className="dm-center-trigger" aria-label="Direct messages" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.8 9.8 0 0 1-3.8-.8L3 21l1.7-4.4A8 8 0 0 1 3 11.5C3 6.8 7 3 12 3s9 3.8 9 8.5Z"/><path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01"/></svg>
+    <button type="button" className="dm-center-trigger" aria-label="Direct message inbox" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 4.5h15l2 10.5v4.5h-19V15l2-10.5Z"/><path d="M3 15h5l1.5 2h5l1.5-2h5"/></svg>
       {pendingCount > 0 && <span>{pendingCount > 9 ? '9+' : pendingCount}</span>}
     </button>
 
