@@ -10,7 +10,7 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras,
     <nav className="landing-nav-links" aria-label="Primary">
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
       <button type="button" className="landing-nav-link" onClick={onTopics}>Quick match</button>
-      {onWhatsHot && <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onWhatsHot}>What&apos;s Hot</button>}
+      <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onWhatsHot || onHome}>What&apos;s Hot</button>
       <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
       <button type="button" className="landing-nav-link" onClick={onSupport}>Support</button>
     </nav>
