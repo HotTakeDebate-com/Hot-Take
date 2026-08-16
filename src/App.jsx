@@ -1398,7 +1398,10 @@ export default function App() {
                             </span>
                             <span className="custom-room-creator-copy">
                               <small>Hosted by</small>
-                              <strong>{g.creatorDisplayName || 'Hot Take member'} <IdentityBadges compact verified={g.creatorVerified} role={g.creatorRole} /></strong>
+                              <span className="custom-room-host-name">
+                                <strong>{g.creatorDisplayName || 'Hot Take member'}</strong>
+                                <IdentityBadges compact premium={g.creatorPremium} verified={g.creatorVerified} role={g.creatorRole} />
+                              </span>
                             </span>
                           </td>
                           <td>{g.statement}</td>
