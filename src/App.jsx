@@ -1228,6 +1228,11 @@ export default function App() {
       {isSignedIn && step === 'profile' && (
         <ProfilePanel
           targetEmail={socialProfileEmail}
+          hostedRoom={socialProfileEmail?.startsWith('uid:')
+            ? customGames.find((game) => game.creatorUid === socialProfileEmail.slice(4)) || null
+            : null}
+          canJoinHostedRoom={!socialProfileEmail?.startsWith('uid:') || socialProfileEmail.slice(4) !== firebaseUserId}
+          onJoinHostedRoom={(roomCode) => joinCustomGame(roomCode)}
           onBack={() => {
             setStep(socialReturnStep);
             setSocialProfileEmail(null);
