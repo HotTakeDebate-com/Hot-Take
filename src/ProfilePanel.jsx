@@ -340,8 +340,8 @@ export default function ProfilePanel({
                 ? <button type="button" className="public-profile-join-room" onClick={() => onJoinHostedRoom(hostedRoom.roomCode)}>Join debate →</button>
                 : <span className="public-profile-your-room">Your room</span>}
             </section>}
-            {messageOpen && <section className="public-profile-messages" aria-label="Direct messages">
-              <header><div><span>Direct messages</span><h2>Message {displayName || 'this member'}</h2></div><small>Private conversation</small></header>
+            {messageOpen && <section className="public-profile-messages" aria-label="Direct messages" role="dialog" aria-modal="false">
+              <header><div><span>Direct messages</span><h2>Message {displayName || 'this member'}</h2><small>Private conversation</small></div><button type="button" className="public-profile-message-close" onClick={() => setMessageOpen(false)} aria-label="Close messages">×</button></header>
               <div className="public-profile-message-list">
                 {directMessages.length ? directMessages.map((message) => <article key={message.id} className={message.senderUid === auth.currentUser?.uid ? 'is-mine' : ''}>
                   <p>{message.text}</p><time>{message.createdAtMs ? new Date(message.createdAtMs).toLocaleString() : 'Just now'}</time>

@@ -92,18 +92,20 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     const otherUid = String(req.params.uid || '').trim();
     if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
     try {
-      await admin.auth().getUser(otherUid);
       const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
-      const snap = await admin.firestore().collection('direct_conversations').doc(conversationId)
-        .collection('messages').orderBy('createdAt', 'desc').limit(100).get();
+      const conversationRef = admin.firestore().collection('direct_conversations').doc(conversationId);
+      const [conversation, snap] = await Promise.all([
+        conversationRef.get(),
+        conversationRef.collection('messages').orderBy('createdAt', 'desc').limit(100).get(),
+      ]);
       const messages = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAtMs: serializeTime(doc.data()?.createdAt),
       })).reverse();
-      res.json({ conversationId, messages });
+      res.json({ conversationId, conversation: conversation.exists ? conversation.data() : null, messages });
     } catch {
-      res.status(404).json({ error: 'Member or conversation not found.' });
+      res.status(404).json({ error: 'Conversation not found.' });
     }
   });
 
@@ -118,9 +120,18 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
       const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
       const conversationRef = db.collection('direct_conversations').doc(conversationId);
       const messageRef = conversationRef.collection('messages').doc();
+      const [senderIdentity, recipientIdentity] = await Promise.all([
+        publicIdentity(req.networkUser.uid),
+        publicIdentity(otherUid),
+      ]);
       const batch = db.batch();
       batch.set(conversationRef, {
         participants: [req.networkUser.uid, otherUid],
+        participantProfiles: [senderIdentity, recipientIdentity].map((identity) => ({
+          uid: identity.uid,
+          displayName: identity.displayName || 'Hot Take member',
+          avatarUrl: identity.avatarUrl || '',
+        })),
         lastMessage: text.slice(0, 180),
         lastSenderUid: req.networkUser.uid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
