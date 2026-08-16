@@ -3,6 +3,7 @@ import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
 import ReportIssue from './ReportIssue.jsx';
 import { auth } from './firebase.js';
+import GenericAvatar from './GenericAvatar.jsx';
 import './debateRatingCapture.js';
 
 async function fetchLiveRatingSummary(uid) {
@@ -98,7 +99,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
 
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName}`}>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span style={{ marginLeft: '0.55rem', whiteSpace: 'nowrap' }}>★ {opponentRating.toFixed(2)}</span>}</div></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName}`}><span className={'live-opponent-avatar' + (debateInfo.peerAvatarUrl ? ' has-image' : '')}>{debateInfo.peerAvatarUrl ? <img src={debateInfo.peerAvatarUrl} alt="" /> : <GenericAvatar />}</span><span>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span className="live-opponent-rating">★ {opponentRating.toFixed(2)}</span>}</span></div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video">
         <video ref={localVideoRef} autoPlay playsInline muted />
