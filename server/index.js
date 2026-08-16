@@ -183,6 +183,11 @@ io.use(async (socket, next) => {
       ? 'owner' : String(decoded.role || 'user');
     socket.data.emailVerified = decoded.email_verified === true;
     socket.data.displayName = cleanDisplayName(decoded.name);
+    socket.data.avatarUrl = '';
+    if (decoded.email) {
+      const profileSnap = await admin.firestore().collection('publicProfiles').doc(decoded.email.toLowerCase()).get();
+      socket.data.avatarUrl = profileSnap.exists ? String(profileSnap.data()?.avatarUrl || '') : '';
+    }
     return next();
   } catch (e) {
     const msg = String(e?.message ?? e ?? '');
@@ -763,6 +768,7 @@ io.on('connection', (socket) => {
         yourSide: peerSocket.data.side,
         peerUid: socket.data.uid ?? null,
         peerDisplayName: socket.data.displayName ?? null,
+        peerAvatarUrl: socket.data.avatarUrl ?? '',
       });
 
       socket.emit('matched', {
@@ -772,6 +778,7 @@ io.on('connection', (socket) => {
         yourSide: side,
         peerUid: peerSocket.data.uid ?? null,
         peerDisplayName: peerSocket.data.displayName ?? null,
+        peerAvatarUrl: peerSocket.data.avatarUrl ?? '',
       });
       metrics.matches += 1;
       analytics.recordMatch(topicId, 'quick');
@@ -947,6 +954,7 @@ io.on('connection', (socket) => {
         statement: game.statement,
         peerUid: socket.data.uid ?? null,
         peerDisplayName: socket.data.displayName ?? null,
+        peerAvatarUrl: socket.data.avatarUrl ?? '',
       });
 
       socket.emit('matched', {
@@ -959,6 +967,7 @@ io.on('connection', (socket) => {
         statement: game.statement,
         peerUid: peerSocket.data.uid ?? null,
         peerDisplayName: peerSocket.data.displayName ?? null,
+        peerAvatarUrl: peerSocket.data.avatarUrl ?? '',
       });
       metrics.matches += 1;
       game.activeRoomId = roomId;
