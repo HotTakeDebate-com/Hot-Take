@@ -461,6 +461,7 @@ export default function App() {
         statement: payload.statement ?? null,
         peerUid: payload.peerUid ?? null,
         peerDisplayName: payload.peerDisplayName ?? null,
+        peerAvatarUrl: payload.peerAvatarUrl ?? '',
       });
       setStep('debate');
 
