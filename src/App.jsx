@@ -26,6 +26,7 @@ import QuickMatchPage from './QuickMatchPage.jsx';
 import WarningNotice from './WarningNotice.jsx';
 import DebateRoomPage from './DebateRoomPage.jsx';
 import StaffPanel from './StaffPanel.jsx';
+import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { staffMe } from './staffApi.js';
 import './App.css';
 import './HomePage.css';
@@ -1195,7 +1196,19 @@ export default function App() {
       )}
 
       {isSignedIn && step === 'custom' && (
-        <div className="custom-browser custom-browser-v2">
+        <div className="custom-room-page">
+        <SiteHeader
+          onHome={goHome}
+          onAbout={() => setHeaderOverlay('mission')}
+          onTopics={startQuickMatch}
+          onFaq={() => setHeaderOverlay('faq')}
+          onSupport={() => setHeaderOverlay('support')}
+          isSignedIn
+          onSignOut={handleSignOut}
+          onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('custom'); setStep('profile'); }}
+          onPickLegal={(id) => setHeaderOverlay(id)}
+        />
+        <main className="custom-browser custom-browser-v2">
           <header className="custom-browser-hero">
             <button type="button" className="custom-browser-back" onClick={() => setStep('welcome')} aria-label="Back">←</button>
             <div><p>CHOOSE THE CONVERSATION</p><h1>Debate rooms<span>.</span></h1><small>Publish a take and defend it, or step into an open challenge.</small></div>
@@ -1377,6 +1390,8 @@ export default function App() {
               Back
             </button>
           )}
+        </main>
+        <SiteFooter onHome={goHome} onAbout={() => setHeaderOverlay('mission')} onFaq={() => setHeaderOverlay('faq')} onSupport={() => setHeaderOverlay('support')} onPickLegal={(id) => setHeaderOverlay(id)} />
         </div>
       )}
 
