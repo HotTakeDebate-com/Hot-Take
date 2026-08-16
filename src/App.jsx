@@ -1391,7 +1391,7 @@ export default function App() {
                       const query = customSearch.trim().toLowerCase();
                       if (!query) return true;
                       return (
-                        g.roomCode?.toLowerCase().includes(query) ||
+                        g.creatorDisplayName?.toLowerCase().includes(query) ||
                         g.statement?.toLowerCase().includes(query)
                       );
                     }).length === 0 && (
