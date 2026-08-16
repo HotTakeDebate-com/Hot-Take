@@ -271,6 +271,26 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     } catch (profileError) {
       console.warn('[staff] profile pictures could not be loaded', profileError?.message ?? profileError);
     }
+    const ratingByUid = new Map();
+    try {
+      for (let index = 0; index < result.users.length; index += 30) {
+        const uids = result.users.slice(index, index + 30).map((user) => user.uid);
+        if (!uids.length) continue;
+        const ratingSnap = await admin.firestore().collection('userRatings').where('ratedUid', 'in', uids).get();
+        ratingSnap.docs.forEach((ratingDoc) => {
+          const data = ratingDoc.data();
+          const uid = String(data?.ratedUid || '');
+          const score = Number(data?.rating);
+          if (!uid || !Number.isInteger(score) || score < 1 || score > 5) return;
+          const summary = ratingByUid.get(uid) || { sum: 0, count: 0 };
+          summary.sum += score;
+          summary.count += 1;
+          ratingByUid.set(uid, summary);
+        });
+      }
+    } catch (ratingError) {
+      console.warn('[staff] debate ratings could not be loaded', ratingError?.message ?? ratingError);
+    }
     const banByUid = new Map();
     try {
       const banRefs = result.users.map((user) => admin.firestore().collection('user_bans').doc(user.uid));
@@ -305,6 +325,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       const ban = banByUid.get(u.uid) || null;
       const banUntilMs = ban?.banUntil?.toMillis?.() || null;
       const timedBanActive = ban?.active === true && ban?.permanent !== true && Number(banUntilMs) > nowMs;
+      const rating = ratingByUid.get(u.uid) || { sum: 0, count: 0 };
       return ({
       uid: u.uid,
       email: u.email || '',
@@ -324,6 +345,8 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
+      starAverage: rating.count ? Number((rating.sum / rating.count).toFixed(2)) : null,
+      starCount: rating.count,
     });
     });
     res.json({ users, pageToken: result.pageToken || null, capabilities: (await permissionConfig())[req.staff.role] || {} });
