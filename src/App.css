@@ -3033,7 +3033,7 @@
 .admin-pagination button:disabled { opacity:.35; cursor:not-allowed; }
 .admin-debate-summary { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
 .admin-debate-summary span { display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid #30323a; border-radius:999px; background:#15161b; font-weight:800; }
-.admin-debate-summary i { width:9px; height:9px; border-radius:50%; }
+.admin-debate-summary i { display:block; flex:0 0 9px; width:9px; min-width:9px; height:9px; margin:0; padding:0; border:0; border-radius:50%; box-sizing:border-box; text-align:initial; }
 .admin-debate-summary i.active { background:#35dc80; box-shadow:0 0 10px rgba(53,220,128,.5); }
 .admin-debate-summary i.waiting { background:#ffae32; box-shadow:0 0 10px rgba(255,174,50,.45); }
 .admin-debate-summary i.reported { background:#ff3038; box-shadow:0 0 10px rgba(255,48,56,.5); }
