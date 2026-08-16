@@ -3284,6 +3284,28 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.custom-room-host-link {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .18s ease, transform .18s ease;
+}
+.custom-room-host-link:hover:not(:disabled),
+.custom-room-host-link:focus-visible {
+  background: rgba(36, 244, 169, .07);
+  outline: 1px solid rgba(36, 244, 169, .22);
+  transform: translateY(-1px);
+}
+.custom-room-host-link:disabled { cursor: default; }
 .custom-room-host-name {
   display: inline-flex;
   min-width: 0;

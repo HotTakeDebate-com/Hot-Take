@@ -1391,6 +1391,18 @@ export default function App() {
                       .map((g) => (
                         <tr key={g.roomCode}>
                           <td className="custom-room-creator">
+                            <button
+                              type="button"
+                              className="custom-room-host-link"
+                              disabled={!g.creatorUid}
+                              aria-label={`View ${g.creatorDisplayName || 'host'}'s profile`}
+                              onClick={() => {
+                                if (!g.creatorUid) return;
+                                setSocialProfileEmail(`uid:${g.creatorUid}`);
+                                setSocialReturnStep('custom');
+                                setStep('profile');
+                              }}
+                            >
                             <span className={`custom-room-creator-avatar${g.creatorAvatarUrl ? ' has-image' : ''}`}>
                               {g.creatorAvatarUrl
                                 ? <img src={g.creatorAvatarUrl} alt="" />
@@ -1403,6 +1415,7 @@ export default function App() {
                                 <IdentityBadges compact premium={g.creatorPremium} verified={g.creatorVerified} role={g.creatorRole} />
                               </span>
                             </span>
+                            </button>
                           </td>
                           <td>{g.statement}</td>
                           <td><span className="custom-waiting-status"><i />Waiting</span></td>

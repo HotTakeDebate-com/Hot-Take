@@ -58,10 +58,13 @@ export default function ProfilePanel({
   onDeleted,
 }) {
   const own = targetEmail == null;
+  const targetUid = !own && String(targetEmail ?? '').startsWith('uid:')
+    ? String(targetEmail).slice(4)
+    : '';
   const resolvedEmail =
     own && auth.currentUser?.email
       ? userProfileDocId(auth.currentUser)
-      : String(targetEmail ?? '').toLowerCase();
+      : targetUid ? '' : String(targetEmail ?? '').toLowerCase();
 
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -87,11 +90,21 @@ export default function ProfilePanel({
   }, []);
 
   const load = useCallback(async () => {
-    if (!resolvedEmail) return;
+    if (!resolvedEmail && !targetUid) return;
     setLoading(true);
     setError(null);
     setSavedMsg(null);
     try {
+      if (!own && targetUid) {
+        const [{ identity }, follow] = await Promise.all([networkIdentity(targetUid), networkFollowStatus(targetUid)]);
+        setDisplayName(identity?.displayName?.trim() || 'Hot Take member');
+        setBio(identity?.bio ?? '');
+        setAvatarUrl(identity?.avatarUrl ?? '');
+        setNetworkIdentityState(identity || { uid: targetUid, role: 'user', premium: false, verifiedDebater: false });
+        setFollowing(follow.following === true);
+        setRating(await fetchLiveRatingSummary(targetUid));
+        return;
+      }
       const prof = await fetchPublicProfile(resolvedEmail);
       const fromAuth = own ? auth.currentUser?.displayName?.trim() ?? '' : '';
       setDisplayName(prof?.displayName?.trim() || fromAuth);
@@ -112,7 +125,7 @@ export default function ProfilePanel({
     } finally {
       setLoading(false);
     }
-  }, [resolvedEmail, own]);
+  }, [resolvedEmail, targetUid, own]);
 
   useEffect(() => {
     load();
@@ -228,7 +241,7 @@ export default function ProfilePanel({
   const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
   const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
 
-  if (!resolvedEmail) {
+  if (!resolvedEmail && !targetUid) {
     return <div className="account-page">{sharedHeader}<main className="account-empty"><p>Could not resolve this account.</p><button type="button" onClick={onBack}>Back</button></main></div>;
   }
 
