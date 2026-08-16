@@ -2,10 +2,14 @@ import { HotTakeWordmark, IconInstagram, IconReddit, IconX, IconYouTube } from '
 import HeaderNavMenu from './HeaderNavMenu.jsx';
 
 export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+  const globalAdminAction = typeof window !== 'undefined' ? window.__hotTakeAdminAction : null;
+  const adminControl = brandExtras || (globalAdminAction ? (
+    <button type="button" className="landing-admin-link" onClick={globalAdminAction}>Admin</button>
+  ) : null);
   return <header className="landing-nav">
     <div className="landing-nav-brand-group">
       <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
-      {brandExtras}
+      {adminControl}
     </div>
     <nav className="landing-nav-links" aria-label="Primary">
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
