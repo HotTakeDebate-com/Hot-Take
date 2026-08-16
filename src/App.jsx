@@ -1345,7 +1345,7 @@ export default function App() {
                 <table className="custom-table">
                   <thead className="custom-table-head">
                     <tr>
-                      <th>Room</th>
+                      <th>Creator</th>
                       <th>Statement</th>
                       <th>Status</th>
                       <th />
@@ -1357,13 +1357,23 @@ export default function App() {
                         const query = customSearch.trim().toLowerCase();
                         if (!query) return true;
                         return (
-                          g.roomCode?.toLowerCase().includes(query) ||
+                          g.creatorDisplayName?.toLowerCase().includes(query) ||
                           g.statement?.toLowerCase().includes(query)
                         );
                       })
                       .map((g) => (
                         <tr key={g.roomCode}>
-                          <td>{g.roomCode}</td>
+                          <td className="custom-room-creator">
+                            <span className={`custom-room-creator-avatar${g.creatorAvatarUrl ? ' has-image' : ''}`}>
+                              {g.creatorAvatarUrl
+                                ? <img src={g.creatorAvatarUrl} alt="" />
+                                : <span aria-hidden="true">{(g.creatorDisplayName || 'H').trim().charAt(0).toUpperCase()}</span>}
+                            </span>
+                            <span className="custom-room-creator-copy">
+                              <small>Hosted by</small>
+                              <strong>{g.creatorDisplayName || 'Hot Take member'}</strong>
+                            </span>
+                          </td>
                           <td>{g.statement}</td>
                           <td><span className="custom-waiting-status"><i />Waiting</span></td>
                           <td>
