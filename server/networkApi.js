@@ -98,12 +98,20 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         conversationRef.get(),
         conversationRef.collection('messages').orderBy('createdAt', 'desc').limit(100).get(),
       ]);
+      const conversationData = conversation.exists ? conversation.data() : null;
+      const pendingForRecipient = conversationData?.status === 'pending'
+        && conversationData?.requestedRecipientUid === req.networkUser.uid;
       const messages = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAtMs: serializeTime(doc.data()?.createdAt),
       })).reverse();
-      res.json({ conversationId, conversation: conversation.exists ? conversation.data() : null, messages });
+      res.json({
+        conversationId,
+        conversation: conversationData,
+        pendingForRecipient,
+        messages: pendingForRecipient ? [] : messages,
+      });
     } catch {
       res.status(404).json({ error: 'Conversation not found.' });
     }
@@ -119,6 +127,14 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
       const db = admin.firestore();
       const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
       const conversationRef = db.collection('direct_conversations').doc(conversationId);
+      const existingConversation = await conversationRef.get();
+      const existingData = existingConversation.exists ? existingConversation.data() : null;
+      if (existingData?.status === 'pending') {
+        return res.status(409).json({ error: 'This member must accept your message request before you can send another message.' });
+      }
+      if (existingData?.status === 'declined') {
+        return res.status(403).json({ error: 'This member is not accepting messages from you.' });
+      }
       const messageRef = conversationRef.collection('messages').doc();
       const [senderIdentity, recipientIdentity] = await Promise.all([
         publicIdentity(req.networkUser.uid),
@@ -134,6 +150,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         })),
         lastMessage: text.slice(0, 180),
         lastSenderUid: req.networkUser.uid,
+        status: existingConversation.exists ? (existingData?.status || 'accepted') : 'pending',
+        requestedByUid: existingConversation.exists ? (existingData?.requestedByUid || null) : req.networkUser.uid,
+        requestedRecipientUid: existingConversation.exists ? (existingData?.requestedRecipientUid || null) : otherUid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
       batch.set(messageRef, {
@@ -142,12 +161,55 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         text,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      if (!existingConversation.exists) {
+        const notificationRef = db.collection('user_notifications').doc(otherUid).collection('items').doc();
+        batch.set(notificationRef, {
+          type: 'dm_request',
+          fromUid: req.networkUser.uid,
+          conversationId,
+          hostDisplayName: senderIdentity.displayName || 'A Hot Take member',
+          hostAvatarUrl: senderIdentity.avatarUrl || '',
+          hostVerified: senderIdentity.verifiedDebater === true,
+          hostRole: senderIdentity.role || 'user',
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
       await batch.commit();
-      io?.to(`user:${otherUid}`).emit('direct-message', { fromUid: req.networkUser.uid, conversationId });
+      io?.to(`user:${otherUid}`).emit(existingConversation.exists ? 'direct-message' : 'dm-request', {
+        fromUid: req.networkUser.uid,
+        conversationId,
+        hostDisplayName: senderIdentity.displayName || 'A Hot Take member',
+        hostAvatarUrl: senderIdentity.avatarUrl || '',
+        hostVerified: senderIdentity.verifiedDebater === true,
+        hostRole: senderIdentity.role || 'user',
+      });
       res.status(201).json({ id: messageRef.id, conversationId });
     } catch {
       res.status(404).json({ error: 'That member could not be messaged.' });
     }
+  });
+
+  router.post('/messages/:uid/decision', async (req, res) => {
+    const otherUid = String(req.params.uid || '').trim();
+    const decision = String(req.body?.decision || '').trim().toLowerCase();
+    if (!['accept', 'decline'].includes(decision)) return res.status(400).json({ error: 'Choose accept or decline.' });
+    const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
+    const ref = admin.firestore().collection('direct_conversations').doc(conversationId);
+    const snap = await ref.get();
+    const data = snap.exists ? snap.data() : null;
+    if (!data || data.status !== 'pending' || data.requestedRecipientUid !== req.networkUser.uid) {
+      return res.status(404).json({ error: 'That message request is no longer pending.' });
+    }
+    const status = decision === 'accept' ? 'accepted' : 'declined';
+    const notificationSnap = await admin.firestore().collection('user_notifications').doc(req.networkUser.uid).collection('items')
+      .where('conversationId', '==', conversationId).get();
+    const batch = admin.firestore().batch();
+    batch.set(ref, { status, decidedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    notificationSnap.docs.forEach((doc) => batch.set(doc.ref, { read: true, readAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }));
+    await batch.commit();
+    io?.to(`user:${otherUid}`).emit('dm-request-decided', { byUid: req.networkUser.uid, conversationId, status });
+    res.json({ ok: true, status });
   });
 
   router.get('/follow/:uid', async (req, res) => {
