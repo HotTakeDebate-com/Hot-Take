@@ -35,11 +35,14 @@
   margin: 0;
   font-size: clamp(3.7rem, 7.6vw, 7.1rem);
   line-height: 0.9;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.032em;
 }
 
 .whats-hot-intro h1 span {
+  display: inline-block;
+  margin-left: 0.075em;
   color: #ff1f2d;
+  letter-spacing: 0;
 }
 
 .whats-hot-intro > p:last-child {
