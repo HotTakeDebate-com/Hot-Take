@@ -56,7 +56,7 @@ function LeaveDebateModal({ onCancel, onConfirm }) {
   );
 }
 
-export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, onReportSubmitted, kickOpponent, canKick }) {
+export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', isSearching = false, connState, connectionText, localVideoRef, remoteVideoRef, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socketId, reportOpen, onCloseReport, onReportSubmitted, kickOpponent, canKick }) {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [opponentRating, setOpponentRating] = useState(null);
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
@@ -99,14 +99,16 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
 
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className="live-opponent-name" aria-label={`Debating: ${opponentName}`}><span className={'live-opponent-avatar' + (debateInfo.peerAvatarUrl ? ' has-image' : '')}>{debateInfo.peerAvatarUrl ? <img src={debateInfo.peerAvatarUrl} alt="" /> : <GenericAvatar />}</span><span>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span className="live-opponent-rating">★ {opponentRating.toFixed(2)}</span>}</span></div></div>
+    <div className="live-topic"><p><strong>TOPIC:</strong> {topic} <span>&bull;</span> <em>You:</em> <b>{side}</b></p><div className={`live-opponent-name ${isSearching ? 'live-opponent-name--searching' : ''}`} role="status" aria-live="polite" aria-label={isSearching ? 'Finding you a match' : `Debating: ${opponentName}`}>
+      {isSearching ? <><span className="live-search-mini" aria-hidden="true"><i /><i /><i /></span><span>Finding you a match<strong>...</strong></span></> : <><span className={'live-opponent-avatar' + (debateInfo.peerAvatarUrl ? ' has-image' : '')}>{debateInfo.peerAvatarUrl ? <img src={debateInfo.peerAvatarUrl} alt="" /> : <GenericAvatar />}</span><span>Debating: <strong>{opponentName}</strong>{opponentRating != null && <span className="live-opponent-rating">★ {opponentRating.toFixed(2)}</span>}</span></>}
+    </div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video">
         <video ref={localVideoRef} autoPlay playsInline muted />
         {!micOn && <div className="local-mic-muted-reminder" role="status" aria-live="polite"><LineIcon type="micOff" /><span>Your mic is muted</span></div>}
         <span className="live-video-label"><span>You</span><ConnectionBars connState={connState} connectionText={connectionText} /><AudioLevelMeter stream={localStream} compact muted={!micOn} /></span>
       </div>
-      <div className="live-video"><video ref={remoteVideoRef} autoPlay playsInline /><span className="live-video-label"><span>Opponent</span><ConnectionBars connState={connState} connectionText={connectionText} /></span></div>
+      <div className={`live-video ${isSearching ? 'live-video--searching' : ''}`}><video ref={remoteVideoRef} autoPlay playsInline />{isSearching && <div className="live-searching-overlay" role="status" aria-live="polite"><div className="live-search-orb" aria-hidden="true"><span /><i /><i /><i /></div><h2>Finding you a match<span>...</span></h2><p>Your public room is live. We’ll bring your challenger in as soon as someone joins.</p></div>}<span className="live-video-label"><span>{isSearching ? 'Searching' : 'Opponent'}</span>{isSearching ? <span className="live-search-label-dots" aria-hidden="true"><i /><i /><i /></span> : <ConnectionBars connState={connState} connectionText={connectionText} />}</span></div>
     </div><div className="live-controls"><button onClick={onToggleMic}><LineIcon type={micOn ? 'mic' : 'micOff'} />{micOn ? 'Mute mic' : 'Unmute mic'}</button><button onClick={onToggleCam}><LineIcon type={camOn ? 'camera' : 'cameraOff'} />{camOn ? 'Camera off' : 'Camera on'}</button><button onClick={onReport}><LineIcon type="flag" />Report issue</button>{canKick && <button onClick={kickOpponent}>Kick opponent</button>}<button className="live-leave" onClick={() => setLeaveConfirmOpen(true)}><LineIcon type="exit" />Leave debate</button></div></section>
       <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} />
     </main>
