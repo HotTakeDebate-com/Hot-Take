@@ -88,6 +88,37 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     catch { res.status(404).json({ error: 'Member not found.' }); }
   });
 
+  router.get('/messages', async (req, res) => {
+    try {
+      const snap = await admin.firestore().collection('direct_conversations')
+        .where('participants', 'array-contains', req.networkUser.uid).limit(100).get();
+      const conversations = await Promise.all(snap.docs.map(async (doc) => {
+        const data = doc.data() || {};
+        const otherUid = (data.participants || []).find((uid) => uid !== req.networkUser.uid) || '';
+        let otherProfile = (data.participantProfiles || []).find((profile) => profile.uid === otherUid) || null;
+        if (!otherProfile && otherUid) {
+          try { otherProfile = await publicIdentity(otherUid); }
+          catch { otherProfile = { uid: otherUid, displayName: 'Deleted account', avatarUrl: '', deleted: true }; }
+        }
+        const pendingForRecipient = data.status === 'pending' && data.requestedRecipientUid === req.networkUser.uid;
+        return {
+          id: doc.id,
+          otherUid,
+          otherProfile,
+          status: data.status || 'accepted',
+          pendingForRecipient,
+          lastMessage: pendingForRecipient ? '' : (data.lastMessage || ''),
+          lastSenderUid: data.lastSenderUid || '',
+          updatedAtMs: serializeTime(data.updatedAt),
+        };
+      }));
+      conversations.sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
+      res.json({ conversations });
+    } catch {
+      res.status(500).json({ error: 'Could not load your inbox.' });
+    }
+  });
+
   router.get('/messages/:uid', async (req, res) => {
     const otherUid = String(req.params.uid || '').trim();
     if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
