@@ -12,7 +12,7 @@ import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
-import { networkFollow, networkFollowStatus, networkIdentity, networkUnfollow } from './networkApi.js';
+import { networkDirectMessages, networkFollow, networkFollowStatus, networkIdentity, networkSendDirectMessage, networkUnfollow } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
 
@@ -47,6 +47,9 @@ function AccountIcon({ type }) {
  */
 export default function ProfilePanel({
   targetEmail,
+  hostedRoom = null,
+  canJoinHostedRoom = true,
+  onJoinHostedRoom,
   onBack,
   onHome,
   onAbout,
@@ -75,6 +78,10 @@ export default function ProfilePanel({
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
   const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
+  const [activity, setActivity] = useState({ key: 'offline', label: 'Offline' });
+  const [directMessages, setDirectMessages] = useState([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [messageBusy, setMessageBusy] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
@@ -96,12 +103,18 @@ export default function ProfilePanel({
     setSavedMsg(null);
     try {
       if (!own && targetUid) {
-        const [{ identity }, follow] = await Promise.all([networkIdentity(targetUid), networkFollowStatus(targetUid)]);
+        const [{ identity, activity: currentActivity }, follow, conversation] = await Promise.all([
+          networkIdentity(targetUid),
+          networkFollowStatus(targetUid),
+          networkDirectMessages(targetUid),
+        ]);
         setDisplayName(identity?.displayName?.trim() || 'Hot Take member');
         setBio(identity?.bio ?? '');
         setAvatarUrl(identity?.avatarUrl ?? '');
         setNetworkIdentityState(identity || { uid: targetUid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
+        setActivity(currentActivity || { key: 'offline', label: 'Offline' });
+        setDirectMessages(conversation.messages || []);
         setRating(await fetchLiveRatingSummary(targetUid));
         return;
       }
@@ -130,6 +143,24 @@ export default function ProfilePanel({
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (own || !targetUid) return undefined;
+    const refreshLiveProfile = async () => {
+      try {
+        const [{ activity: currentActivity }, conversation] = await Promise.all([
+          networkIdentity(targetUid),
+          networkDirectMessages(targetUid),
+        ]);
+        setActivity(currentActivity || { key: 'offline', label: 'Offline' });
+        setDirectMessages(conversation.messages || []);
+      } catch {
+        // Keep the last successful profile state during a brief network interruption.
+      }
+    };
+    const timer = window.setInterval(refreshLiveProfile, 8000);
+    return () => window.clearInterval(timer);
+  }, [own, targetUid]);
 
   useEffect(() => {
     const refresh = () => {
@@ -226,6 +257,24 @@ export default function ProfilePanel({
     }
   };
 
+  const sendDirectMessage = async (event) => {
+    event.preventDefault();
+    const text = messageDraft.trim();
+    if (!text || !networkIdentityState.uid) return;
+    setMessageBusy(true);
+    setError(null);
+    try {
+      await networkSendDirectMessage(networkIdentityState.uid, text);
+      setMessageDraft('');
+      const conversation = await networkDirectMessages(networkIdentityState.uid);
+      setDirectMessages(conversation.messages || []);
+    } catch (messageError) {
+      setError(messageError?.message || 'Could not send that message.');
+    } finally {
+      setMessageBusy(false);
+    }
+  };
+
   const sharedHeader = <SiteHeader
     onHome={onHome || onBack}
     onAbout={onAbout}
@@ -256,6 +305,9 @@ export default function ProfilePanel({
             <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
             <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
             <p>{bio || 'No bio yet.'}</p>
+            <div className={`public-profile-activity public-profile-activity--${activity.key}`}>
+              <i aria-hidden="true" /><span>Current status</span><strong>{activity.label}</strong>
+            </div>
             <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
               <div style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)' }}>Debate rating</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '.45rem', marginTop: '.25rem' }}>
@@ -267,6 +319,25 @@ export default function ProfilePanel({
             <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
               {followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}
             </button>
+            {hostedRoom && <section className="public-profile-live-room" aria-label="Live public debate room">
+              <div className="public-profile-live-room-copy">
+                <span className="public-profile-live-kicker"><i aria-hidden="true" /> Hosting now</span>
+                <h2>{hostedRoom.statement}</h2>
+                <p>A public opponent spot is open.</p>
+              </div>
+              {canJoinHostedRoom && onJoinHostedRoom
+                ? <button type="button" className="public-profile-join-room" onClick={() => onJoinHostedRoom(hostedRoom.roomCode)}>Join debate →</button>
+                : <span className="public-profile-your-room">Your room</span>}
+            </section>}
+            <section className="public-profile-messages" aria-label="Direct messages">
+              <header><div><span>Direct messages</span><h2>Message {displayName || 'this member'}</h2></div><small>Private conversation</small></header>
+              <div className="public-profile-message-list">
+                {directMessages.length ? directMessages.map((message) => <article key={message.id} className={message.senderUid === auth.currentUser?.uid ? 'is-mine' : ''}>
+                  <p>{message.text}</p><time>{message.createdAtMs ? new Date(message.createdAtMs).toLocaleString() : 'Just now'}</time>
+                </article>) : <p className="public-profile-message-empty">No messages yet. Start the conversation.</p>}
+              </div>
+              <form onSubmit={sendDirectMessage}><textarea value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} maxLength={1000} placeholder="Write a private message…" required /><div><small>{messageDraft.length}/1000</small><button type="submit" disabled={messageBusy || !messageDraft.trim()}>{messageBusy ? 'Sending…' : 'Send message'}</button></div></form>
+            </section>
           </>}
           {error && <div className="account-alert account-alert--error">{error}</div>}
         </section>

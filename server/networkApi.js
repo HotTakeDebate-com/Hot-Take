@@ -53,6 +53,21 @@ async function publicIdentity(uid) {
 
 export function attachNetworkRoutes(app, { isAdminReady, io }) {
   const router = express.Router();
+  const activityForUid = (uid) => {
+    const sockets = Array.from(io?.sockets?.sockets?.values?.() || []).filter((socket) => socket.data?.uid === uid);
+    if (!sockets.length) return { key: 'offline', label: 'Offline' };
+    if (sockets.some((socket) => socket.data?.roomId)) return { key: 'debating', label: 'In a debate' };
+    if (sockets.some((socket) => socket.data?.matchType === 'quick' && socket.data?.side)) {
+      return { key: 'quick_match', label: 'Searching for a Quick Match' };
+    }
+    if (sockets.some((socket) => socket.data?.matchType === 'custom' && socket.data?.customRoomCode && socket.data?.side === 'agree')) {
+      return { key: 'hosting_room', label: 'Hosting a public debate room' };
+    }
+    if (sockets.some((socket) => socket.data?.matchType === 'custom' && socket.data?.customRoomCode)) {
+      return { key: 'joining_room', label: 'Joining a custom debate' };
+    }
+    return { key: 'online', label: 'Online' };
+  };
   router.use((req, res, next) => {
     if (!isAdminReady()) return res.status(503).json({ error: 'The debate network is temporarily unavailable.' });
     next();
@@ -66,8 +81,62 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
   });
 
   router.get('/identity/:uid', async (req, res) => {
-    try { res.json({ identity: await publicIdentity(String(req.params.uid)) }); }
+    try {
+      const uid = String(req.params.uid);
+      res.json({ identity: await publicIdentity(uid), activity: activityForUid(uid) });
+    }
     catch { res.status(404).json({ error: 'Member not found.' }); }
+  });
+
+  router.get('/messages/:uid', async (req, res) => {
+    const otherUid = String(req.params.uid || '').trim();
+    if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
+    try {
+      await admin.auth().getUser(otherUid);
+      const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
+      const snap = await admin.firestore().collection('direct_conversations').doc(conversationId)
+        .collection('messages').orderBy('createdAt', 'desc').limit(100).get();
+      const messages = snap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAtMs: serializeTime(doc.data()?.createdAt),
+      })).reverse();
+      res.json({ conversationId, messages });
+    } catch {
+      res.status(404).json({ error: 'Member or conversation not found.' });
+    }
+  });
+
+  router.post('/messages/:uid', async (req, res) => {
+    const otherUid = String(req.params.uid || '').trim();
+    const text = String(req.body?.text || '').trim();
+    if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
+    if (!text || text.length > 1000) return res.status(400).json({ error: 'Messages must be between 1 and 1,000 characters.' });
+    try {
+      await admin.auth().getUser(otherUid);
+      const db = admin.firestore();
+      const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
+      const conversationRef = db.collection('direct_conversations').doc(conversationId);
+      const messageRef = conversationRef.collection('messages').doc();
+      const batch = db.batch();
+      batch.set(conversationRef, {
+        participants: [req.networkUser.uid, otherUid],
+        lastMessage: text.slice(0, 180),
+        lastSenderUid: req.networkUser.uid,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      batch.set(messageRef, {
+        senderUid: req.networkUser.uid,
+        recipientUid: otherUid,
+        text,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      await batch.commit();
+      io?.to(`user:${otherUid}`).emit('direct-message', { fromUid: req.networkUser.uid, conversationId });
+      res.status(201).json({ id: messageRef.id, conversationId });
+    } catch {
+      res.status(404).json({ error: 'That member could not be messaged.' });
+    }
   });
 
   router.get('/follow/:uid', async (req, res) => {
