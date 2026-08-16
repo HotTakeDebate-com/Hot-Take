@@ -478,7 +478,7 @@ app.delete('/api/account', async (req, res) => {
 });
 
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
-attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady, io });
+attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady, io, customGames });
 attachWarningRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {
