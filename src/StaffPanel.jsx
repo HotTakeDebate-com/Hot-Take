@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
-import { prepareProfileImage, profileInitial } from './profileImage.js';
+import { prepareProfileImage } from './profileImage.js';
+import GenericAvatar from './GenericAvatar.jsx';
 import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews } from './staffApi.js';
 import './WhatsHotAdmin.css';
 import './AdminIcons.css';
@@ -619,13 +620,13 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             <article className="admin-dashboard-section admin-online-staff">
               <header><div><p>LIVE</p><h2>Online staff</h2></div><span>{onlineStaff.length} online now</span></header>
               <div className="admin-staff-list">
-                {onlineStaff.length ? onlineStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className={'admin-staff-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : (member.displayName || member.email || '?')[0].toUpperCase()}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Active now</small></span><i className="ok" /></button>) : <p className="admin-empty-list">No staff members are online right now.</p>}
+                {onlineStaff.length ? onlineStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className={'admin-staff-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Active now</small></span><i className="ok" /></button>) : <p className="admin-empty-list">No staff members are online right now.</p>}
               </div>
             </article>
             <article className="admin-dashboard-section">
               <header><div><p>STAFF</p><h2>Recent staff activity</h2></div></header>
               <div className="admin-staff-list">
-                {recentStaff.length ? recentStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className={'admin-staff-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : (member.displayName || member.email || '?')[0].toUpperCase()}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Last admin access {member.lastAdminAccessAt ? dateValue(member.lastAdminAccessAt) : 'Not recorded yet'}</small></span><i className={member.online ? 'ok' : 'offline'} /></button>) : <p>No staff accounts were returned.</p>}
+                {recentStaff.length ? recentStaff.map((member) => <button key={member.uid} onClick={() => { setTab('users'); setQuery(member.email || member.uid); }}><span className={'admin-staff-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span><span><b>{member.displayName || member.email || 'Staff member'}</b><small>{member.role} · Last admin access {member.lastAdminAccessAt ? dateValue(member.lastAdminAccessAt) : 'Not recorded yet'}</small></span><i className={member.online ? 'ok' : 'offline'} /></button>) : <p>No staff accounts were returned.</p>}
               </div>
             </article>
             <article className="admin-dashboard-section">
@@ -725,7 +726,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         {editingUser && userDraft && <div className="user-editor-backdrop" onMouseDown={() => setEditingUser(null)}>
           <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Manage ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
             <header className="user-editor-header">
-              <div className={'user-editor-avatar' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="" /> : profileInitial(editingUser.displayName, editingUser.email)}</div>
+              <div className={'user-editor-avatar' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="" /> : <GenericAvatar />}</div>
               <div><p>HOT TAKE ACCOUNT MANAGEMENT</p><h2>{editingUser.displayName || 'No display name'}</h2><span>{editingUser.email}</span></div>
               <button type="button" onClick={() => setEditingUser(null)} aria-label="Close user editor">×</button>
             </header>
@@ -740,7 +741,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               {editorTab === 'details' && <>
                 <section className="user-editor-section"><h3>Identity</h3>
                   <div className="staff-avatar-editor">
-                    <div className={'user-editor-avatar staff-avatar-preview' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="Profile preview" /> : profileInitial(userDraft.displayName, userDraft.email)}</div>
+                    <div className={'user-editor-avatar staff-avatar-preview' + (userDraft.avatarUrl ? ' has-image' : '')}>{userDraft.avatarUrl ? <img src={userDraft.avatarUrl} alt="Profile preview" /> : <GenericAvatar />}</div>
                     <div><strong>Profile picture</strong><small>Moderators and administrators can update pictures only for accounts below their role.</small>
                       <div className="staff-avatar-actions">
                         <label className={'admin-small-button' + ((!capabilities.editAvatars || editingProtected || avatarBusy) ? ' disabled' : '')}>{avatarBusy ? 'Preparing…' : 'Choose image'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!capabilities.editAvatars || editingProtected || avatarBusy} onChange={onStaffAvatarSelected} /></label>
@@ -751,6 +752,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                   <label><span>Display name</span><input value={userDraft.displayName} disabled={!capabilities.editUsers || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, displayName: event.target.value }))} /></label>
                   <label><span>Email address</span><input type="email" value={userDraft.email} disabled={!capabilities.manageCredentials || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, email: event.target.value, emailVerified: event.target.value.trim().toLowerCase() === editingUser.email?.toLowerCase() ? editingUser.emailVerified : false }))} /><small>Changing the email signs the user out and marks the new address unverified.</small></label>
                   <label><span>Firebase UID</span><input value={editingUser.uid} readOnly /></label>
+                  <div className="user-star-summary" aria-label={editingUser.starCount ? `${editingUser.starAverage} stars from ${editingUser.starCount} ratings` : 'No star ratings yet'}><span>Debate stars</span><div><b>{editingUser.starAverage == null ? '—' : Number(editingUser.starAverage).toFixed(2)}</b><i aria-hidden="true">★</i><small>{editingUser.starCount ? `${editingUser.starCount} rating${editingUser.starCount === 1 ? '' : 's'}` : 'No ratings yet'}</small></div></div>
                 </section>
                 <section className="user-editor-section"><h3>Role & membership</h3>
                   <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
