@@ -51,6 +51,7 @@ export default function WhatsHotPage({
   onPickFaq,
   onPickSupport,
   onQuickMatch,
+  brandExtras,
 }) {
   const [stories, setStories] = useState([FALLBACK_STORY]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +82,7 @@ export default function WhatsHotPage({
         onTopics={onQuickMatch}
         onQuickMatch={onQuickMatch}
         onWhatsHot={() => {}}
-        whatsHotActive
+        brandExtras={brandExtras}
         onFaq={onPickFaq}
         onSupport={onPickSupport}
         isSignedIn={isSignedIn}
