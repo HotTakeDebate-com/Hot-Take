@@ -80,6 +80,8 @@ export default function WhatsHotPage({
         onAbout={onPickMission}
         onTopics={onQuickMatch}
         onQuickMatch={onQuickMatch}
+        onWhatsHot={() => {}}
+        whatsHotActive
         onFaq={onPickFaq}
         onSupport={onPickSupport}
         isSignedIn={isSignedIn}
