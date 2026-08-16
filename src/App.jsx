@@ -31,6 +31,7 @@ import { staffMe } from './staffApi.js';
 import VerificationApplicationPage from './VerificationApplicationPage.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
+import DirectMessageCenter from './DirectMessageCenter.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -1158,6 +1159,7 @@ export default function App() {
           navExtras={
             isSignedIn ? (
               <>
+                <DirectMessageCenter socket={socketRef.current} />
                 <NotificationCenter
                   socket={socketRef.current}
                   onJoinRoom={(roomCode) => window.__hotTakeJoinNetworkRoom?.(roomCode)}
