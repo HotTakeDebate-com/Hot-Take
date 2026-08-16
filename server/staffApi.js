@@ -191,7 +191,7 @@ function cleanStoryInput(body = {}) {
   return { title, category, summary, body: storyBody, eventDate, status, featured: body.featured === true, ...video };
 }
 
-export function attachStaffRoutes(app, { isAdminReady, io }) {
+export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
   const router = express.Router();
 
   app.get('/api/whats-hot', async (_req, res) => {
@@ -364,9 +364,26 @@ export function attachStaffRoutes(app, { isAdminReady, io }) {
         active: activeRoomIds.has(roomId),
       });
     });
-    const debates = [...debatesByRoom.values()].sort((a, b) => {
+    const waitingRooms = [...(customGames?.values?.() || [])]
+      .filter((game) => !game.activeRoomId)
+      .map((game) => ({
+        roomId: `lobby:${game.roomCode}`,
+        roomCode: game.roomCode,
+        topicId: 'custom',
+        statement: game.statement,
+        matchMode: 'custom',
+        joinMode: game.joinMode,
+        startedAt: game.createdAtMs,
+        reported: false,
+        reportCount: 0,
+        active: false,
+        waiting: true,
+      }));
+    const debates = [...waitingRooms, ...debatesByRoom.values()].sort((a, b) => {
+      if (a.waiting !== b.waiting) return a.waiting ? -1 : 1;
       if (a.active !== b.active) return a.active ? -1 : 1;
-      return (b.startedAt?.toMillis?.() || 0) - (a.startedAt?.toMillis?.() || 0);
+      const time = (value) => value?.toMillis?.() || Number(value || 0);
+      return time(b.startedAt) - time(a.startedAt);
     });
     res.json({ debates });
   });
