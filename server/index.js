@@ -545,12 +545,17 @@ function listCustomGames() {
   return Array.from(customGames.values())
     .filter((g) => g.joinMode === 'open' && !g.activeRoomId)
     .sort((a, b) => b.createdAtMs - a.createdAtMs)
-    .map((g) => ({
-      roomCode: g.roomCode,
-      statement: g.statement,
-      joinMode: g.joinMode,
-      createdAtMs: g.createdAtMs,
-    }));
+    .map((g) => {
+      const creator = io.sockets.sockets.get(g.createdBy);
+      return {
+        roomCode: g.roomCode,
+        statement: g.statement,
+        joinMode: g.joinMode,
+        createdAtMs: g.createdAtMs,
+        creatorDisplayName: creator?.data?.displayName || 'Hot Take member',
+        creatorAvatarUrl: creator?.data?.avatarUrl || '',
+      };
+    });
 }
 
 function cleanupStaleCustomLobbies() {
