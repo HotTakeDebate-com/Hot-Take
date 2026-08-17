@@ -337,7 +337,7 @@ export default function HomePage({
         <div className="landing-nav-actions">
           {navExtras}
           {isSignedIn ? (
-            <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignOut}>Sign out</button>
+            <button type="button" className="landing-btn landing-btn--ghost landing-sign-out-compact" onClick={onSignOut}>Sign out</button>
           ) : (
             <>
               <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>Sign in</button>
