@@ -245,6 +245,9 @@ export default function HomePage({
   brandExtras,
   navExtras,
 }) {
+  const howSectionRef = useRef(null);
+  const [howSectionVisible, setHowSectionVisible] = useState(false);
+
   const handleQuick = () => {
     if (!isSignedIn) onSignIn();
     else onQuickMatch();
@@ -260,6 +263,21 @@ export default function HomePage({
     if (params.get('quickMatch') !== '1') return;
     window.history.replaceState({}, document.title, window.location.pathname);
     handleQuick();
+  }, []);
+
+  useEffect(() => {
+    const section = howSectionRef.current;
+    if (!section || typeof IntersectionObserver === 'undefined') {
+      setHowSectionVisible(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setHowSectionVisible(true);
+      observer.disconnect();
+    }, { threshold: 0.18 });
+    observer.observe(section);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -324,7 +342,7 @@ export default function HomePage({
         </div>
       </section>
 
-      <section id="how-it-works" className="landing-how">
+      <section ref={howSectionRef} id="how-it-works" className={`landing-how${howSectionVisible ? ' is-visible' : ''}`}>
         <h2 className="landing-how-title">How it works</h2>
         <div className="landing-steps">
           <article className="landing-step"><StepIconMatch step="1" /><h3>Get matched</h3><p>We pair you with someone who disagrees with you.</p></article>
