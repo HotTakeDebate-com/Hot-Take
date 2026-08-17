@@ -146,6 +146,7 @@ export default function ProfilePanel({
           networkFollowing(),
         ]);
         setNetworkIdentityState(meResult.identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
+        setFollowerCount(Number(meResult.followerCount || 0));
         setAppearOffline(meResult.privacy?.appearOffline === true);
         setFollowedMembers(followingResult.members || []);
       }
@@ -441,8 +442,8 @@ export default function ProfilePanel({
         <aside className="account-nav" aria-label="Account sections">
           <p className="account-nav-label">Account</p>
           <a href="#account-overview"><AccountIcon type="user" />Overview</a>
-          <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
           <a href="#account-following"><AccountIcon type="user" />Following</a>
+          <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
           <a href="#account-security"><AccountIcon type="lock" />Security</a>
           <a href="#account-danger" className="account-nav-danger"><AccountIcon type="trash" />Delete account</a>
         </aside>
@@ -457,10 +458,17 @@ export default function ProfilePanel({
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h2>
               <p>{resolvedEmail}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '.38rem', marginTop: '.65rem', fontSize: '.95rem' }} aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
-                <span style={{ color: '#ff2b2b', lineHeight: 1 }} aria-hidden="true">★</span>
-                <strong style={{ color: '#f4f4f6', fontSize: '.95rem' }}>{ratingDisplay}</strong>
-                {rating.count > 0 && <span style={{ color: '#777781', fontSize: '.75rem' }}>({rating.count})</span>}
+              <div className="account-overview-stats">
+                <span className="account-overview-rating" aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
+                  <span aria-hidden="true">★</span>
+                  <strong>{ratingDisplay}</strong>
+                  {rating.count > 0 && <small>({rating.count})</small>}
+                </span>
+                <a href="#account-following" className="account-overview-followers" aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. View accounts you follow.`}>
+                  <strong>{followerCount}</strong>
+                  <span>{followerCount === 1 ? 'follower' : 'followers'}</span>
+                  <b aria-hidden="true">→</b>
+                </a>
               </div>
             </div>
             <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
