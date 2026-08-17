@@ -78,6 +78,7 @@ export default function ProfilePanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
   const [followedMembers, setFollowedMembers] = useState([]);
   const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
   const [activity, setActivity] = useState({ key: 'offline', label: 'Offline' });
@@ -92,6 +93,7 @@ export default function ProfilePanel({
   const [resetBusy, setResetBusy] = useState(false);
   const [deleteText, setDeleteText] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const liveTargetUid = targetUid || (!own ? networkIdentityState.uid : '');
 
   const providerLabel = useMemo(() => {
     const providers = auth.currentUser?.providerData?.map((item) => item.providerId) ?? [];
@@ -107,7 +109,7 @@ export default function ProfilePanel({
     setSavedMsg(null);
     try {
       if (!own && targetUid) {
-        const [{ identity, activity: currentActivity }, follow, conversation] = await Promise.all([
+        const [{ identity, activity: currentActivity, followerCount: currentFollowerCount }, follow, conversation] = await Promise.all([
           networkIdentity(targetUid),
           networkFollowStatus(targetUid),
           networkDirectMessages(targetUid),
@@ -117,6 +119,7 @@ export default function ProfilePanel({
         setAvatarUrl(identity?.avatarUrl ?? '');
         setNetworkIdentityState(identity || { uid: targetUid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
+        setFollowerCount(Number(currentFollowerCount || 0));
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true);
@@ -131,9 +134,10 @@ export default function ProfilePanel({
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own && prof?.uid) {
-        const [{ identity }, follow] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid)]);
+        const [{ identity, followerCount: currentFollowerCount }, follow] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid)]);
         setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
+        setFollowerCount(Number(currentFollowerCount || 0));
       } else if (own && auth.currentUser?.uid) {
         const [{ identity }, followingResult] = await Promise.all([
           networkIdentity(auth.currentUser.uid),
@@ -159,14 +163,15 @@ export default function ProfilePanel({
   }, [targetUid, resolvedEmail]);
 
   useEffect(() => {
-    if (own || !targetUid) return undefined;
+    if (own || !liveTargetUid) return undefined;
     const refreshLiveProfile = async () => {
       try {
-        const [{ activity: currentActivity }, conversation] = await Promise.all([
-          networkIdentity(targetUid),
-          networkDirectMessages(targetUid),
+        const [{ activity: currentActivity, followerCount: currentFollowerCount }, conversation] = await Promise.all([
+          networkIdentity(liveTargetUid),
+          networkDirectMessages(liveTargetUid),
         ]);
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
+        setFollowerCount(Number(currentFollowerCount || 0));
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true);
       } catch {
@@ -175,7 +180,18 @@ export default function ProfilePanel({
     };
     const timer = window.setInterval(refreshLiveProfile, 8000);
     return () => window.clearInterval(timer);
-  }, [own, targetUid]);
+  }, [own, liveTargetUid]);
+
+  useEffect(() => {
+    if (own || !liveTargetUid) return undefined;
+    const socket = typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null;
+    if (!socket) return undefined;
+    const updateFollowerCount = (payload = {}) => {
+      if (payload.uid === liveTargetUid) setFollowerCount(Number(payload.followerCount || 0));
+    };
+    socket.on('follower-count-updated', updateFollowerCount);
+    return () => socket.off('follower-count-updated', updateFollowerCount);
+  }, [own, liveTargetUid]);
 
   useEffect(() => {
     const refresh = () => {
@@ -259,11 +275,13 @@ export default function ProfilePanel({
     setError(null);
     try {
       if (following) {
-        await networkUnfollow(networkIdentityState.uid);
+        const result = await networkUnfollow(networkIdentityState.uid);
         setFollowing(false);
+        setFollowerCount(Number(result.followerCount || 0));
       } else {
-        await networkFollow(networkIdentityState.uid);
+        const result = await networkFollow(networkIdentityState.uid);
         setFollowing(true);
+        setFollowerCount(Number(result.followerCount || 0));
       }
     } catch (followError) {
       setError(followError?.message ?? 'Could not update follow.');
@@ -345,13 +363,9 @@ export default function ProfilePanel({
             <div className={`public-profile-activity public-profile-activity--${activity.key}`}>
               <i aria-hidden="true" /><span>Current status</span><strong>{activity.label}</strong>
             </div>
-            <div style={{ margin: '1.25rem 0', padding: '1rem 1.1rem', border: '1px solid rgba(255,255,255,.12)', borderRadius: '14px', background: 'rgba(255,255,255,.025)' }}>
-              <div style={{ fontSize: '.78rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)' }}>Debate rating</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '.45rem', marginTop: '.25rem' }}>
-                <strong style={{ fontSize: '1.8rem' }}>{ratingDisplay}</strong>
-                <span style={{ color: '#ff2b2b', fontSize: '1.1rem' }}>★</span>
-                <span style={{ color: 'var(--muted)', fontSize: '.85rem' }}>{ratingCountLabel}</span>
-              </div>
+            <div className="public-profile-stats">
+              <section><span>Debate rating</span><div><strong>{ratingDisplay}</strong><b className="public-profile-rating-star">★</b><small>{ratingCountLabel}</small></div></section>
+              <section><span>Followers</span><div><strong>{followerCount.toLocaleString()}</strong><small>{followerCount === 1 ? 'follower' : 'followers'}</small></div></section>
             </div>
             <div className="public-profile-actions">
               <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
