@@ -535,6 +535,12 @@ function activeCustomWaiters(roomCode) {
 
 function emitCustomQueuePositions(roomCode) {
   const waiters = activeCustomWaiters(roomCode);
+  const game = customGames.get(roomCode);
+  const hostSocket = game ? io.sockets.sockets.get(game.createdBy) : null;
+  hostSocket?.emit('custom-queue-count', {
+    roomCode,
+    queueLength: waiters.length,
+  });
   waiters.forEach((socketId, index) => {
     io.sockets.sockets.get(socketId)?.emit('custom-queue-status', {
       roomCode,
