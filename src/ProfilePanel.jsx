@@ -358,14 +358,16 @@ export default function ProfilePanel({
           <p className="account-eyebrow">Community profile</p>
           {loading ? <p>Loading profile…</p> : <>
             <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
-            <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
+            <div className="public-profile-name-row">
+              <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
+              <span className="public-profile-follower-count">{followerCount.toLocaleString()} {followerCount === 1 ? 'follower' : 'followers'}</span>
+            </div>
             <p>{bio || 'No bio yet.'}</p>
             <div className={`public-profile-activity public-profile-activity--${activity.key}`}>
               <i aria-hidden="true" /><span>Current status</span><strong>{activity.label}</strong>
             </div>
             <div className="public-profile-stats">
               <section><span>Debate rating</span><div><strong>{ratingDisplay}</strong><b className="public-profile-rating-star">★</b><small>{ratingCountLabel}</small></div></section>
-              <section><span>Followers</span><div><strong>{followerCount.toLocaleString()}</strong><small>{followerCount === 1 ? 'follower' : 'followers'}</small></div></section>
             </div>
             <div className="public-profile-actions">
               <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
