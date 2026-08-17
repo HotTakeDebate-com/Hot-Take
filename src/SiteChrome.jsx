@@ -3,8 +3,10 @@ import HeaderNavMenu from './HeaderNavMenu.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
 import DirectMessageCenter from './DirectMessageCenter.jsx';
 import MemberSearchCenter from './MemberSearchCenter.jsx';
+import GenericAvatar from './GenericAvatar.jsx';
 
 export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+  const avatarUrl = typeof window !== 'undefined' ? window.__hotTakeHeaderAvatarUrl : '';
   const globalAdminAction = typeof window !== 'undefined' ? window.__hotTakeAdminAction : null;
   const adminControl = brandExtras || (globalAdminAction ? (
     <button type="button" className="landing-admin-link" onClick={globalAdminAction}>Admin</button>
@@ -24,9 +26,11 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras,
         <MemberSearchCenter />
         <DirectMessageCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} />
         <NotificationCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} onJoinRoom={typeof window !== 'undefined' ? window.__hotTakeJoinNetworkRoom : null} />
-        <button type="button" className="landing-btn landing-btn--ghost" onClick={onProfile}>Account</button>
+        <button type="button" className={`landing-account-avatar${avatarUrl ? ' has-image' : ''}`} onClick={onProfile} aria-label="Account" title="Account">
+          {avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}
+        </button>
         <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickFaq={onFaq} onPickSupport={onSupport} />
-        <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignOut}>Sign out</button>
+        <button type="button" className="landing-btn landing-btn--ghost landing-sign-out-compact" onClick={onSignOut}>Sign out</button>
       </> : <>
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>Sign in</button>
         <button type="button" className="landing-btn landing-btn--primary" onClick={onSignUp}>Create account</button>

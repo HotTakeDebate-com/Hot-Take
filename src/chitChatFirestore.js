@@ -312,6 +312,9 @@ export async function savePublicProfile({ displayName, bio, avatarUrl = '' }) {
     /* optional */
   }
   await syncUserPresence();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('hot-take-profile-updated', { detail: { avatarUrl: avatar } }));
+  }
 }
 
 export async function fetchFollowingEmails() {

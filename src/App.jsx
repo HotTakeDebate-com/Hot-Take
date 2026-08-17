@@ -5,7 +5,7 @@ import DebateHistory from './DebateHistory.jsx';
 import ProfilePanel from './ProfilePanel.jsx';
 import SocialFeed from './SocialFeed.jsx';
 import UserSearchPanel from './UserSearchPanel.jsx';
-import { fetchRecentDebates, syncUserPresence } from './chitChatFirestore.js';
+import { fetchPublicProfile, fetchRecentDebates, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
 import { GoogleAuthProvider, onIdTokenChanged, reauthenticateWithPopup, signOut } from 'firebase/auth';
 import AuthScreen from './AuthScreen.jsx';
@@ -33,6 +33,7 @@ import IdentityBadges from './IdentityBadges.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
 import DirectMessageCenter from './DirectMessageCenter.jsx';
 import MemberSearchCenter from './MemberSearchCenter.jsx';
+import GenericAvatar from './GenericAvatar.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -114,6 +115,7 @@ export default function App() {
   const [camOn, setCamOn] = useState(true);
   const [connState, setConnState] = useState(null);
   const [firebaseUserId, setFirebaseUserId] = useState(null);
+  const [headerAvatarUrl, setHeaderAvatarUrl] = useState('');
   const [staffRole, setStaffRole] = useState(null);
   /** Must be true to use the app, Socket.IO, and Firestore (email/password users verify via link). */
   const [authReady, setAuthReady] = useState(false);
@@ -167,6 +169,31 @@ export default function App() {
     },
     [firebaseUserId, openAuth]
   );
+
+  useEffect(() => {
+    if (!firebaseUserId || !auth?.currentUser?.email) {
+      setHeaderAvatarUrl('');
+      return undefined;
+    }
+    let active = true;
+    const loadAvatar = async () => {
+      try {
+        const profile = await fetchPublicProfile(auth.currentUser.email);
+        if (active) setHeaderAvatarUrl(profile?.avatarUrl || auth.currentUser?.photoURL || '');
+      } catch {
+        if (active) setHeaderAvatarUrl(auth.currentUser?.photoURL || '');
+      }
+    };
+    const onProfileUpdated = (event) => {
+      setHeaderAvatarUrl(event?.detail?.avatarUrl || auth.currentUser?.photoURL || '');
+    };
+    loadAvatar();
+    window.addEventListener('hot-take-profile-updated', onProfileUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener('hot-take-profile-updated', onProfileUpdated);
+    };
+  }, [firebaseUserId]);
 
   const rtcConfigRef = useRef(FALLBACK_RTC);
   const socketRef = useRef(null);
@@ -1002,6 +1029,7 @@ export default function App() {
 
   if (typeof window !== 'undefined') {
     window.__hotTakeAdminAction = staffRole ? openAdminPanel : null;
+    window.__hotTakeHeaderAvatarUrl = headerAvatarUrl;
     window.__hotTakeNetworkSocket = socketRef.current;
     window.__hotTakeOpenVerification = isSignedIn ? (() => { setHeaderOverlay(null); setStep('verification'); }) : null;
     window.__hotTakeJoinNetworkRoom = isSignedIn ? ((roomCode) => { setStep('custom'); setCustomTab('join'); joinCustomGame(roomCode); }) : null;
@@ -1181,15 +1209,17 @@ export default function App() {
                 />
                 <button
                   type="button"
-                  className="landing-btn landing-btn--ghost"
+                  className={`landing-account-avatar${headerAvatarUrl ? ' has-image' : ''}`}
                   onClick={() => {
                     if (!requireAuth('signin')) return;
                     setSocialProfileEmail(null);
                     setSocialReturnStep('welcome');
                     setStep('profile');
                   }}
+                  aria-label="Account"
+                  title="Account"
                 >
-                  Account
+                  {headerAvatarUrl ? <img src={headerAvatarUrl} alt="" /> : <GenericAvatar />}
                 </button>
                 <HeaderNavMenu
                   variant="landing"
