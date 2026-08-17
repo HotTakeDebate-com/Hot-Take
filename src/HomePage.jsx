@@ -355,6 +355,9 @@ export default function HomePage({
           <div className="landing-embers">
             {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
           </div>
+          <div className="landing-silver-specks">
+            {Array.from({ length: 10 }, (_, index) => <i key={index} />)}
+          </div>
         </div>
         <div className="landing-hero-copy">
           <h1 className="landing-headline">
