@@ -147,13 +147,15 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
   });
 
   router.get('/me', async (req, res) => {
-    const [identity, application, privacy] = await Promise.all([
+    const [identity, followerCount, application, privacy] = await Promise.all([
       publicIdentity(req.networkUser.uid),
+      followerCountForUid(req.networkUser.uid),
       admin.firestore().collection('verification_applications').doc(req.networkUser.uid).get(),
       admin.firestore().collection('network_privacy').doc(req.networkUser.uid).get(),
     ]);
     res.json({
       identity,
+      followerCount,
       privacy: { appearOffline: privacy.data()?.appearOffline === true },
       application: application.exists ? { ...application.data(), submittedAtMs: serializeTime(application.data()?.submittedAt), updatedAtMs: serializeTime(application.data()?.updatedAt) } : null,
     });
