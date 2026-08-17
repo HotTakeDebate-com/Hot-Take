@@ -13,6 +13,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
+import { networkUpdateDisplayName } from './networkApi.js';
 import { auth, db, isFirebaseConfigured } from './firebase.js';
 
 /**
@@ -290,9 +291,10 @@ export async function savePublicProfile({ displayName, bio, avatarUrl = '' }) {
   }
   const key = userProfileDocId(auth.currentUser);
   if (!key) throw new Error('No email on account.');
-  const dn = String(displayName ?? '').trim().slice(0, 100);
+  const dn = String(displayName ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').slice(0, 40);
   const b = String(bio ?? '').trim().slice(0, MAX_BIO_CHARS);
   const avatar = String(avatarUrl ?? '').trim().slice(0, 250000);
+  await networkUpdateDisplayName(dn);
   await setDoc(
     doc(db, 'publicProfiles', key),
     {
@@ -437,3 +439,4 @@ if (typeof document !== 'undefined' && !window.__hotTakeRatingListenerInstalled)
     window.localStorage.removeItem('hottake:ratingContext');
   });
 }
+
