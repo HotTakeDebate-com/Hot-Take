@@ -133,6 +133,7 @@ export default function App() {
   const [customJoinMode, setCustomJoinMode] = useState('open');
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [customHostWaiting, setCustomHostWaiting] = useState(false);
+  const [customQueuePosition, setCustomQueuePosition] = useState(null);
   /** Socket.IO id for labeling own chat messages. */
   const [socketId, setSocketId] = useState(null);
   /** In-debate text chat (cleared when match ends or opponent leaves). */
@@ -446,6 +447,7 @@ export default function App() {
       setWaiting(false);
       setError(null);
       setCustomHostWaiting(false);
+      setCustomQueuePosition(null);
       if (pcRef.current) {
         pcRef.current.close();
         pcRef.current = null;
@@ -540,6 +542,14 @@ export default function App() {
       if (payload.matchMode === 'custom' && payload.roomCode) {
         setCustomRoomCode(payload.roomCode);
       }
+      if (!payload.queuedForHost) setCustomQueuePosition(null);
+    });
+
+    socket.on('custom-queue-status', ({ roomCode, position, totalWaiting }) => {
+      setCustomRoomCode(roomCode || '');
+      setCustomQueuePosition({ position: Number(position) || 1, totalWaiting: Number(totalWaiting) || 1 });
+      setWaiting(true);
+      setError(null);
     });
 
     socket.on('custom-games-updated', (games = []) => {
@@ -658,6 +668,7 @@ export default function App() {
         setError(message ?? 'Could not join the queue.');
       }
       setWaiting(false);
+      setCustomQueuePosition(null);
     });
 
     socket.on('signal', async ({ type, payload }) => {
@@ -772,6 +783,7 @@ export default function App() {
   const cancelWaiting = () => {
     socketRef.current?.emit('leave-queue');
     setWaiting(false);
+    setCustomQueuePosition(null);
     setSide(null);
     setStep(matchMode === 'custom' ? 'custom' : 'topic');
   };
@@ -1432,14 +1444,14 @@ export default function App() {
                             </button>
                           </td>
                           <td>{g.statement}</td>
-                          <td><span className="custom-waiting-status"><i />Waiting</span></td>
+                          <td><span className={`custom-waiting-status ${g.active ? 'is-live' : ''}`}><i />{g.active ? `Live · ${g.queueLength || 0} queued` : 'Waiting'}</span></td>
                           <td>
                             <button
                               type="button"
                               className="custom-join-btn"
                               onClick={() => joinCustomGame(g.roomCode)}
                             >
-                              Take the opposing side →
+                              {g.active ? 'Join queue →' : 'Take the opposing side →'}
                             </button>
                           </td>
                         </tr>
@@ -1472,12 +1484,13 @@ export default function App() {
             </p>
           )}
           {waiting && (
-            <div className="waiting" style={{ marginTop: '1.5rem' }}>
+            <div className={`waiting custom-queue-waiting ${customQueuePosition ? 'has-position' : ''}`} style={{ marginTop: '1.5rem' }}>
               <div className="spinner" aria-hidden />
+              {customQueuePosition && <div className="custom-queue-position"><small>You are in line</small><strong>#{customQueuePosition.position}</strong><span>{customQueuePosition.position === 1 ? 'You are next to debate the host.' : `${customQueuePosition.position - 1} ${customQueuePosition.position === 2 ? 'person' : 'people'} ahead of you.`}</span></div>}
               <p>
                 {side === 'agree'
                   ? 'Your custom game is live. Waiting for someone who disagrees to join…'
-                  : 'Joining debate…'}
+                  : customQueuePosition ? 'Keep this page open. You will enter automatically when it is your turn.' : 'Joining debate…'}
               </p>
               <button type="button" className="back-btn" onClick={cancelWaiting}>
                 Cancel

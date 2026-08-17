@@ -519,6 +519,78 @@ function removeFromCustomQueue(socketId, side, roomCode) {
   }
 }
 
+function activeCustomWaiters(roomCode) {
+  const q = customQueues.get(roomCode);
+  if (!q) return [];
+  q.disagree = q.disagree.filter((socketId) => {
+    const queuedSocket = io.sockets.sockets.get(socketId);
+    return !!queuedSocket && queuedSocket.connected &&
+      queuedSocket.data.matchType === 'custom' &&
+      queuedSocket.data.customRoomCode === roomCode &&
+      queuedSocket.data.side === 'disagree' &&
+      !queuedSocket.data.roomId;
+  });
+  return q.disagree;
+}
+
+function emitCustomQueuePositions(roomCode) {
+  const waiters = activeCustomWaiters(roomCode);
+  waiters.forEach((socketId, index) => {
+    io.sockets.sockets.get(socketId)?.emit('custom-queue-status', {
+      roomCode,
+      position: index + 1,
+      totalWaiting: waiters.length,
+    });
+  });
+}
+
+function closeCustomWaitingLine(roomCode, message = 'This debate room has closed.') {
+  const q = customQueues.get(roomCode);
+  for (const socketId of q?.disagree || []) {
+    const queuedSocket = io.sockets.sockets.get(socketId);
+    if (!queuedSocket || queuedSocket.data.roomId) continue;
+    queuedSocket.emit('queue-error', { code: 'room_closed', message });
+    queuedSocket.data.matchType = null;
+    queuedSocket.data.topicId = null;
+    queuedSocket.data.side = null;
+    queuedSocket.data.customRoomCode = null;
+  }
+  customQueues.delete(roomCode);
+}
+
+async function matchCustomChallenger(game, challengerSocket) {
+  const hostSocket = io.sockets.sockets.get(game.createdBy);
+  if (!hostSocket?.connected || !challengerSocket?.connected || hostSocket.data.roomId || challengerSocket.data.roomId) return false;
+  const roomId = `custom-${game.roomCode}-${challengerSocket.id}-${hostSocket.id}`;
+  hostSocket.data.matchType = 'custom';
+  hostSocket.data.side = 'agree';
+  hostSocket.data.customRoomCode = game.roomCode;
+  hostSocket.data.roomId = roomId;
+  hostSocket.join(roomId);
+  challengerSocket.data.roomId = roomId;
+  challengerSocket.join(roomId);
+  game.activeRoomId = roomId;
+  await persistMatchSession(firebaseAdminReady, { roomId, agreeUid: hostSocket.data.uid ?? null, disagreeUid: challengerSocket.data.uid ?? null, topicId: 'custom', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement });
+  hostSocket.emit('matched', { roomId, isOfferer: false, topicId: null, yourSide: 'agree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: challengerSocket.data.uid ?? null, peerDisplayName: challengerSocket.data.displayName ?? null, peerAvatarUrl: challengerSocket.data.avatarUrl ?? '', peerRole: challengerSocket.data.role ?? 'user', peerVerified: challengerSocket.data.verifiedDebater === true });
+  challengerSocket.emit('matched', { roomId, isOfferer: true, topicId: null, yourSide: 'disagree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: hostSocket.data.uid ?? null, peerDisplayName: hostSocket.data.displayName ?? game.creatorDisplayName ?? null, peerAvatarUrl: hostSocket.data.avatarUrl ?? game.creatorAvatarUrl ?? '', peerRole: hostSocket.data.role ?? game.creatorRole ?? 'user', peerVerified: hostSocket.data.verifiedDebater === true || game.creatorVerified === true });
+  metrics.matches += 1;
+  analytics.recordMatch('custom', 'custom');
+  emitCustomQueuePositions(game.roomCode);
+  io.emit('custom-games-updated', listCustomGames());
+  return true;
+}
+
+async function promoteNextCustomChallenger(game) {
+  if (!game || game.activeRoomId) return false;
+  const waiters = activeCustomWaiters(game.roomCode);
+  while (waiters.length) {
+    const nextSocket = io.sockets.sockets.get(waiters.shift());
+    if (nextSocket && await matchCustomChallenger(game, nextSocket)) return true;
+  }
+  emitCustomQueuePositions(game.roomCode);
+  return false;
+}
+
 function queueHostForCustomLobby(game) {
   const hostSocket = io.sockets.sockets.get(game.createdBy);
   if (!hostSocket) return false;
@@ -546,7 +618,7 @@ function isSocketConnected(id) {
 
 function listCustomGames() {
   return Array.from(customGames.values())
-    .filter((g) => g.joinMode === 'open' && !g.activeRoomId)
+    .filter((g) => g.joinMode === 'open')
     .sort((a, b) => b.createdAtMs - a.createdAtMs)
     .map((g) => {
       const creator = io.sockets.sockets.get(g.createdBy);
@@ -561,6 +633,8 @@ function listCustomGames() {
         creatorRole: g.creatorRole || creator?.data?.role || 'user',
         creatorPremium: g.creatorPremium === true || creator?.data?.premium === true,
         creatorVerified: g.creatorVerified === true || creator?.data?.verifiedDebater === true,
+        active: Boolean(g.activeRoomId),
+        queueLength: activeCustomWaiters(g.roomCode).length,
       };
     });
 }
@@ -574,16 +648,16 @@ function cleanupStaleCustomLobbies() {
 
   for (const [roomCode, game] of customGames.entries()) {
     if (!isSocketConnected(game.createdBy)) {
+      closeCustomWaitingLine(roomCode, 'The host left this debate room.');
       customGames.delete(roomCode);
-      customQueues.delete(roomCode);
       changed = true;
       removedOrphaned.push(roomCode);
       continue;
     }
 
     if (!game.activeRoomId && now - game.createdAtMs > customLobbyTtlMs) {
+      closeCustomWaitingLine(roomCode, 'This debate room expired.');
       customGames.delete(roomCode);
-      customQueues.delete(roomCode);
       changed = true;
       removedExpired.push(roomCode);
       continue;
@@ -659,6 +733,7 @@ io.on('connection', (socket) => {
   };
 
   const clearMatchmaking = () => {
+    const customCode = socket.data.customRoomCode;
     if (socket.data.matchType === 'quick' && socket.data.topicId && socket.data.side) {
       removeFromQueue(socket.id, socket.data.topicId, socket.data.side);
     }
@@ -670,6 +745,7 @@ io.on('connection', (socket) => {
       removeFromCustomQueue(socket.id, socket.data.side, socket.data.customRoomCode);
       const game = customGames.get(socket.data.customRoomCode);
       if (game && game.createdBy === socket.id) {
+        closeCustomWaitingLine(socket.data.customRoomCode, 'The host closed this debate room.');
         customGames.delete(socket.data.customRoomCode);
       }
       emitCustomGamesUpdate();
@@ -679,6 +755,7 @@ io.on('connection', (socket) => {
     socket.data.side = null;
     socket.data.customRoomCode = null;
     clearRoom();
+    if (customCode) emitCustomQueuePositions(customCode);
   };
 
   socket.emit('custom-games-updated', listCustomGames());
@@ -930,12 +1007,6 @@ io.on('connection', (socket) => {
       socket.emit('queue-error', { message: 'That custom game is no longer available.' });
       return;
     }
-    if (game.activeRoomId) {
-      metrics.queueErrors += 1;
-      socket.emit('queue-error', { message: 'This lobby is currently in an active debate.' });
-      return;
-    }
-
     clearMatchmaking();
 
     socket.data.matchType = 'custom';
@@ -945,6 +1016,13 @@ io.on('connection', (socket) => {
     socket.data.customRoomCode = normalizedRoomCode;
 
     const q = getCustomQueue(normalizedRoomCode);
+    if (game.activeRoomId) {
+      if (!q.disagree.includes(socket.id)) q.disagree.push(socket.id);
+      emitCustomQueuePositions(normalizedRoomCode);
+      socket.emit('queued', { side: 'disagree', roomCode: normalizedRoomCode, matchMode: 'custom', queuedForHost: true });
+      emitCustomGamesUpdate();
+      return;
+    }
     const opposite = side === 'agree' ? 'disagree' : 'agree';
     const oppositeList = q[opposite];
 
@@ -1007,6 +1085,7 @@ io.on('connection', (socket) => {
       });
       metrics.matches += 1;
       game.activeRoomId = roomId;
+      emitCustomQueuePositions(normalizedRoomCode);
       emitCustomGamesUpdate();
       return;
     }
@@ -1018,13 +1097,15 @@ io.on('connection', (socket) => {
       roomCode: normalizedRoomCode,
       matchMode: 'custom',
     });
+    emitCustomQueuePositions(normalizedRoomCode);
+    emitCustomGamesUpdate();
   });
 
   socket.on('leave-queue', () => {
     clearMatchmaking();
   });
 
-  socket.on('kick-peer', ({ roomId }) => {
+  socket.on('kick-peer', async ({ roomId }) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     if (socket.data.matchType !== 'custom' || !socket.data.customRoomCode) return;
@@ -1054,14 +1135,12 @@ io.on('connection', (socket) => {
     queueHostForCustomLobby(game);
     metrics.peerKicks += 1;
 
-    socket.emit('custom-lobby-waiting', {
-      roomCode: game.roomCode,
-      statement: game.statement,
-    });
+    const promoted = await promoteNextCustomChallenger(game);
+    if (!promoted) socket.emit('custom-lobby-waiting', { roomCode: game.roomCode, statement: game.statement });
     emitCustomGamesUpdate();
   });
 
-  socket.on('leave-debate', () => {
+  socket.on('leave-debate', async () => {
     metrics.leaveDebate += 1;
     const rid = socket.data.roomId;
     if (!rid) {
@@ -1069,6 +1148,7 @@ io.on('connection', (socket) => {
       if (socket.data.matchType === 'custom' && socket.data.customRoomCode) {
         const game = customGames.get(socket.data.customRoomCode);
         if (game && game.createdBy === socket.id) {
+          closeCustomWaitingLine(socket.data.customRoomCode, 'The host closed this debate room.');
           customGames.delete(socket.data.customRoomCode);
         }
         clearMatchmaking();
@@ -1089,12 +1169,14 @@ io.on('connection', (socket) => {
         game.activeRoomId = null;
       }
       if (isHost && game) {
+        closeCustomWaitingLine(socket.data.customRoomCode, 'The host ended this debate room.');
         customGames.delete(socket.data.customRoomCode);
         clearMatchmaking();
       } else if (game) {
         queueHostForCustomLobby(game);
         const hostSocket = io.sockets.sockets.get(game.createdBy);
-        if (hostSocket) {
+        const promoted = await promoteNextCustomChallenger(game);
+        if (hostSocket && !promoted) {
           hostSocket.emit('custom-lobby-waiting', {
             roomCode: game.roomCode,
             statement: game.statement,
@@ -1206,7 +1288,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     debateChatRate.delete(socket.id);
     const rid = socket.data.roomId;
     const gameCode = socket.data.customRoomCode;
@@ -1221,11 +1303,13 @@ io.on('connection', (socket) => {
         game.activeRoomId = null;
       }
       if (isHost && game) {
+        closeCustomWaitingLine(gameCode, 'The host disconnected from this debate room.');
         customGames.delete(gameCode);
       } else if (game) {
         queueHostForCustomLobby(game);
         const hostSocket = io.sockets.sockets.get(game.createdBy);
-        if (hostSocket) {
+        const promoted = await promoteNextCustomChallenger(game);
+        if (hostSocket && !promoted) {
           hostSocket.emit('custom-lobby-waiting', {
             roomCode: game.roomCode,
             statement: game.statement,
@@ -1235,6 +1319,7 @@ io.on('connection', (socket) => {
       emitCustomGamesUpdate();
     }
     clearMatchmaking();
+    if (gameCode) emitCustomQueuePositions(gameCode);
     if (rid && !handledCustomDisconnect) {
       socket.to(rid).emit('peer-left');
       metrics.peerLeftEvents += 1;
