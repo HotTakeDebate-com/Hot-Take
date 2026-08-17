@@ -18,7 +18,7 @@ export default function NotificationCenter({ socket, onJoinRoom }) {
     try {
       const notifications = (await networkNotifications()).notifications || [];
       setItems(notifications);
-      setDmRequest((current) => current || notifications.find((item) => item.type === 'dm_request' && !item.read) || null);
+      setDmRequest(notifications.find((item) => item.type === 'dm_request' && !item.read) || null);
     }
     catch { /* Header notifications stay non-blocking. */ }
     finally { setLoading(false); }
@@ -54,16 +54,24 @@ export default function NotificationCenter({ socket, onJoinRoom }) {
     void networkReadNotification(item.id).catch(() => {});
     setOpen(false);
     if (item.type === 'room_live' && item.roomCode) onJoinRoom?.(item.roomCode);
-    if (item.type === 'dm_request' && item.fromUid) setDmRequest(item);
+    if (item.type === 'dm_request' && (item.fromUid || item.hostUid || item.requestedByUid)) setDmRequest(item);
   };
 
   const decideDmRequest = async (decision) => {
-    if (!dmRequest?.fromUid) return;
+    const request = dmRequest;
+    const senderUid = request?.fromUid || request?.hostUid || request?.requestedByUid;
+    if (!request) return;
     setDmBusy(true);
+    setItems((current) => current.filter((item) => item.id !== request.id));
+    setDmRequest(null);
     try {
-      await networkDecideDirectMessage(dmRequest.fromUid, decision);
-      setItems((current) => current.filter((item) => item.id !== dmRequest.id));
-      setDmRequest(null);
+      if (senderUid) await networkDecideDirectMessage(senderUid, decision);
+      if (request.id) await networkReadNotification(request.id).catch(() => {});
+    } catch (requestError) {
+      // A stale request may already have been accepted or declined elsewhere. It should
+      // still leave the screen instead of trapping the member behind an obsolete modal.
+      if (request.id) await networkReadNotification(request.id).catch(() => {});
+      console.warn('[direct messages] request decision could not be repeated', requestError);
     } finally {
       setDmBusy(false);
     }
