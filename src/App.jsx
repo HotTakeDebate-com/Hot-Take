@@ -1063,6 +1063,7 @@ export default function App() {
                 <HeaderNavMenu
                   onPickLegal={(id) => setHeaderOverlay(id)}
                   onPickMission={() => setHeaderOverlay('mission')}
+                  onPickFaq={() => setHeaderOverlay('faq')}
                   onPickSupport={() => setHeaderOverlay('support')}
                 />
                 {isSignedIn ? (
@@ -1194,6 +1195,7 @@ export default function App() {
                   variant="landing"
                   onPickLegal={(id) => setHeaderOverlay(id)}
                   onPickMission={() => setHeaderOverlay('mission')}
+                  onPickFaq={() => setHeaderOverlay('faq')}
                   onPickSupport={() => setHeaderOverlay('support')}
                 />
               </>
