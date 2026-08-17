@@ -1249,6 +1249,11 @@ export default function App() {
           onSignOut={handleSignOut}
           onPickLegal={(id) => setHeaderOverlay(id)}
           onDeleted={goHome}
+          onOpenProfile={(uid) => {
+            setSocialProfileEmail(`uid:${uid}`);
+            setSocialReturnStep('profile');
+            setStep('profile');
+          }}
         />
       )}
 
