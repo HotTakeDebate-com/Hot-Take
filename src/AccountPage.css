@@ -187,3 +187,7 @@
 .account-following-close:hover{border-color:#ff3038;color:#fff;transform:rotate(6deg)}
 @keyframes account-following-reveal{from{opacity:0;transform:translateY(8px) scale(.992)}to{opacity:1;transform:none}}
 @media(max-width:920px){.account-nav button{white-space:nowrap}.account-following-card{grid-column:1}}
+
+
+/* Keep Security directly beneath Public profile in the left account column. */
+#account-security{grid-column:1}
