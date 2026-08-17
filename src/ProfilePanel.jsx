@@ -89,6 +89,7 @@ export default function ProfilePanel({
   const [messageOpen, setMessageOpen] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [appearOffline, setAppearOffline] = useState(false);
+  const [followingPanelOpen, setFollowingPanelOpen] = useState(false);
   const [privacyBusy, setPrivacyBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
@@ -442,7 +443,7 @@ export default function ProfilePanel({
         <aside className="account-nav" aria-label="Account sections">
           <p className="account-nav-label">Account</p>
           <a href="#account-overview"><AccountIcon type="user" />Overview</a>
-          <a href="#account-following"><AccountIcon type="user" />Following</a>
+          <button type="button" onClick={() => setFollowingPanelOpen(true)}><AccountIcon type="user" />Following</button>
           <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
           <a href="#account-security"><AccountIcon type="lock" />Security</a>
           <a href="#account-danger" className="account-nav-danger"><AccountIcon type="trash" />Delete account</a>
@@ -464,11 +465,11 @@ export default function ProfilePanel({
                   <strong>{ratingDisplay}</strong>
                   {rating.count > 0 && <small>({rating.count})</small>}
                 </span>
-                <a href="#account-following" className="account-overview-followers" aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. View accounts you follow.`}>
+                <button type="button" className="account-overview-followers" onClick={() => setFollowingPanelOpen(true)} aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. Open accounts you follow.`}>
                   <strong>{followerCount}</strong>
                   <span>{followerCount === 1 ? 'follower' : 'followers'}</span>
                   <b aria-hidden="true">→</b>
-                </a>
+                </button>
               </div>
             </div>
             <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
@@ -505,11 +506,12 @@ export default function ProfilePanel({
               </form>
             </section>
 
-            <section id="account-following" className="account-card account-following-card">
+            {followingPanelOpen && <section id="account-following" className="account-card account-following-card">
               <div className="account-card-heading">
                 <span><AccountIcon type="user" /></span>
                 <div><h2>Following</h2><p>Accounts you follow across Hot Take.</p></div>
                 <b className="account-following-count">{followedMembers.length}</b>
+                <button type="button" className="account-following-close" onClick={() => setFollowingPanelOpen(false)} aria-label="Close Following panel">×</button>
               </div>
               {followedMembers.length ? <div className="account-following-list">
                 {followedMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
@@ -518,7 +520,7 @@ export default function ProfilePanel({
                   <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
                 </button>)}
               </div> : <div className="account-following-empty"><strong>You aren’t following anyone yet.</strong><p>Search for debaters or open a community profile to follow them.</p></div>}
-            </section>
+            </section>}
 
             <section id="account-security" className="account-card">
               <div className="account-card-heading">

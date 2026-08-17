@@ -175,3 +175,15 @@
   .account-form-footer { align-items: flex-end; }
 }
 
+
+
+/* Following opens as an on-demand companion panel beside Public profile. */
+.account-nav button{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border:0;border-radius:10px;color:#b9bac2;background:transparent;font:inherit;font-size:.9rem;font-weight:750;text-align:left;cursor:pointer;transition:.18s ease}
+.account-nav button:hover{color:#fff;background:linear-gradient(90deg,rgba(255,32,39,.14),rgba(255,32,39,.04));transform:translateX(2px)}
+.account-overview-followers{border:0;background:transparent;font:inherit;cursor:pointer}
+.account-following-card{grid-column:2;animation:account-following-reveal .22s ease both}
+.account-following-card .account-following-list{grid-template-columns:1fr}
+.account-following-close{display:grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid #393b43;border-radius:50%;color:#aeb0b9;background:#111218;font-size:1.15rem;line-height:1;cursor:pointer;transition:border-color .18s,color .18s,transform .18s}
+.account-following-close:hover{border-color:#ff3038;color:#fff;transform:rotate(6deg)}
+@keyframes account-following-reveal{from{opacity:0;transform:translateY(8px) scale(.992)}to{opacity:1;transform:none}}
+@media(max-width:920px){.account-nav button{white-space:nowrap}.account-following-card{grid-column:1}}
