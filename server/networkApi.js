@@ -42,7 +42,7 @@ async function publicIdentity(uid) {
   }
   return {
     uid,
-    displayName: String(profile.displayName || user.displayName || email.split('@')[0] || 'Hot Take member'),
+    displayName: String(profile.displayName || user.displayName || 'Hot Take member'),
     avatarUrl: String(profile.avatarUrl || ''),
     bio: String(profile.bio || ''),
     role: STAFF_ROLES.has(role) ? role : 'user',
@@ -73,6 +73,71 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     next();
   });
   router.use(requireUser);
+
+  router.get('/members/search', async (req, res) => {
+    const needle = String(req.query.q || '').normalize('NFKC').trim().toLocaleLowerCase();
+    if (needle.length < 2) return res.status(400).json({ error: 'Enter at least 2 characters.' });
+    try {
+      const matches = [];
+      let pageToken;
+      do {
+        const page = await admin.auth().listUsers(1000, pageToken);
+        const identities = await Promise.all(page.users.map((user) => publicIdentity(user.uid).catch(() => null)));
+        for (const identity of identities) {
+          if (!identity || identity.uid === req.networkUser.uid) continue;
+          if (identity.displayName.normalize('NFKC').toLocaleLowerCase().includes(needle)) matches.push(identity);
+          if (matches.length >= 30) break;
+        }
+        pageToken = page.pageToken;
+      } while (pageToken && matches.length < 30);
+      matches.sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
+      res.json({ members: matches.slice(0, 30) });
+    } catch {
+      res.status(500).json({ error: 'Could not search members.' });
+    }
+  });
+
+  router.put('/display-name', async (req, res) => {
+    const displayName = String(req.body?.displayName || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+    const normalized = displayName.toLocaleLowerCase();
+    if (displayName.length < 2 || displayName.length > 40) {
+      return res.status(400).json({ error: 'Display name must be between 2 and 40 characters.' });
+    }
+    if (!/^[\p{L}\p{N}][\p{L}\p{N} ._'’-]*$/u.test(displayName)) {
+      return res.status(400).json({ error: 'Use letters, numbers, spaces, periods, apostrophes, underscores, or hyphens.' });
+    }
+    try {
+      let pageToken;
+      do {
+        const page = await admin.auth().listUsers(1000, pageToken);
+        const conflict = page.users.find((user) => user.uid !== req.networkUser.uid && String(user.displayName || '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase() === normalized);
+        if (conflict) return res.status(409).json({ error: 'That display name is already taken.' });
+        pageToken = page.pageToken;
+      } while (pageToken);
+
+      const db = admin.firestore();
+      const claimRef = db.collection('display_name_claims').doc(encodeURIComponent(normalized));
+      const ownerRef = db.collection('display_name_owners').doc(req.networkUser.uid);
+      await db.runTransaction(async (transaction) => {
+        const [claim, owner] = await Promise.all([transaction.get(claimRef), transaction.get(ownerRef)]);
+        if (claim.exists && claim.data()?.uid !== req.networkUser.uid) throw Object.assign(new Error('taken'), { code: 'name-taken' });
+        const oldKey = owner.data()?.key;
+        if (oldKey && oldKey !== claimRef.id) {
+          const oldRef = db.collection('display_name_claims').doc(oldKey);
+          const oldClaim = await transaction.get(oldRef);
+          if (oldClaim.data()?.uid === req.networkUser.uid) transaction.delete(oldRef);
+        }
+        transaction.set(claimRef, { uid: req.networkUser.uid, displayName, normalized, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        transaction.set(ownerRef, { key: claimRef.id, displayName, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      });
+      await admin.auth().updateUser(req.networkUser.uid, { displayName });
+      if (req.networkUser.email) await db.collection('publicProfiles').doc(req.networkUser.email).set({ uid: req.networkUser.uid, displayName, displayNameNormalized: normalized, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      res.json({ ok: true, displayName });
+    } catch (error) {
+      if (error?.code === 'name-taken') return res.status(409).json({ error: 'That display name is already taken.' });
+      res.status(500).json({ error: 'Could not reserve that display name.' });
+    }
+  });
 
   router.get('/me', async (req, res) => {
     const identity = await publicIdentity(req.networkUser.uid);
