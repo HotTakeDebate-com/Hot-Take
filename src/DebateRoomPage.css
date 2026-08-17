@@ -2,8 +2,8 @@
 
 
 /* Public custom-room lobby: show an honest matchmaking state until a peer joins. */
-.live-opponent-name--searching{color:#f0f0f2;overflow:visible}
-.live-topic-statuses{display:flex;align-items:center;justify-content:flex-end;gap:14px;min-width:0;flex:0 1 auto}.live-queue-count{height:38px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;border:1px solid #34353b;border-radius:999px;background:rgba(8,9,11,.76);color:#b7b8bd;font-size:13px;font-weight:700;white-space:nowrap}.live-queue-count i{width:7px;height:7px;border-radius:50%;background:#666870;box-shadow:0 0 0 4px rgba(102,104,112,.1)}.live-queue-count.has-waiters{border-color:rgba(255,29,34,.55);color:#fff;background:rgba(255,29,34,.08)}.live-queue-count.has-waiters i{background:#ff1d22;box-shadow:0 0 12px rgba(255,29,34,.8)}
+.live-opponent-name--searching{color:#f0f0f2;max-width:none;min-width:210px;overflow:hidden}
+.live-topic-statuses{display:grid;grid-template-columns:max-content minmax(210px,max-content);align-items:center;justify-content:end;gap:14px;min-width:0;flex:0 0 auto}.live-queue-count{height:38px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;border:1px solid #34353b;border-radius:999px;background:rgba(8,9,11,.76);color:#b7b8bd;font-size:13px;font-weight:700;white-space:nowrap}.live-queue-count i{width:7px;height:7px;border-radius:50%;background:#666870;box-shadow:0 0 0 4px rgba(102,104,112,.1)}.live-queue-count.has-waiters{border-color:rgba(255,29,34,.55);color:#fff;background:rgba(255,29,34,.08)}.live-queue-count.has-waiters i{background:#ff1d22;box-shadow:0 0 12px rgba(255,29,34,.8)}
 .live-opponent-name--searching>span:last-child{display:inline-flex;align-items:center;gap:2px;font-weight:700}
 .live-opponent-name--searching>span:last-child strong{color:#ff1d22;letter-spacing:.08em}
 .live-search-mini{width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;gap:3px;border:1px solid rgba(255,29,34,.5);border-radius:50%;background:rgba(255,29,34,.08)}
@@ -26,6 +26,6 @@
 .live-search-label-dots i{width:4px;height:4px}
 @keyframes live-search-spin{to{transform:rotate(360deg)}}
 @keyframes live-search-dot{0%,65%,100%{opacity:.3;transform:scale(.72)}32%{opacity:1;transform:scale(1.12);background:#ff1d22}}
-@media(max-width:680px){.live-searching-overlay{padding:24px}.live-search-orb{width:96px;height:96px}.live-searching-overlay h2{margin-top:20px;font-size:24px}.live-searching-overlay p{font-size:13px}.live-opponent-name--searching>span:last-child{max-width:125px;overflow:hidden;text-overflow:ellipsis}.live-topic-statuses{gap:7px}.live-queue-count{height:34px;padding:0 9px;font-size:11px}}
+@media(max-width:1050px){.live-topic{height:auto;min-height:86px;flex-wrap:wrap;padding-block:13px}.live-topic-statuses{margin-left:auto}}\n@media(max-width:680px){.live-searching-overlay{padding:24px}.live-search-orb{width:96px;height:96px}.live-searching-overlay h2{margin-top:20px;font-size:24px}.live-searching-overlay p{font-size:13px}.live-topic-statuses{width:100%;grid-template-columns:max-content minmax(0,1fr);gap:9px}.live-opponent-name--searching{min-width:0;justify-content:flex-end}.live-opponent-name--searching>span:last-child{max-width:none;overflow:hidden;text-overflow:ellipsis}.live-queue-count{height:34px;padding:0 9px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.live-search-mini i,.live-search-label-dots i,.live-search-orb>span,.live-search-orb i{animation:none}}
 
