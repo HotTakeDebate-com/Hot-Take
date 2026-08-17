@@ -10,7 +10,7 @@ const LEGAL_ITEMS = [
 /**
  * Header “more” menu: legal docs, mission, support — easy to extend with more entries later.
  */
-export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSupport, variant = 'default' }) {
+export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickFaq, onPickSupport, variant = 'default' }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const menuId = useId();
@@ -43,6 +43,10 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSuppor
   };
   const pickSupport = () => {
     onPickSupport();
+    close();
+  };
+  const pickFaq = () => {
+    onPickFaq?.();
     close();
   };
   const pickVerification = () => {
@@ -89,6 +93,9 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickSuppor
           <div className="header-nav-sep" role="separator" />
           <button type="button" className="header-nav-item" role="menuitem" onClick={pickMission}>
             Our Mission
+          </button>
+          <button type="button" className="header-nav-item" role="menuitem" onClick={pickFaq}>
+            FAQ
           </button>
           <button type="button" className="header-nav-item" role="menuitem" onClick={pickSupport}>
             Support
