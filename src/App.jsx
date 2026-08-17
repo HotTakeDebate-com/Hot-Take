@@ -34,6 +34,7 @@ import NotificationCenter from './NotificationCenter.jsx';
 import DirectMessageCenter from './DirectMessageCenter.jsx';
 import MemberSearchCenter from './MemberSearchCenter.jsx';
 import GenericAvatar from './GenericAvatar.jsx';
+import FollowingPage from './FollowingPage.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -155,7 +156,7 @@ export default function App() {
 
   const isSignedIn = Boolean(firebaseUserId);
   const showHeaderSocialTabs =
-    isSignedIn && ['welcome', 'feed', 'profile', 'search', 'history', 'admin', 'verification'].includes(step);
+    isSignedIn && ['welcome', 'feed', 'following', 'profile', 'search', 'history', 'admin', 'verification'].includes(step);
 
   const openAuth = useCallback((mode = 'signin') => {
     setAuthModal(mode === 'signup' ? 'signup' : 'signin');
@@ -170,6 +171,12 @@ export default function App() {
     },
     [firebaseUserId, openAuth]
   );
+
+  const openFollowing = useCallback(() => {
+    if (!requireAuth('signin')) return;
+    setHeaderOverlay(null);
+    setStep('following');
+  }, [requireAuth]);
 
   useEffect(() => {
     if (!firebaseUserId || !auth?.currentUser?.email) {
@@ -1042,11 +1049,12 @@ export default function App() {
     window.__hotTakeOpenVerification = isSignedIn ? (() => { setHeaderOverlay(null); setStep('verification'); }) : null;
     window.__hotTakeJoinNetworkRoom = isSignedIn ? ((roomCode) => { setStep('custom'); setCustomTab('join'); joinCustomGame(roomCode); }) : null;
     window.__hotTakeOpenMemberProfile = isSignedIn ? ((uid) => { setHeaderOverlay(null); setSocialProfileEmail(`uid:${uid}`); setSocialReturnStep(step === 'profile' ? 'welcome' : step); setStep('profile'); }) : null;
+    window.__hotTakeOpenFollowing = isSignedIn ? openFollowing : null;
   }
 
   return (
     <>
-      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'profile' && step !== 'admin' && step !== 'custom' && step !== 'verification' && (
+      {showAppShell && step !== 'welcome' && step !== 'topic' && step !== 'debate' && step !== 'following' && step !== 'profile' && step !== 'admin' && step !== 'custom' && step !== 'verification' && (
         <div className="app-top-bar">
           <header className="app-header">
             <div className="app-header-row">
@@ -1073,6 +1081,13 @@ export default function App() {
               <div className="header-actions">
                 {showHeaderSocialTabs && (
                   <nav className="header-social-tabs" aria-label="Profile">
+                    <button
+                      type="button"
+                      className={`header-chip header-social-tab ${step === 'following' ? 'header-social-tab--active' : ''}`}
+                      onClick={openFollowing}
+                    >
+                      Following
+                    </button>
                     <button
                       type="button"
                       className={`header-chip header-social-tab ${step === 'profile' && socialProfileEmail == null ? 'header-social-tab--active' : ''}`}
@@ -1133,6 +1148,7 @@ export default function App() {
           step === 'welcome' && 'app--landing',
           step === 'topic' && 'app--quick-match',
           step === 'debate' && 'app--debate-room',
+          step === 'following' && 'app--following',
           step === 'profile' && 'app--account',
           step === 'admin' && 'app--admin',
           step === 'verification' && 'app--verification',
@@ -1165,6 +1181,7 @@ export default function App() {
         step !== 'debate' &&
         step !== 'history' &&
         step !== 'feed' &&
+        step !== 'following' &&
         step !== 'profile' &&
         step !== 'search' &&
         step !== 'admin' &&
@@ -1199,6 +1216,7 @@ export default function App() {
           onPickSupport={() => setHeaderOverlay('faq')}
           onPickHelp={() => setHeaderOverlay('support')}
           onPickWhatsHot={() => setHeaderOverlay('whats-hot')}
+          onPickFollowing={openFollowing}
           brandExtras={
             staffRole ? (
               <button type="button" className="landing-admin-link" onClick={openAdminPanel}>
@@ -1278,6 +1296,21 @@ export default function App() {
             setSocialReturnStep('feed');
             setStep('profile');
           }}
+        />
+      )}
+
+      {isSignedIn && step === 'following' && (
+        <FollowingPage
+          onHome={goHome}
+          onAbout={() => setHeaderOverlay('mission')}
+          onQuickMatch={startQuickMatch}
+          onWhatsHot={() => setHeaderOverlay('whats-hot')}
+          onFaq={() => setHeaderOverlay('faq')}
+          onSupport={() => setHeaderOverlay('support')}
+          onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('following'); setStep('profile'); }}
+          onSignOut={handleSignOut}
+          onPickLegal={(id) => setHeaderOverlay(id)}
+          onOpenProfile={(uid) => { setSocialProfileEmail(`uid:${uid}`); setSocialReturnStep('following'); setStep('profile'); }}
         />
       )}
 

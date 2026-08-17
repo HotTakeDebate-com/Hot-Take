@@ -5,12 +5,13 @@ import DirectMessageCenter from './DirectMessageCenter.jsx';
 import MemberSearchCenter from './MemberSearchCenter.jsx';
 import GenericAvatar from './GenericAvatar.jsx';
 
-export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, onFollowing, brandExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   const avatarUrl = typeof window !== 'undefined' ? window.__hotTakeHeaderAvatarUrl : '';
   const globalAdminAction = typeof window !== 'undefined' ? window.__hotTakeAdminAction : null;
   const adminControl = brandExtras || (globalAdminAction ? (
     <button type="button" className="landing-admin-link" onClick={globalAdminAction}>Admin</button>
   ) : null);
+  const followingAction = onFollowing || (typeof window !== 'undefined' ? window.__hotTakeOpenFollowing : null);
   return <header className="landing-nav">
     <div className="landing-nav-brand-group">
       <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
@@ -20,6 +21,7 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras,
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
       <button type="button" className="landing-nav-link" onClick={onTopics}>Quick match</button>
       <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onWhatsHot || onHome}>What&apos;s Hot</button>
+      {isSignedIn && <button type="button" className="landing-nav-link" onClick={followingAction}>Following</button>}
     </nav>
     <div className="landing-nav-actions">
       {isSignedIn ? <>
