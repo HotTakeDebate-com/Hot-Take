@@ -187,13 +187,16 @@ export default function App() {
     const loadAvatar = async () => {
       try {
         const profile = await fetchPublicProfile(auth.currentUser.email);
-        if (active) setHeaderAvatarUrl(profile?.avatarUrl || auth.currentUser?.photoURL || '');
+        // Only use avatars explicitly saved to the Hot Take profile. OAuth provider
+        // photos (for example a private Gmail profile picture) must never become a
+        // public Hot Take avatar implicitly.
+        if (active) setHeaderAvatarUrl(profile?.avatarUrl || '');
       } catch {
-        if (active) setHeaderAvatarUrl(auth.currentUser?.photoURL || '');
+        if (active) setHeaderAvatarUrl('');
       }
     };
     const onProfileUpdated = (event) => {
-      setHeaderAvatarUrl(event?.detail?.avatarUrl || auth.currentUser?.photoURL || '');
+      setHeaderAvatarUrl(event?.detail?.avatarUrl || '');
     };
     loadAvatar();
     window.addEventListener('hot-take-profile-updated', onProfileUpdated);
