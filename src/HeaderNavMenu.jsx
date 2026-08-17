@@ -69,10 +69,13 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickFaq, o
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
       >
-        Menu
-        <span className="header-nav-chevron" aria-hidden>
-          {open ? '▴' : '▾'}
-        </span>
+        {variant === 'landing' ? <>
+          <span className="landing-menu-icon" aria-hidden="true"><i /><i /><i /></span>
+          <span className="sr-only">Menu</span>
+        </> : <>
+          Menu
+          <span className="header-nav-chevron" aria-hidden>{open ? '▴' : '▾'}</span>
+        </>}
       </button>
       {open && (
         <div id={menuId} className="header-nav-panel" role="menu">
