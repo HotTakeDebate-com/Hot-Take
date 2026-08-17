@@ -32,6 +32,7 @@ import VerificationApplicationPage from './VerificationApplicationPage.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
 import DirectMessageCenter from './DirectMessageCenter.jsx';
+import MemberSearchCenter from './MemberSearchCenter.jsx';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -78,8 +79,7 @@ function topicLabel(id) {
 function signedInDisplayName() {
   return (
     auth.currentUser?.displayName?.trim().slice(0, 100) ||
-    auth.currentUser?.email?.split('@')[0]?.slice(0, 100) ||
-    null
+    'Hot Take member'
   );
 }
 
@@ -993,6 +993,7 @@ export default function App() {
     window.__hotTakeNetworkSocket = socketRef.current;
     window.__hotTakeOpenVerification = isSignedIn ? (() => { setHeaderOverlay(null); setStep('verification'); }) : null;
     window.__hotTakeJoinNetworkRoom = isSignedIn ? ((roomCode) => { setStep('custom'); setCustomTab('join'); joinCustomGame(roomCode); }) : null;
+    window.__hotTakeOpenMemberProfile = isSignedIn ? ((uid) => { setHeaderOverlay(null); setSocialProfileEmail(`uid:${uid}`); setSocialReturnStep(step === 'profile' ? 'welcome' : step); setStep('profile'); }) : null;
   }
 
   return (
@@ -1159,6 +1160,7 @@ export default function App() {
           navExtras={
             isSignedIn ? (
               <>
+                <MemberSearchCenter />
                 <DirectMessageCenter socket={socketRef.current} />
                 <NotificationCenter
                   socket={socketRef.current}
@@ -1219,8 +1221,8 @@ export default function App() {
       {isSignedIn && step === 'feed' && (
         <SocialFeed
           onBack={() => setStep('welcome')}
-          onOpenProfile={(email) => {
-            setSocialProfileEmail(email);
+          onOpenProfile={(profileId) => {
+            setSocialProfileEmail(profileId);
             setSocialReturnStep('feed');
             setStep('profile');
           }}
