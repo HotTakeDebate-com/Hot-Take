@@ -276,8 +276,6 @@ export default function HomePage({
           <button type="button" className="landing-nav-link" onClick={onPickMission}>About</button>
           <button type="button" className="landing-nav-link" onClick={handleQuick}>Quick match</button>
           <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onPickWhatsHot}>What&apos;s Hot</button>
-          <button type="button" className="landing-nav-link" onClick={onPickSupport}>FAQ</button>
-          <button type="button" className="landing-nav-link" onClick={onPickHelp}>Support</button>
         </nav>
 
         <div className="landing-nav-actions">
