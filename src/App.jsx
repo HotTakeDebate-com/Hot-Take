@@ -1332,7 +1332,35 @@ export default function App() {
           onProfile={() => { setSocialProfileEmail(null); setSocialReturnStep('custom'); setStep('profile'); }}
           onPickLegal={(id) => setHeaderOverlay(id)}
         />
-        <main className="custom-browser custom-browser-v2">
+        <main className={`custom-browser custom-browser-v2 ${waiting && side === 'disagree' ? 'custom-browser--queue' : ''}`}>
+          {waiting && side === 'disagree' ? (
+            <section className="custom-challenger-queue" aria-live="polite">
+              <div className="custom-challenger-queue__eyebrow"><i /> LIVE WAITING ROOM</div>
+              <div className="custom-challenger-queue__orb" aria-hidden="true">
+                <span />
+                <b>{customQueuePosition ? `#${customQueuePosition.position}` : '…'}</b>
+              </div>
+              <p className="custom-challenger-queue__label">YOUR POSITION</p>
+              <h1>{customQueuePosition ? `You’re #${customQueuePosition.position} in line.` : 'Joining the queue…'}</h1>
+              <p className="custom-challenger-queue__message">
+                {customQueuePosition
+                  ? customQueuePosition.position === 1
+                    ? 'You’re next. Keep this page open and you’ll enter the debate automatically.'
+                    : `${customQueuePosition.position - 1} ${customQueuePosition.position === 2 ? 'person is' : 'people are'} ahead of you. You’ll enter automatically when it’s your turn.`
+                  : 'Confirming your place in the host’s waiting line.'}
+              </p>
+              {customQueuePosition && (
+                <div className="custom-challenger-queue__total">
+                  <span>{customQueuePosition.totalWaiting}</span>
+                  {customQueuePosition.totalWaiting === 1 ? 'challenger waiting' : 'challengers waiting'}
+                </div>
+              )}
+              <div className="custom-challenger-queue__progress" aria-hidden="true"><i /><i /><i /></div>
+              <button type="button" className="custom-challenger-queue__cancel" onClick={cancelWaiting}>
+                Leave queue
+              </button>
+            </section>
+          ) : <>
           <header className="custom-browser-hero">
             <button type="button" className="custom-browser-back" onClick={() => setStep('welcome')} aria-label="Back">←</button>
             <div><p>CHOOSE THE CONVERSATION</p><h1>Debate rooms<span>.</span></h1><small>Publish a take and defend it, or step into an open challenge.</small></div>
@@ -1541,6 +1569,7 @@ export default function App() {
               Back
             </button>
           )}
+          </>}
         </main>
         <SiteFooter onHome={goHome} onAbout={() => setHeaderOverlay('mission')} onFaq={() => setHeaderOverlay('faq')} onSupport={() => setHeaderOverlay('support')} onPickLegal={(id) => setHeaderOverlay(id)} />
         </div>
