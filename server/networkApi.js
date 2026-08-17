@@ -58,7 +58,9 @@ async function followerCountForUid(uid) {
 
 export function attachNetworkRoutes(app, { isAdminReady, io }) {
   const router = express.Router();
-  const activityForUid = (uid) => {
+  const activityForUid = async (uid) => {
+    const privacy = await admin.firestore().collection('network_privacy').doc(uid).get();
+    if (privacy.data()?.appearOffline === true) return { key: 'offline', label: 'Offline' };
     const sockets = Array.from(io?.sockets?.sockets?.values?.() || []).filter((socket) => socket.data?.uid === uid);
     if (!sockets.length) return { key: 'offline', label: 'Offline' };
     if (sockets.some((socket) => socket.data?.roomId)) return { key: 'debating', label: 'In a debate' };
@@ -145,16 +147,36 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
   });
 
   router.get('/me', async (req, res) => {
-    const identity = await publicIdentity(req.networkUser.uid);
-    const application = await admin.firestore().collection('verification_applications').doc(req.networkUser.uid).get();
-    res.json({ identity, application: application.exists ? { ...application.data(), submittedAtMs: serializeTime(application.data()?.submittedAt), updatedAtMs: serializeTime(application.data()?.updatedAt) } : null });
+    const [identity, application, privacy] = await Promise.all([
+      publicIdentity(req.networkUser.uid),
+      admin.firestore().collection('verification_applications').doc(req.networkUser.uid).get(),
+      admin.firestore().collection('network_privacy').doc(req.networkUser.uid).get(),
+    ]);
+    res.json({
+      identity,
+      privacy: { appearOffline: privacy.data()?.appearOffline === true },
+      application: application.exists ? { ...application.data(), submittedAtMs: serializeTime(application.data()?.submittedAt), updatedAtMs: serializeTime(application.data()?.updatedAt) } : null,
+    });
+  });
+
+  router.put('/presence-privacy', async (req, res) => {
+    const appearOffline = req.body?.appearOffline === true;
+    await admin.firestore().collection('network_privacy').doc(req.networkUser.uid).set({
+      appearOffline,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    io?.emit('member-activity-updated', {
+      uid: req.networkUser.uid,
+      activity: appearOffline ? { key: 'offline', label: 'Offline' } : await activityForUid(req.networkUser.uid),
+    });
+    res.json({ ok: true, appearOffline });
   });
 
   router.get('/identity/:uid', async (req, res) => {
     try {
       const uid = String(req.params.uid);
       const [identity, followerCount] = await Promise.all([publicIdentity(uid), followerCountForUid(uid)]);
-      res.json({ identity, followerCount, activity: activityForUid(uid) });
+      res.json({ identity, followerCount, activity: await activityForUid(uid) });
     }
     catch { res.status(404).json({ error: 'Member not found.' }); }
   });
@@ -329,7 +351,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
           return {
             ...(await publicIdentity(targetUid)),
             followedAtMs: serializeTime(member.data()?.createdAt),
-            activity: activityForUid(targetUid),
+            activity: await activityForUid(targetUid),
           };
         } catch {
           return null;

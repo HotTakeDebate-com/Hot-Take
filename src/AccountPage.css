@@ -78,6 +78,7 @@
 .account-setting-row strong { display: block; margin-bottom: 5px; color: #eeeef0; }
 .account-setting-row p { margin: 0; color: #92929c; line-height: 1.5; }
 .account-setting-value { color: #c9c9ce; font-size: .85rem; }
+.account-privacy-toggle{display:inline-flex;align-items:center;gap:.55rem;min-height:40px;padding:0 .85rem;border:1px solid #45464e;border-radius:999px;background:#101116;color:#c9c9ce;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;white-space:nowrap;transition:border-color .18s,background .18s,color .18s}.account-privacy-toggle>span{position:relative;width:30px;height:16px;border-radius:999px;background:#4b4e57;transition:background .18s}.account-privacy-toggle>span::after{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;content:"";transition:transform .18s}.account-privacy-toggle.is-active{border-color:rgba(255,42,50,.45);background:rgba(255,31,39,.08);color:#ff7b80}.account-privacy-toggle.is-active>span{background:#e51d27}.account-privacy-toggle.is-active>span::after{transform:translateX(14px)}.account-privacy-toggle:disabled{cursor:not-allowed;opacity:.55}
 .account-following-card { grid-column: 1 / -1; }
 .account-following-card .account-card-heading > div { min-width: 0; flex: 1; }
 .account-following-count { display: grid; place-items: center; min-width: 34px; height: 28px; padding: 0 9px; border: 1px solid rgba(255,42,50,.28); border-radius: 999px; color: #ff767b; background: rgba(255,31,39,.07); font-size: .76rem; }
