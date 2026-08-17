@@ -12,7 +12,7 @@ import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
-import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowing, networkFollowStatus, networkIdentity, networkSendDirectMessage, networkUnfollow } from './networkApi.js';
+import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
 
@@ -88,6 +88,8 @@ export default function ProfilePanel({
   const [messageBusy, setMessageBusy] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [appearOffline, setAppearOffline] = useState(false);
+  const [privacyBusy, setPrivacyBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
   const [resetBusy, setResetBusy] = useState(false);
@@ -139,11 +141,12 @@ export default function ProfilePanel({
         setFollowing(follow.following === true);
         setFollowerCount(Number(currentFollowerCount || 0));
       } else if (own && auth.currentUser?.uid) {
-        const [{ identity }, followingResult] = await Promise.all([
-          networkIdentity(auth.currentUser.uid),
+        const [meResult, followingResult] = await Promise.all([
+          networkMe(),
           networkFollowing(),
         ]);
-        setNetworkIdentityState(identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
+        setNetworkIdentityState(meResult.identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
+        setAppearOffline(meResult.privacy?.appearOffline === true);
         setFollowedMembers(followingResult.members || []);
       }
     } catch (loadError) {
@@ -287,6 +290,21 @@ export default function ProfilePanel({
       setError(followError?.message ?? 'Could not update follow.');
     } finally {
       setFollowBusy(false);
+    }
+  };
+
+  const toggleAppearOffline = async () => {
+    const nextValue = !appearOffline;
+    setPrivacyBusy(true);
+    setError(null);
+    try {
+      const result = await networkUpdatePresencePrivacy(nextValue);
+      setAppearOffline(result.appearOffline === true);
+      setSavedMsg(result.appearOffline ? 'You now appear offline to other members.' : 'Your activity is visible again.');
+    } catch (privacyError) {
+      setError(privacyError?.message || 'Could not update your activity privacy.');
+    } finally {
+      setPrivacyBusy(false);
     }
   };
 
@@ -501,6 +519,7 @@ export default function ProfilePanel({
               </div>
               <div className="account-setting-row"><div><strong>Email verification</strong><p>Verified accounts can access debates and protected community features.</p></div><ProfileEmailVerification /></div>
               <div className="account-setting-row"><div><strong>Sign-in method</strong><p>{providerLabel}</p></div><span className="account-setting-value">{providerLabel}</span></div>
+              <div className="account-setting-row"><div><strong>Activity privacy</strong><p>Appear offline to other members without signing out or disabling debates and messages.</p></div><button type="button" className={`account-privacy-toggle${appearOffline ? ' is-active' : ''}`} role="switch" aria-checked={appearOffline} onClick={toggleAppearOffline} disabled={privacyBusy}><span aria-hidden="true" />{privacyBusy ? 'Saving…' : appearOffline ? 'Appearing offline' : 'Activity visible'}</button></div>
               <div className="account-setting-row"><div><strong>Password recovery</strong><p>Send secure reset instructions to {resolvedEmail}.</p></div><button type="button" className="account-secondary-button" onClick={sendPasswordReset} disabled={resetBusy}>{resetBusy ? 'Sending…' : 'Send reset email'}</button></div>
             </section>
 
