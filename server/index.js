@@ -183,12 +183,15 @@ io.use(async (socket, next) => {
     socket.data.role = decoded.email?.toLowerCase() === (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase()
       ? 'owner' : String(decoded.role || 'user');
     socket.data.verifiedDebater = decoded.verifiedDebater === true;
+    socket.data.premium = decoded.premium === true;
     socket.data.emailVerified = decoded.email_verified === true;
     socket.data.displayName = cleanDisplayName(decoded.name);
     socket.data.avatarUrl = '';
     if (decoded.email) {
       const profileSnap = await admin.firestore().collection('publicProfiles').doc(decoded.email.toLowerCase()).get();
-      socket.data.avatarUrl = profileSnap.exists ? String(profileSnap.data()?.avatarUrl || '') : '';
+      const profile = profileSnap.exists ? profileSnap.data() || {} : {};
+      socket.data.avatarUrl = String(profile.avatarUrl || '');
+      socket.data.displayName = cleanDisplayName(profile.displayName) ?? socket.data.displayName;
     }
     return next();
   } catch (e) {
@@ -577,8 +580,8 @@ async function matchCustomChallenger(game, challengerSocket) {
   challengerSocket.join(roomId);
   game.activeRoomId = roomId;
   await persistMatchSession(firebaseAdminReady, { roomId, agreeUid: hostSocket.data.uid ?? null, disagreeUid: challengerSocket.data.uid ?? null, topicId: 'custom', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement });
-  hostSocket.emit('matched', { roomId, isOfferer: false, topicId: null, yourSide: 'agree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: challengerSocket.data.uid ?? null, peerDisplayName: challengerSocket.data.displayName ?? null, peerAvatarUrl: challengerSocket.data.avatarUrl ?? '', peerRole: challengerSocket.data.role ?? 'user', peerVerified: challengerSocket.data.verifiedDebater === true });
-  challengerSocket.emit('matched', { roomId, isOfferer: true, topicId: null, yourSide: 'disagree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: hostSocket.data.uid ?? null, peerDisplayName: hostSocket.data.displayName ?? game.creatorDisplayName ?? null, peerAvatarUrl: hostSocket.data.avatarUrl ?? game.creatorAvatarUrl ?? '', peerRole: hostSocket.data.role ?? game.creatorRole ?? 'user', peerVerified: hostSocket.data.verifiedDebater === true || game.creatorVerified === true });
+  hostSocket.emit('matched', { roomId, isOfferer: false, topicId: null, yourSide: 'agree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: challengerSocket.data.uid ?? null, peerDisplayName: challengerSocket.data.displayName ?? null, peerAvatarUrl: challengerSocket.data.avatarUrl ?? '', peerRole: challengerSocket.data.role ?? 'user', peerVerified: challengerSocket.data.verifiedDebater === true, peerPremium: challengerSocket.data.premium === true });
+  challengerSocket.emit('matched', { roomId, isOfferer: true, topicId: null, yourSide: 'disagree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: hostSocket.data.uid ?? null, peerDisplayName: hostSocket.data.displayName ?? game.creatorDisplayName ?? null, peerAvatarUrl: hostSocket.data.avatarUrl ?? game.creatorAvatarUrl ?? '', peerRole: hostSocket.data.role ?? game.creatorRole ?? 'user', peerVerified: hostSocket.data.verifiedDebater === true || game.creatorVerified === true, peerPremium: hostSocket.data.premium === true || game.creatorPremium === true });
   metrics.matches += 1;
   analytics.recordMatch('custom', 'custom');
   emitCustomQueuePositions(game.roomCode);
@@ -868,6 +871,7 @@ io.on('connection', (socket) => {
         peerAvatarUrl: socket.data.avatarUrl ?? '',
         peerRole: socket.data.role ?? 'user',
         peerVerified: socket.data.verifiedDebater === true,
+        peerPremium: socket.data.premium === true,
       });
 
       socket.emit('matched', {
@@ -880,6 +884,7 @@ io.on('connection', (socket) => {
         peerAvatarUrl: peerSocket.data.avatarUrl ?? '',
         peerRole: peerSocket.data.role ?? 'user',
         peerVerified: peerSocket.data.verifiedDebater === true,
+        peerPremium: peerSocket.data.premium === true,
       });
       metrics.matches += 1;
       analytics.recordMatch(topicId, 'quick');
@@ -1073,6 +1078,7 @@ io.on('connection', (socket) => {
         peerAvatarUrl: socket.data.avatarUrl ?? '',
         peerRole: socket.data.role ?? 'user',
         peerVerified: socket.data.verifiedDebater === true,
+        peerPremium: socket.data.premium === true,
       });
 
       socket.emit('matched', {
@@ -1088,6 +1094,7 @@ io.on('connection', (socket) => {
         peerAvatarUrl: peerSocket.data.avatarUrl ?? '',
         peerRole: peerSocket.data.role ?? 'user',
         peerVerified: peerSocket.data.verifiedDebater === true,
+        peerPremium: peerSocket.data.premium === true,
       });
       metrics.matches += 1;
       game.activeRoomId = roomId;

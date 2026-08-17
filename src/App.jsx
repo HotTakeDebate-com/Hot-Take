@@ -498,6 +498,7 @@ export default function App() {
         peerAvatarUrl: payload.peerAvatarUrl ?? '',
         peerRole: payload.peerRole ?? 'user',
         peerVerified: payload.peerVerified === true,
+        peerPremium: payload.peerPremium === true,
       });
       setStep('debate');
 
@@ -557,11 +558,11 @@ export default function App() {
           });
         }
       } catch (e) {
-        setDebateChatMessages([]);
-        setDebateChatDraft('');
         setError(getMediaErrorMessage(e));
-        cleanupMedia();
-        setStep('side');
+        // Do not eject a successfully matched participant into the retired
+        // setup flow when camera or microphone access fails.
+        setConnState('disconnected');
+        setStep('debate');
       }
     });
 
@@ -1642,7 +1643,7 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} hostQueueCount={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' ? customHostQueueCount : null} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} opponentPremium={debateInfo.peerPremium} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} hostQueueCount={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' ? customHostQueueCount : null} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
 
       {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
