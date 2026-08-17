@@ -12,7 +12,7 @@ import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
-import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowStatus, networkIdentity, networkSendDirectMessage, networkUnfollow } from './networkApi.js';
+import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowing, networkFollowStatus, networkIdentity, networkSendDirectMessage, networkUnfollow } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
 
@@ -59,6 +59,7 @@ export default function ProfilePanel({
   onSignOut,
   onPickLegal,
   onDeleted,
+  onOpenProfile,
 }) {
   const own = targetEmail == null;
   const targetUid = !own && String(targetEmail ?? '').startsWith('uid:')
@@ -77,6 +78,7 @@ export default function ProfilePanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [followedMembers, setFollowedMembers] = useState([]);
   const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
   const [activity, setActivity] = useState({ key: 'offline', label: 'Offline' });
   const [directMessages, setDirectMessages] = useState([]);
@@ -133,8 +135,12 @@ export default function ProfilePanel({
         setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
       } else if (own && auth.currentUser?.uid) {
-        const { identity } = await networkIdentity(auth.currentUser.uid);
+        const [{ identity }, followingResult] = await Promise.all([
+          networkIdentity(auth.currentUser.uid),
+          networkFollowing(),
+        ]);
         setNetworkIdentityState(identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
+        setFollowedMembers(followingResult.members || []);
       }
     } catch (loadError) {
       setError(loadError?.message ?? 'Could not load account.');
@@ -401,6 +407,7 @@ export default function ProfilePanel({
         <aside className="account-nav" aria-label="Account sections">
           <a href="#account-overview"><AccountIcon type="user" />Overview</a>
           <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
+          <a href="#account-following"><AccountIcon type="user" />Following</a>
           <a href="#account-security"><AccountIcon type="lock" />Security</a>
           <a href="#account-danger" className="account-nav-danger"><AccountIcon type="trash" />Delete account</a>
         </aside>
@@ -453,6 +460,20 @@ export default function ProfilePanel({
                 <textarea id="account-bio" rows={4} maxLength={500} placeholder="Tell people what you care to debate or discuss." value={bio} onChange={(event) => setBio(event.target.value)} />
                 <div className="account-form-footer"><span>{bio.length}/500</span><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
               </form>
+            </section>
+
+            <section id="account-following" className="account-card account-following-card">
+              <div className="account-card-heading">
+                <span><AccountIcon type="user" /></span>
+                <div><h2>Following</h2><p>Accounts you follow across Hot Take.</p></div>
+              </div>
+              {followedMembers.length ? <div className="account-following-list">
+                {followedMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
+                  <span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
+                  <span className="account-following-identity"><strong>{member.displayName || 'Hot Take member'} <IdentityBadges compact premium={member.premium} verified={member.verifiedDebater} role={member.role} /></strong><small><i className={`is-${member.activity?.key || 'offline'}`} aria-hidden="true" />{member.activity?.label || 'Offline'}</small></span>
+                  <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
+                </button>)}
+              </div> : <div className="account-following-empty"><strong>You aren’t following anyone yet.</strong><p>Search for debaters or open a community profile to follow them.</p></div>}
             </section>
 
             <section id="account-security" className="account-card">
