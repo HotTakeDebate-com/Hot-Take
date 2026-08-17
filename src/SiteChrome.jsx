@@ -18,8 +18,6 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras,
       <button type="button" className="landing-nav-link" onClick={onAbout}>About</button>
       <button type="button" className="landing-nav-link" onClick={onTopics}>Quick match</button>
       <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onWhatsHot || onHome}>What&apos;s Hot</button>
-      <button type="button" className="landing-nav-link" onClick={onFaq}>FAQ</button>
-      <button type="button" className="landing-nav-link" onClick={onSupport}>Support</button>
     </nav>
     <div className="landing-nav-actions">
       {isSignedIn ? <>
@@ -27,7 +25,7 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, brandExtras,
         <DirectMessageCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} />
         <NotificationCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} onJoinRoom={typeof window !== 'undefined' ? window.__hotTakeJoinNetworkRoom : null} />
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onProfile}>Account</button>
-        <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickSupport={onSupport} />
+        <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickFaq={onFaq} onPickSupport={onSupport} />
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignOut}>Sign out</button>
       </> : <>
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>Sign in</button>
