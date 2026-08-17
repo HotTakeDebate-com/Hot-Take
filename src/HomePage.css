@@ -96,6 +96,9 @@
 .landing-btn--primary:hover { background: var(--landing-red-hover); }
 
 .landing-hero {
+  --pointer-x: 50%;
+  --pointer-y: 48%;
+  --hero-depth: 0;
   position: relative;
   isolation: isolate;
   min-height: clamp(500px, 47vw, 690px);
@@ -110,6 +113,61 @@
     #020204;
   animation: landing-scene-drift 16s ease-in-out infinite alternate;
 }
+.landing-hero-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate3d(0, calc(var(--hero-depth) * -16px), 0);
+  transition: transform .12s linear;
+}
+.landing-pointer-light {
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(circle 260px at var(--pointer-x) var(--pointer-y), rgba(255,38,44,.14), transparent 70%),
+    radial-gradient(circle 380px at calc(100% - var(--pointer-x)) var(--pointer-y), rgba(222,230,244,.055), transparent 72%);
+  mix-blend-mode: screen;
+  opacity: .9;
+  transition: background-position .16s ease-out;
+}
+.landing-smoke {
+  position: absolute;
+  width: 48%;
+  height: 36%;
+  border-radius: 50%;
+  filter: blur(42px);
+  opacity: .13;
+  background: radial-gradient(ellipse, rgba(195,202,216,.42), rgba(70,73,82,.12) 45%, transparent 72%);
+}
+.landing-smoke--one { left: 22%; bottom: 4%; animation: landing-smoke-one 18s ease-in-out infinite alternate; }
+.landing-smoke--two { right: 18%; top: 18%; opacity: .08; animation: landing-smoke-two 22s ease-in-out infinite alternate; }
+.landing-embers { position: absolute; inset: 0 50% 0 0; overflow: hidden; }
+.landing-embers i {
+  position: absolute;
+  left: calc(7% + (var(--ember-index, 1) * 6%));
+  bottom: -12px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ff3439;
+  box-shadow: 0 0 8px rgba(255,33,39,.95);
+  opacity: 0;
+  animation: landing-ember-rise 8s linear infinite;
+}
+.landing-embers i:nth-child(1) { left:10%; animation-delay:-1s; }
+.landing-embers i:nth-child(2) { left:18%; animation-delay:-5s; animation-duration:10s; }
+.landing-embers i:nth-child(3) { left:25%; animation-delay:-3s; }
+.landing-embers i:nth-child(4) { left:31%; animation-delay:-7s; animation-duration:11s; }
+.landing-embers i:nth-child(5) { left:38%; animation-delay:-2s; }
+.landing-embers i:nth-child(6) { left:45%; animation-delay:-6s; animation-duration:9s; }
+.landing-embers i:nth-child(7) { left:52%; animation-delay:-4s; }
+.landing-embers i:nth-child(8) { left:59%; animation-delay:-8s; animation-duration:12s; }
+.landing-embers i:nth-child(9) { left:66%; animation-delay:-2.5s; }
+.landing-embers i:nth-child(10) { left:73%; animation-delay:-9s; animation-duration:13s; }
+.landing-embers i:nth-child(11) { left:80%; animation-delay:-4.5s; }
+.landing-embers i:nth-child(12) { left:88%; animation-delay:-7.5s; animation-duration:10s; }
 .landing-hero::before {
   content: '';
   position: absolute;
@@ -156,7 +214,7 @@
   text-transform: uppercase;
   text-wrap: balance;
   filter: drop-shadow(0 8px 18px rgba(0,0,0,.82));
-  animation: landing-copy-rise .72s cubic-bezier(.2,.75,.25,1) both;
+  animation: landing-impact-reveal .82s cubic-bezier(.12,.82,.24,1) both;
 }
 .landing-headline-accent {
   display: inline-block;
@@ -288,15 +346,20 @@
 .landing-step-icon-wrap { grid-area: icon; position: relative; width: 84px; height: 84px; margin: 0; }
 
 @keyframes landing-copy-rise { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+@keyframes landing-impact-reveal { 0% { opacity:0; transform:scale(.91) translateY(16px); filter:blur(7px) drop-shadow(0 8px 18px rgba(0,0,0,.82)); } 62% { opacity:1; transform:scale(1.018); filter:blur(0) drop-shadow(0 0 30px rgba(255,31,38,.22)); } 100% { transform:none; filter:drop-shadow(0 8px 18px rgba(0,0,0,.82)); } }
 @keyframes landing-step-rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
 @keyframes landing-red-sweep { 0%,70%,100% { background-position:100% 0; } 82% { background-position:0 0; } }
 @keyframes landing-ambient-drift { from { opacity:.55; transform:translate3d(-1.5%,0,0) scale(1.03); } to { opacity:.9; transform:translate3d(1.5%,-1%,0) scale(1.07); } }
 @keyframes landing-scene-drift { from { background-position:center,49.7% center,center; } to { background-position:center,50.3% center,center; } }
 @keyframes landing-live-pulse { 50% { transform:scale(.72); opacity:.68; box-shadow:0 0 17px rgba(23,222,117,.95); } }
 @keyframes landing-live-breathe { 50% { box-shadow:0 0 17px rgba(230,23,34,.38); } }
+@keyframes landing-smoke-one { from { transform:translate3d(-9%,8%,0) scale(.92); } to { transform:translate3d(18%,-14%,0) scale(1.14); } }
+@keyframes landing-smoke-two { from { transform:translate3d(8%,-4%,0) scale(1); } to { transform:translate3d(-18%,18%,0) scale(1.18); } }
+@keyframes landing-ember-rise { 0% { opacity:0; transform:translate3d(0,0,0) scale(.7); } 12% { opacity:.8; } 72% { opacity:.38; } 100% { opacity:0; transform:translate3d(34px,-470px,0) scale(1.25); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-hero, .landing-hero::after, .landing-headline, .landing-headline-accent, .landing-subhead, .landing-hero-actions, .landing-live-proof, .landing-live-dot, .landing-live-pill, .landing-how, .landing-how.is-visible .landing-step { animation:none; transition:none; transform:none; opacity:1; }
+  .landing-hero, .landing-hero::after, .landing-headline, .landing-headline-accent, .landing-subhead, .landing-hero-actions, .landing-live-proof, .landing-live-dot, .landing-live-pill, .landing-how, .landing-how.is-visible .landing-step, .landing-smoke, .landing-embers i, .landing-hero-atmosphere { animation:none; transition:none; transform:none; opacity:1; }
+  .landing-embers { display:none; }
   .landing-hero-btn::after { display:none; }
 }
 .landing-step-icon-wrap svg { width: 84px; height: 84px; }
