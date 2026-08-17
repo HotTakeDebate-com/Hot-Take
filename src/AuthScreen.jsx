@@ -5,6 +5,7 @@ import {
   OAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
+  deleteUser,
   updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase.js';
@@ -15,6 +16,7 @@ import SignupLegalReview from './SignupLegalReview.jsx';
 import { HotTakeWordmark, IconLightning, IconShield, IconUser } from './LandingAssets.jsx';
 import './AuthScreen.css';
 import './AuthProviderFix.css';
+import { networkUpdateDisplayName } from './networkApi.js';
 
 function mapAuthError(code) {
   switch (code) {
@@ -135,8 +137,8 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         return;
       }
       const name = displayName.trim();
-      if (name.length > 100) {
-        setError('Display name must be 100 characters or fewer.');
+      if (name.length < 2 || name.length > 40) {
+        setError('Display name must be between 2 and 40 characters.');
         return;
       }
     }
@@ -161,12 +163,12 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
 
         const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
         const name = displayName.trim();
-        if (name) {
-          try {
-            await updateProfile(cred.user, { displayName: name.slice(0, 100) });
-          } catch {
-            /* profile update is optional; account still exists */
-          }
+        try {
+          await networkUpdateDisplayName(name);
+          await updateProfile(cred.user, { displayName: name });
+        } catch (nameError) {
+          await deleteUser(cred.user).catch(() => {});
+          throw nameError;
         }
         try {
           await sendHotTakeEmailVerification(cred.user);
@@ -180,7 +182,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
       setError(
         err?.code === 'email-validation/failed'
           ? err.message
-          : mapAuthError(err?.code)
+          : (err?.message && !String(err.message).startsWith('Firebase:') ? err.message : mapAuthError(err?.code))
       );
     } finally {
       setBusy(false);
@@ -602,3 +604,4 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
 
   return screen;
 }
+
