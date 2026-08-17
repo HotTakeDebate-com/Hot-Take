@@ -366,6 +366,29 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     }
   });
 
+  router.get('/followers', async (req, res) => {
+    try {
+      const snap = await admin.firestore().collection('followers').doc(req.networkUser.uid).collection('members').get();
+      const members = (await Promise.all(snap.docs.map(async (member) => {
+        const followerUid = String(member.data()?.followerUid || member.id || '').trim();
+        if (!followerUid) return null;
+        try {
+          return {
+            ...(await publicIdentity(followerUid)),
+            followedAtMs: serializeTime(member.data()?.createdAt),
+            activity: await activityForUid(followerUid),
+          };
+        } catch {
+          return null;
+        }
+      }))).filter(Boolean);
+      members.sort((a, b) => (b.followedAtMs || 0) - (a.followedAtMs || 0) || a.displayName.localeCompare(b.displayName));
+      res.json({ members });
+    } catch {
+      res.status(500).json({ error: 'Could not load your followers.' });
+    }
+  });
+
   router.post('/follow/:uid', async (req, res) => {
     const targetUid = String(req.params.uid || '');
     if (!targetUid || targetUid === req.networkUser.uid) return res.status(400).json({ error: 'You cannot follow yourself.' });
