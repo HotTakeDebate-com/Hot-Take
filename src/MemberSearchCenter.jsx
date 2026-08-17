@@ -9,6 +9,7 @@ export default function MemberSearchCenter() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const rootRef = useRef(null);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     if (!open) return;
@@ -17,18 +18,38 @@ export default function MemberSearchCenter() {
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
-  const search = async (event) => {
-    event.preventDefault();
+  useEffect(() => {
+    if (!open) return undefined;
     const value = query.trim();
-    if (value.length < 2) { setError('Enter at least 2 characters.'); return; }
-    setBusy(true); setError('');
-    try {
-      const response = await networkSearchMembers(value);
-      setResults(response.members || []);
-      if (!response.members?.length) setError('No matching display names.');
-    } catch (searchError) { setError(searchError?.message || 'Search failed.'); }
-    finally { setBusy(false); }
-  };
+    const requestId = ++requestRef.current;
+    if (!value) {
+      setResults([]);
+      setError('');
+      setBusy(false);
+      return undefined;
+    }
+
+    setBusy(true);
+    setError('');
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await networkSearchMembers(value);
+        if (requestId !== requestRef.current) return;
+        const members = response.members || [];
+        setResults(members);
+        setError(members.length ? '' : 'No matching display names.');
+      } catch (searchError) {
+        if (requestId === requestRef.current) {
+          setResults([]);
+          setError(searchError?.message || 'Search failed.');
+        }
+      } finally {
+        if (requestId === requestRef.current) setBusy(false);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timer);
+  }, [open, query]);
 
   return <div className="member-search-center" ref={rootRef}>
     <button type="button" className="member-search-trigger" aria-label="Search members" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
@@ -36,7 +57,7 @@ export default function MemberSearchCenter() {
     </button>
     {open && <section className="member-search-popover" aria-label="Search members">
       <h2>Find a member</h2>
-      <form onSubmit={search}><input autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by display name…" maxLength={40}/><button type="submit" disabled={busy}>{busy ? '…' : 'Search'}</button></form>
+      <form onSubmit={(event) => event.preventDefault()}><input autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by display name…" maxLength={40}/><button type="button" disabled aria-label={busy ? 'Searching' : 'Live search'}>{busy ? '…' : 'Live'}</button></form>
       {error && <p className="member-search-error">{error}</p>}
       {!!results.length && <ul>{results.map((member) => <li key={member.uid}>
         <button type="button" onClick={() => { window.__hotTakeOpenMemberProfile?.(member.uid); setOpen(false); }}>
