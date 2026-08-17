@@ -76,7 +76,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
 
   router.get('/members/search', async (req, res) => {
     const needle = String(req.query.q || '').normalize('NFKC').trim().toLocaleLowerCase();
-    if (needle.length < 2) return res.status(400).json({ error: 'Enter at least 2 characters.' });
+    if (needle.length < 1) return res.status(400).json({ error: 'Enter a display name.' });
     try {
       const matches = [];
       let pageToken;
