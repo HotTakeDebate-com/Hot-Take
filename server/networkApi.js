@@ -51,6 +51,11 @@ async function publicIdentity(uid) {
   };
 }
 
+async function followerCountForUid(uid) {
+  const snapshot = await admin.firestore().collection('followers').doc(uid).collection('members').count().get();
+  return Number(snapshot.data()?.count || 0);
+}
+
 export function attachNetworkRoutes(app, { isAdminReady, io }) {
   const router = express.Router();
   const activityForUid = (uid) => {
@@ -148,7 +153,8 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
   router.get('/identity/:uid', async (req, res) => {
     try {
       const uid = String(req.params.uid);
-      res.json({ identity: await publicIdentity(uid), activity: activityForUid(uid) });
+      const [identity, followerCount] = await Promise.all([publicIdentity(uid), followerCountForUid(uid)]);
+      res.json({ identity, followerCount, activity: activityForUid(uid) });
     }
     catch { res.status(404).json({ error: 'Member not found.' }); }
   });
@@ -352,7 +358,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     await batch.commit();
-    res.json({ following: true });
+    const followerCount = await followerCountForUid(targetUid);
+    io?.emit?.('follower-count-updated', { uid: targetUid, followerCount, updatedAtMs: Date.now() });
+    res.json({ following: true, followerCount });
   });
 
   router.delete('/follow/:uid', async (req, res) => {
@@ -362,7 +370,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     batch.delete(db.collection('followers').doc(targetUid).collection('members').doc(req.networkUser.uid));
     batch.delete(db.collection('following').doc(req.networkUser.uid).collection('members').doc(targetUid));
     await batch.commit();
-    res.json({ following: false });
+    const followerCount = await followerCountForUid(targetUid);
+    io?.emit?.('follower-count-updated', { uid: targetUid, followerCount, updatedAtMs: Date.now() });
+    res.json({ following: false, followerCount });
   });
 
   router.get('/notifications', async (req, res) => {
