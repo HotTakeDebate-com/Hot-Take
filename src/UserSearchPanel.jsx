@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { networkSearchMembers } from './networkApi.js';
 
 export default function UserSearchPanel({ onBack, onOpenProfile }) {
@@ -6,28 +6,38 @@ export default function UserSearchPanel({ onBack, onOpenProfile }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState([]);
+  const requestRef = useRef(0);
 
-  const runSearch = async (e) => {
-    e?.preventDefault();
+  useEffect(() => {
     const q = query.trim();
-    setError(null);
-    setResults([]);
-    if (q.length < 2) {
-      setError('Enter at least 2 characters.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const rows = (await networkSearchMembers(q)).members || [];
-      setResults(rows);
-      if (rows.length === 0) setError('No members found with that display name.');
-    } catch (err) {
-      setError(err?.message ?? 'Search failed. If this keeps happening, the database may need a search index.');
+    const requestId = ++requestRef.current;
+    if (!q) {
+      setError(null);
       setResults([]);
-    } finally {
       setLoading(false);
+      return undefined;
     }
-  };
+
+    setError(null);
+    setLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const rows = (await networkSearchMembers(q)).members || [];
+        if (requestId !== requestRef.current) return;
+        setResults(rows);
+        if (rows.length === 0) setError('No members found with that display name.');
+      } catch (err) {
+        if (requestId === requestRef.current) {
+          setError(err?.message ?? 'Search failed. If this keeps happening, the database may need a search index.');
+          setResults([]);
+        }
+      } finally {
+        if (requestId === requestRef.current) setLoading(false);
+      }
+    }, 180);
+
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
   return (
     <div className="panel user-search-panel">
@@ -36,7 +46,7 @@ export default function UserSearchPanel({ onBack, onOpenProfile }) {
         Find people by display name. Open a profile to follow them or see their status.
       </p>
 
-      <form className="user-search-form" onSubmit={runSearch}>
+      <form className="user-search-form" onSubmit={(event) => event.preventDefault()}>
         <label className="auth-label" htmlFor="user-search-input">
           Display name
         </label>
@@ -50,8 +60,8 @@ export default function UserSearchPanel({ onBack, onOpenProfile }) {
           onChange={(e) => setQuery(e.target.value)}
           maxLength={40}
         />
-        <button type="submit" className="btn btn-primary user-search-submit" disabled={loading}>
-          {loading ? 'Searching…' : 'Search'}
+        <button type="button" className="btn btn-primary user-search-submit" disabled>
+          {loading ? 'Searching…' : 'Live search'}
         </button>
       </form>
 
