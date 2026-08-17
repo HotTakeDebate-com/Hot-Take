@@ -448,7 +448,7 @@ export default function ProfilePanel({
                   </div>
                 </div>
                 <label htmlFor="account-display-name">Display name</label>
-                <input id="account-display-name" type="text" maxLength={100} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+                <input id="account-display-name" type="text" minLength={2} maxLength={40} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                 <label htmlFor="account-bio">Bio</label>
                 <textarea id="account-bio" rows={4} maxLength={500} placeholder="Tell people what you care to debate or discuss." value={bio} onChange={(event) => setBio(event.target.value)} />
                 <div className="account-form-footer"><span>{bio.length}/500</span><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
