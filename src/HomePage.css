@@ -168,6 +168,29 @@
 .landing-embers i:nth-child(10) { left:73%; animation-delay:-9s; animation-duration:13s; }
 .landing-embers i:nth-child(11) { left:80%; animation-delay:-4.5s; }
 .landing-embers i:nth-child(12) { left:88%; animation-delay:-7.5s; animation-duration:10s; }
+.landing-silver-specks { position:absolute; inset:0 0 0 50%; overflow:hidden; }
+.landing-silver-specks i {
+  position:absolute;
+  right:12%;
+  bottom:-12px;
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:#d9dde5;
+  box-shadow:0 0 7px rgba(224,230,241,.76), 0 0 15px rgba(176,184,199,.26);
+  opacity:0;
+  animation:landing-silver-rise 10s linear infinite;
+}
+.landing-silver-specks i:nth-child(1) { right:9%; animation-delay:-2s; }
+.landing-silver-specks i:nth-child(2) { right:17%; animation-delay:-7s; animation-duration:12s; }
+.landing-silver-specks i:nth-child(3) { right:26%; animation-delay:-4s; }
+.landing-silver-specks i:nth-child(4) { right:34%; animation-delay:-9s; animation-duration:13s; }
+.landing-silver-specks i:nth-child(5) { right:43%; animation-delay:-1s; }
+.landing-silver-specks i:nth-child(6) { right:52%; animation-delay:-6s; animation-duration:11s; }
+.landing-silver-specks i:nth-child(7) { right:61%; animation-delay:-3s; }
+.landing-silver-specks i:nth-child(8) { right:70%; animation-delay:-10s; animation-duration:14s; }
+.landing-silver-specks i:nth-child(9) { right:79%; animation-delay:-5s; }
+.landing-silver-specks i:nth-child(10) { right:88%; animation-delay:-8s; animation-duration:12s; }
 .landing-hero::before {
   content: '';
   position: absolute;
@@ -356,10 +379,11 @@
 @keyframes landing-smoke-one { from { transform:translate3d(-9%,8%,0) scale(.92); } to { transform:translate3d(18%,-14%,0) scale(1.14); } }
 @keyframes landing-smoke-two { from { transform:translate3d(8%,-4%,0) scale(1); } to { transform:translate3d(-18%,18%,0) scale(1.18); } }
 @keyframes landing-ember-rise { 0% { opacity:0; transform:translate3d(0,0,0) scale(.7); } 12% { opacity:.8; } 72% { opacity:.38; } 100% { opacity:0; transform:translate3d(34px,-470px,0) scale(1.25); } }
+@keyframes landing-silver-rise { 0% { opacity:0; transform:translate3d(0,0,0) scale(.65); } 15% { opacity:.58; } 72% { opacity:.3; } 100% { opacity:0; transform:translate3d(-28px,-430px,0) scale(1.15); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-hero, .landing-hero::after, .landing-headline, .landing-headline-accent, .landing-subhead, .landing-hero-actions, .landing-live-proof, .landing-live-dot, .landing-live-pill, .landing-how, .landing-how.is-visible .landing-step, .landing-smoke, .landing-embers i, .landing-hero-atmosphere { animation:none; transition:none; transform:none; opacity:1; }
-  .landing-embers { display:none; }
+  .landing-hero, .landing-hero::after, .landing-headline, .landing-headline-accent, .landing-subhead, .landing-hero-actions, .landing-live-proof, .landing-live-dot, .landing-live-pill, .landing-how, .landing-how.is-visible .landing-step, .landing-smoke, .landing-embers i, .landing-silver-specks i, .landing-hero-atmosphere { animation:none; transition:none; transform:none; opacity:1; }
+  .landing-embers, .landing-silver-specks { display:none; }
   .landing-hero-btn::after { display:none; }
 }
 .landing-step-icon-wrap svg { width: 84px; height: 84px; }
