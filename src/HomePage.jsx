@@ -245,6 +245,7 @@ export default function HomePage({
   brandExtras,
   navExtras,
 }) {
+  const heroRef = useRef(null);
   const howSectionRef = useRef(null);
   const [howSectionVisible, setHowSectionVisible] = useState(false);
 
@@ -263,6 +264,43 @@ export default function HomePage({
     if (params.get('quickMatch') !== '1') return;
     window.history.replaceState({}, document.title, window.location.pathname);
     handleQuick();
+  }, []);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+
+    let frame = 0;
+    const updatePointer = (event) => {
+      const bounds = hero.getBoundingClientRect();
+      const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+      const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        hero.style.setProperty('--pointer-x', `${Math.max(0, Math.min(100, x))}%`);
+        hero.style.setProperty('--pointer-y', `${Math.max(0, Math.min(100, y))}%`);
+      });
+    };
+    const resetPointer = () => {
+      hero.style.setProperty('--pointer-x', '50%');
+      hero.style.setProperty('--pointer-y', '48%');
+    };
+    const updateScrollDepth = () => {
+      const bounds = hero.getBoundingClientRect();
+      const depth = Math.max(-1, Math.min(1, -bounds.top / Math.max(bounds.height, 1)));
+      hero.style.setProperty('--hero-depth', depth.toFixed(3));
+    };
+
+    hero.addEventListener('pointermove', updatePointer, { passive: true });
+    hero.addEventListener('pointerleave', resetPointer);
+    window.addEventListener('scroll', updateScrollDepth, { passive: true });
+    updateScrollDepth();
+    return () => {
+      cancelAnimationFrame(frame);
+      hero.removeEventListener('pointermove', updatePointer);
+      hero.removeEventListener('pointerleave', resetPointer);
+      window.removeEventListener('scroll', updateScrollDepth);
+    };
   }, []);
 
   useEffect(() => {
@@ -309,7 +347,15 @@ export default function HomePage({
         </div>
       </header>
 
-      <section className="landing-hero landing-hero--versus">
+      <section ref={heroRef} className="landing-hero landing-hero--versus">
+        <div className="landing-hero-atmosphere" aria-hidden="true">
+          <span className="landing-smoke landing-smoke--one" />
+          <span className="landing-smoke landing-smoke--two" />
+          <span className="landing-pointer-light" />
+          <div className="landing-embers">
+            {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
+          </div>
+        </div>
         <div className="landing-hero-copy">
           <h1 className="landing-headline">
             Your opinion
@@ -381,3 +427,4 @@ export default function HomePage({
     </div>
   );
 }
+
