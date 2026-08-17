@@ -405,6 +405,7 @@ export default function ProfilePanel({
 
       <div className="account-layout">
         <aside className="account-nav" aria-label="Account sections">
+          <p className="account-nav-label">Account</p>
           <a href="#account-overview"><AccountIcon type="user" />Overview</a>
           <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
           <a href="#account-following"><AccountIcon type="user" />Following</a>
@@ -466,6 +467,7 @@ export default function ProfilePanel({
               <div className="account-card-heading">
                 <span><AccountIcon type="user" /></span>
                 <div><h2>Following</h2><p>Accounts you follow across Hot Take.</p></div>
+                <b className="account-following-count">{followedMembers.length}</b>
               </div>
               {followedMembers.length ? <div className="account-following-list">
                 {followedMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
