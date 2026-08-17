@@ -12,7 +12,7 @@ import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
-import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
+import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowers, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
 
@@ -79,6 +79,7 @@ export default function ProfilePanel({
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+  const [followerMembers, setFollowerMembers] = useState([]);
   const [followedMembers, setFollowedMembers] = useState([]);
   const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
   const [activity, setActivity] = useState({ key: 'offline', label: 'Offline' });
@@ -90,6 +91,7 @@ export default function ProfilePanel({
   const [followBusy, setFollowBusy] = useState(false);
   const [appearOffline, setAppearOffline] = useState(false);
   const [followingPanelOpen, setFollowingPanelOpen] = useState(false);
+  const [followersPanelOpen, setFollowersPanelOpen] = useState(false);
   const [privacyBusy, setPrivacyBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
@@ -142,13 +144,15 @@ export default function ProfilePanel({
         setFollowing(follow.following === true);
         setFollowerCount(Number(currentFollowerCount || 0));
       } else if (own && auth.currentUser?.uid) {
-        const [meResult, followingResult] = await Promise.all([
+        const [meResult, followersResult, followingResult] = await Promise.all([
           networkMe(),
+          networkFollowers(),
           networkFollowing(),
         ]);
         setNetworkIdentityState(meResult.identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowerCount(Number(meResult.followerCount || 0));
         setAppearOffline(meResult.privacy?.appearOffline === true);
+        setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
       }
     } catch (loadError) {
@@ -186,6 +190,24 @@ export default function ProfilePanel({
     const timer = window.setInterval(refreshLiveProfile, 8000);
     return () => window.clearInterval(timer);
   }, [own, liveTargetUid]);
+
+  useEffect(() => {
+    if (!own || !auth.currentUser?.uid) return undefined;
+    const socket = typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null;
+    if (!socket) return undefined;
+    const updateOwnFollowers = async (payload = {}) => {
+      if (payload.uid !== auth.currentUser?.uid) return;
+      setFollowerCount(Number(payload.followerCount || 0));
+      try {
+        const result = await networkFollowers();
+        setFollowerMembers(result.members || []);
+      } catch {
+        // Keep the current list visible if a real-time refresh briefly fails.
+      }
+    };
+    socket.on('follower-count-updated', updateOwnFollowers);
+    return () => socket.off('follower-count-updated', updateOwnFollowers);
+  }, [own]);
 
   useEffect(() => {
     if (own || !liveTargetUid) return undefined;
@@ -443,7 +465,8 @@ export default function ProfilePanel({
         <aside className="account-nav" aria-label="Account sections">
           <p className="account-nav-label">Account</p>
           <a href="#account-overview"><AccountIcon type="user" />Overview</a>
-          <button type="button" onClick={() => setFollowingPanelOpen(true)}><AccountIcon type="user" />Following</button>
+          <button type="button" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}><AccountIcon type="user" />Followers</button>
+          <button type="button" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}><AccountIcon type="user" />Following</button>
           <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
           <a href="#account-security"><AccountIcon type="lock" />Security</a>
           <a href="#account-danger" className="account-nav-danger"><AccountIcon type="trash" />Delete account</a>
@@ -461,14 +484,13 @@ export default function ProfilePanel({
               <p>{resolvedEmail}</p>
               <div className="account-overview-stats">
                 <span className="account-overview-rating" aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
-                  <span aria-hidden="true">★</span>
-                  <strong>{ratingDisplay}</strong>
-                  {rating.count > 0 && <small>({rating.count})</small>}
+                  <span aria-hidden="true">★</span><strong>{ratingDisplay}</strong>{rating.count > 0 && <small>({rating.count})</small>}
                 </span>
-                <button type="button" className="account-overview-followers" onClick={() => setFollowingPanelOpen(true)} aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. Open accounts you follow.`}>
-                  <strong>{followerCount}</strong>
-                  <span>{followerCount === 1 ? 'follower' : 'followers'}</span>
-                  <b aria-hidden="true">→</b>
+                <button type="button" className="account-overview-followers" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }} aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. Open your followers.`}>
+                  <strong>{followerCount.toLocaleString()}</strong> {followerCount === 1 ? 'follower' : 'followers'} <span aria-hidden="true">→</span>
+                </button>
+                <button type="button" className="account-overview-followers" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }} aria-label={`${followedMembers.length} following. Open accounts you follow.`}>
+                  <strong>{followedMembers.length.toLocaleString()}</strong> following <span aria-hidden="true">→</span>
                 </button>
               </div>
             </div>
@@ -505,6 +527,22 @@ export default function ProfilePanel({
                 <div className="account-form-footer"><span>{bio.length}/500</span><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
               </form>
             </section>
+
+            {followersPanelOpen && <section id="account-followers" className="account-card account-following-card">
+              <div className="account-card-heading">
+                <span><AccountIcon type="user" /></span>
+                <div><h2>Followers</h2><p>People who follow you on Hot Take.</p></div>
+                <b className="account-following-count">{followerMembers.length}</b>
+                <button type="button" className="account-following-close" onClick={() => setFollowersPanelOpen(false)} aria-label="Close Followers panel">×</button>
+              </div>
+              {followerMembers.length ? <div className="account-following-list">
+                {followerMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
+                  <span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
+                  <span className="account-following-identity"><strong>{member.displayName || 'Hot Take member'} <IdentityBadges compact premium={member.premium} verified={member.verifiedDebater} role={member.role} /></strong><small><i className={`is-${member.activity?.key || 'offline'}`} aria-hidden="true" />{member.activity?.label || 'Offline'}</small></span>
+                  <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
+                </button>)}
+              </div> : <div className="account-following-empty"><strong>You don’t have any followers yet.</strong><p>Your followers will appear here when people discover and follow your profile.</p></div>}
+            </section>}
 
             {followingPanelOpen && <section id="account-following" className="account-card account-following-card">
               <div className="account-card-heading">

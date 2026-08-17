@@ -19,6 +19,7 @@ export const networkUpdateDisplayName = (displayName) => networkRequest('/displa
 export const networkIdentity = (uid) => networkRequest('/identity/' + encodeURIComponent(uid));
 export const networkFollowStatus = (uid) => networkRequest('/follow/' + encodeURIComponent(uid));
 export const networkFollowing = () => networkRequest('/following');
+export const networkFollowers = () => networkRequest('/followers');
 export const networkFollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'POST' });
 export const networkUnfollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'DELETE' });
 export const networkDirectMessages = (uid) => networkRequest('/messages/' + encodeURIComponent(uid));
