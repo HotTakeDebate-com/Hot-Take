@@ -242,6 +242,7 @@ export default function HomePage({
   onPickSupport,
   onPickHelp,
   onPickWhatsHot,
+  onPickFollowing,
   brandExtras,
   navExtras,
 }) {
@@ -332,6 +333,7 @@ export default function HomePage({
           <button type="button" className="landing-nav-link" onClick={onPickMission}>About</button>
           <button type="button" className="landing-nav-link" onClick={handleQuick}>Quick match</button>
           <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onPickWhatsHot}>What&apos;s Hot</button>
+          {isSignedIn && <button type="button" className="landing-nav-link" onClick={onPickFollowing}>Following</button>}
         </nav>
 
         <div className="landing-nav-actions">
