@@ -136,6 +136,7 @@ export default function App() {
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [customHostWaiting, setCustomHostWaiting] = useState(false);
   const [customQueuePosition, setCustomQueuePosition] = useState(null);
+  const [customHostQueueCount, setCustomHostQueueCount] = useState(0);
   /** Socket.IO id for labeling own chat messages. */
   const [socketId, setSocketId] = useState(null);
   /** In-debate text chat (cleared when match ends or opponent leaves). */
@@ -579,6 +580,11 @@ export default function App() {
       setError(null);
     });
 
+    socket.on('custom-queue-count', ({ roomCode, queueLength }) => {
+      setCustomRoomCode((currentRoomCode) => roomCode || currentRoomCode);
+      setCustomHostQueueCount(Math.max(0, Number(queueLength) || 0));
+    });
+
     socket.on('custom-games-updated', (games = []) => {
       setCustomGames(Array.isArray(games) ? games : []);
     });
@@ -588,6 +594,7 @@ export default function App() {
       if (statement) setCustomStatement(statement);
       setSide('agree');
       setCustomHostWaiting(true);
+      setCustomHostQueueCount(0);
       setError(null);
       setDebateInfo({
         roomId: null,
@@ -1606,7 +1613,7 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} hostQueueCount={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' ? customHostQueueCount : null} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
 
       {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
