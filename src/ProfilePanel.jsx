@@ -79,6 +79,7 @@ export default function ProfilePanel({
   const [rating, setRating] = useState({ average: null, count: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [tagBusy, setTagBusy] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followerMembers, setFollowerMembers] = useState([]);
@@ -390,11 +391,24 @@ export default function ProfilePanel({
 
   const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
   const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
-  const toggleInterest = (interest) => {
+  const toggleInterest = async (interest) => {
     setSavedMsg(null);
-    setInterests((current) => current.includes(interest)
-      ? current.filter((item) => item !== interest)
-      : current.length < MAX_PROFILE_INTERESTS ? [...current, interest] : current);
+    const previous = interests;
+    const next = previous.includes(interest)
+      ? previous.filter((item) => item !== interest)
+      : previous.length < MAX_PROFILE_INTERESTS ? [...previous, interest] : previous;
+    if (next === previous) return;
+    setInterests(next);
+    setTagBusy(true);
+    setError(null);
+    try {
+      await savePublicProfile({ displayName, bio, avatarUrl, interests: next });
+    } catch (tagError) {
+      setInterests(previous);
+      setError(tagError?.message ?? 'Could not update your profile tags.');
+    } finally {
+      setTagBusy(false);
+    }
   };
   const interestBanner = interests.length > 0 && <div className="account-interest-banner" aria-label="Profile interests">
     {interests.map((interest) => <span key={interest}>{interest}</span>)}
@@ -509,9 +523,27 @@ export default function ProfilePanel({
               </div>
               {interestBanner}
             </div>
-            <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
-              {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
-            </span>
+            <div className="account-overview-tools">
+              <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
+                {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
+              </span>
+              <details className="account-tags-dropdown">
+                <summary>Tags <b aria-hidden="true">+</b></summary>
+                <div className="account-tags-menu">
+                  <header><div><strong>Profile tags</strong><small>Choose up to {MAX_PROFILE_INTERESTS}</small></div><span>{interests.length}/{MAX_PROFILE_INTERESTS}</span></header>
+                  <div className="account-tags-menu-scroll">
+                    {PROFILE_INTEREST_GROUPS.map((group) => <section key={group.label}>
+                      <h3>{group.label}</h3>
+                      {group.options.map((interest) => {
+                        const selected = interests.includes(interest);
+                        const disabled = tagBusy || (!selected && interests.length >= MAX_PROFILE_INTERESTS);
+                        return <button key={interest} type="button" className={selected ? 'selected' : ''} aria-pressed={selected} disabled={disabled} onClick={() => toggleInterest(interest)}><span aria-hidden="true">{selected ? '✓' : '+'}</span>{interest}</button>;
+                      })}
+                    </section>)}
+                  </div>
+                </div>
+              </details>
+            </div>
           </section>
 
           {loading ? <section className="account-card"><p>Loading your account…</p></section> : <>
@@ -539,23 +571,6 @@ export default function ProfilePanel({
                 <input id="account-display-name" type="text" minLength={2} maxLength={40} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                 <label htmlFor="account-bio">Bio</label>
                 <textarea id="account-bio" rows={4} maxLength={500} placeholder="Tell people what you care to debate or discuss." value={bio} onChange={(event) => setBio(event.target.value)} />
-                <fieldset className="account-interest-picker">
-                  <legend>Profile banner interests</legend>
-                  <div className="account-interest-picker-heading">
-                    <p>Choose up to {MAX_PROFILE_INTERESTS}. These tags appear on your public profile.</p>
-                    <strong>{interests.length}/{MAX_PROFILE_INTERESTS} selected</strong>
-                  </div>
-                  {PROFILE_INTEREST_GROUPS.map((group) => <details key={group.label} open={group.label === 'Viewpoints'}>
-                    <summary><span>{group.label}</span><small>{group.description}</small></summary>
-                    <div className="account-interest-options">
-                      {group.options.map((interest) => {
-                        const selected = interests.includes(interest);
-                        const disabled = !selected && interests.length >= MAX_PROFILE_INTERESTS;
-                        return <button key={interest} type="button" className={selected ? 'selected' : ''} aria-pressed={selected} disabled={disabled} onClick={() => toggleInterest(interest)}>{selected && <span aria-hidden="true">✓</span>}{interest}</button>;
-                      })}
-                    </div>
-                  </details>)}
-                </fieldset>
                 <div className="account-form-footer"><span>{bio.length}/500</span><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
               </form>
             </section>
