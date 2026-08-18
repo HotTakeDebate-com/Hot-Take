@@ -11,6 +11,7 @@ import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
+import { MAX_PROFILE_INTERESTS, PROFILE_INTEREST_GROUPS, sanitizeProfileInterests } from './profileInterests.js';
 import IdentityBadges from './IdentityBadges.jsx';
 import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowers, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
 import './DebateNetwork.css';
@@ -73,6 +74,7 @@ export default function ProfilePanel({
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [interests, setInterests] = useState([]);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [rating, setRating] = useState({ average: null, count: 0 });
   const [loading, setLoading] = useState(true);
@@ -122,6 +124,7 @@ export default function ProfilePanel({
         setDisplayName(identity?.displayName?.trim() || 'Hot Take member');
         setBio(identity?.bio ?? '');
         setAvatarUrl(identity?.avatarUrl ?? '');
+        setInterests(sanitizeProfileInterests(identity?.interests));
         setNetworkIdentityState(identity || { uid: targetUid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
         setFollowerCount(Number(currentFollowerCount || 0));
@@ -136,6 +139,7 @@ export default function ProfilePanel({
       setDisplayName(prof?.displayName?.trim() || fromAuth);
       setBio(prof?.bio ?? '');
       setAvatarUrl(prof?.avatarUrl ?? '');
+      setInterests(sanitizeProfileInterests(prof?.interests));
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own && prof?.uid) {
@@ -234,7 +238,7 @@ export default function ProfilePanel({
     setError(null);
     setSavedMsg(null);
     try {
-      await savePublicProfile({ displayName, bio, avatarUrl });
+      await savePublicProfile({ displayName, bio, avatarUrl, interests });
       setSavedMsg('Account details saved.');
       setRating(await fetchLiveRatingSummary(auth.currentUser?.uid));
     } catch (saveError) {
@@ -386,6 +390,15 @@ export default function ProfilePanel({
 
   const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
   const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
+  const toggleInterest = (interest) => {
+    setSavedMsg(null);
+    setInterests((current) => current.includes(interest)
+      ? current.filter((item) => item !== interest)
+      : current.length < MAX_PROFILE_INTERESTS ? [...current, interest] : current);
+  };
+  const interestBanner = interests.length > 0 && <div className="account-interest-banner" aria-label="Profile interests">
+    {interests.map((interest) => <span key={interest}>{interest}</span>)}
+  </div>;
 
   if (!resolvedEmail && !targetUid) {
     return <div className="account-page">{sharedHeader}<main className="account-empty"><p>Could not resolve this account.</p><button type="button" onClick={onBack}>Back</button></main></div>;
@@ -404,6 +417,7 @@ export default function ProfilePanel({
               <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
               <span className="public-profile-follower-count">{followerCount.toLocaleString()} {followerCount === 1 ? 'follower' : 'followers'}</span>
             </div>
+            {interestBanner}
             <p>{bio || 'No bio yet.'}</p>
             <div className={`public-profile-activity public-profile-activity--${activity.key}`}>
               <i aria-hidden="true" /><span>Current status</span><strong>{activity.label}</strong>
@@ -493,6 +507,7 @@ export default function ProfilePanel({
                   <strong>{followedMembers.length.toLocaleString()}</strong> following <span aria-hidden="true">→</span>
                 </button>
               </div>
+              {interestBanner}
             </div>
             <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
               {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
@@ -524,6 +539,23 @@ export default function ProfilePanel({
                 <input id="account-display-name" type="text" minLength={2} maxLength={40} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                 <label htmlFor="account-bio">Bio</label>
                 <textarea id="account-bio" rows={4} maxLength={500} placeholder="Tell people what you care to debate or discuss." value={bio} onChange={(event) => setBio(event.target.value)} />
+                <fieldset className="account-interest-picker">
+                  <legend>Profile banner interests</legend>
+                  <div className="account-interest-picker-heading">
+                    <p>Choose up to {MAX_PROFILE_INTERESTS}. These tags appear on your public profile.</p>
+                    <strong>{interests.length}/{MAX_PROFILE_INTERESTS} selected</strong>
+                  </div>
+                  {PROFILE_INTEREST_GROUPS.map((group) => <details key={group.label} open={group.label === 'Viewpoints'}>
+                    <summary><span>{group.label}</span><small>{group.description}</small></summary>
+                    <div className="account-interest-options">
+                      {group.options.map((interest) => {
+                        const selected = interests.includes(interest);
+                        const disabled = !selected && interests.length >= MAX_PROFILE_INTERESTS;
+                        return <button key={interest} type="button" className={selected ? 'selected' : ''} aria-pressed={selected} disabled={disabled} onClick={() => toggleInterest(interest)}>{selected && <span aria-hidden="true">✓</span>}{interest}</button>;
+                      })}
+                    </div>
+                  </details>)}
+                </fieldset>
                 <div className="account-form-footer"><span>{bio.length}/500</span><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
               </form>
             </section>

@@ -15,6 +15,7 @@ import {
 import { updateProfile } from 'firebase/auth';
 import { networkUpdateDisplayName } from './networkApi.js';
 import { auth, db, isFirebaseConfigured } from './firebase.js';
+import { sanitizeProfileInterests } from './profileInterests.js';
 
 /**
  * Firestore profile document id: normalized email (must match `request.auth.token.email` in rules).
@@ -272,7 +273,7 @@ export async function fetchPublicProfile(profileEmail) {
   if (!key) return null;
   const snap = await getDoc(doc(db, 'publicProfiles', key));
   if (!snap.exists()) {
-    return { email: key, displayName: '', bio: '', avatarUrl: '', uid: null, updatedAt: null };
+    return { email: key, displayName: '', bio: '', avatarUrl: '', interests: [], uid: null, updatedAt: null };
   }
   const d = snap.data();
   return {
@@ -280,12 +281,13 @@ export async function fetchPublicProfile(profileEmail) {
     displayName: typeof d.displayName === 'string' ? d.displayName : '',
     bio: typeof d.bio === 'string' ? d.bio : '',
     avatarUrl: typeof d.avatarUrl === 'string' ? d.avatarUrl : '',
+    interests: sanitizeProfileInterests(d.interests),
     uid: typeof d.uid === 'string' ? d.uid : null,
     updatedAt: d.updatedAt ?? null,
   };
 }
 
-export async function savePublicProfile({ displayName, bio, avatarUrl = '' }) {
+export async function savePublicProfile({ displayName, bio, avatarUrl = '', interests = [] }) {
   if (!isFirebaseConfigured || !db || !auth?.currentUser?.email) {
     throw new Error('Not signed in.');
   }
@@ -294,6 +296,7 @@ export async function savePublicProfile({ displayName, bio, avatarUrl = '' }) {
   const dn = String(displayName ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').slice(0, 40);
   const b = String(bio ?? '').trim().slice(0, MAX_BIO_CHARS);
   const avatar = String(avatarUrl ?? '').trim().slice(0, 250000);
+  const selectedInterests = sanitizeProfileInterests(interests);
   await networkUpdateDisplayName(dn);
   await setDoc(
     doc(db, 'publicProfiles', key),
@@ -302,6 +305,7 @@ export async function savePublicProfile({ displayName, bio, avatarUrl = '' }) {
       displayName: dn,
       bio: b,
       avatarUrl: avatar,
+      interests: selectedInterests,
       updatedAt: serverTimestamp(),
     },
     { merge: true }

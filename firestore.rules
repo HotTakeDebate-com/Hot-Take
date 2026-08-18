@@ -124,6 +124,9 @@ service cloud.firestore {
         && request.resource.data.displayName.size() <= 100
         && request.resource.data.bio is string
         && request.resource.data.bio.size() <= 500
+        && (!request.resource.data.keys().hasAny(['interests'])
+          || (request.resource.data.interests is list
+            && request.resource.data.interests.size() <= 5))
         && (!request.resource.data.keys().hasAny(['avatarUrl'])
           || (request.resource.data.avatarUrl is string
             && request.resource.data.avatarUrl.size() <= 250000));

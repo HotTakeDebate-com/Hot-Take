@@ -45,6 +45,7 @@ async function publicIdentity(uid) {
     displayName: String(profile.displayName || user.displayName || 'Hot Take member'),
     avatarUrl: String(profile.avatarUrl || ''),
     bio: String(profile.bio || ''),
+    interests: Array.isArray(profile.interests) ? profile.interests.filter((interest) => typeof interest === 'string').slice(0, 5) : [],
     role: STAFF_ROLES.has(role) ? role : 'user',
     premium: user.customClaims?.premium === true,
     verifiedDebater: user.customClaims?.verifiedDebater === true,
