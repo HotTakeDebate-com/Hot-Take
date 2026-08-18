@@ -55,6 +55,10 @@
 
 html {
   scroll-behavior: smooth;
+  /* Reserve the desktop scrollbar width on short routes too. Without this,
+     viewport-centered shared headers shift horizontally between pages. */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 html,
