@@ -1,9 +1,11 @@
 .whats-hot-page {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
   z-index: 1000;
-  overflow: auto;
+  overflow: visible;
   min-height: 100vh;
+  box-sizing: border-box;
   color: #f7f7f8;
   background:
     radial-gradient(circle at 82% 17%, rgba(255, 24, 34, 0.13), transparent 29rem),
@@ -413,3 +415,4 @@
     grid-template-columns: 1fr;
   }
 }
+
