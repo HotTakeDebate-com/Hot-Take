@@ -5,7 +5,7 @@ import DirectMessageCenter from './DirectMessageCenter.jsx';
 import MemberSearchCenter from './MemberSearchCenter.jsx';
 import GenericAvatar from './GenericAvatar.jsx';
 
-export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, onFollowing, brandExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
+export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, onFollowing, brandExtras, navExtras, onFaq, onSupport, isSignedIn, onSignIn, onSignUp, onSignOut, onProfile, onPickLegal }) {
   const avatarUrl = typeof window !== 'undefined' ? window.__hotTakeHeaderAvatarUrl : '';
   const globalAdminAction = typeof window !== 'undefined' ? window.__hotTakeAdminAction : null;
   const adminControl = brandExtras || (globalAdminAction ? (
@@ -25,13 +25,15 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, onFollowing,
     </nav>
     <div className="landing-nav-actions">
       {isSignedIn ? <>
-        <MemberSearchCenter />
-        <DirectMessageCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} />
-        <NotificationCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} onJoinRoom={typeof window !== 'undefined' ? window.__hotTakeJoinNetworkRoom : null} />
-        <button type="button" className={`landing-account-avatar${avatarUrl ? ' has-image' : ''}`} onClick={onProfile} aria-label="Account" title="Account">
-          {avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}
-        </button>
-        <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickFaq={onFaq} onPickSupport={onSupport} />
+        {navExtras || <>
+          <MemberSearchCenter />
+          <DirectMessageCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} />
+          <NotificationCenter socket={typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null} onJoinRoom={typeof window !== 'undefined' ? window.__hotTakeJoinNetworkRoom : null} />
+          <button type="button" className={`landing-account-avatar${avatarUrl ? ' has-image' : ''}`} onClick={onProfile} aria-label="Account" title="Account">
+            {avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}
+          </button>
+          <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickFaq={onFaq} onPickSupport={onSupport} />
+        </>}
         <button type="button" className="landing-btn landing-btn--ghost landing-sign-out-compact" onClick={onSignOut}>Sign out</button>
       </> : <>
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>Sign in</button>
