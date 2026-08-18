@@ -1287,6 +1287,13 @@ export default function App() {
           onSignOut={handleSignOut}
           onPickLegal={(id) => setHeaderOverlay(id)}
           onOpenProfile={(uid) => { setSocialProfileEmail(`uid:${uid}`); setSocialReturnStep('following'); setStep('profile'); }}
+          brandExtras={
+            staffRole ? (
+              <button type="button" className="landing-admin-link" onClick={openAdminPanel}>
+                Admin
+              </button>
+            ) : null
+          }
         />
       )}
 
