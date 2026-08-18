@@ -4,6 +4,7 @@ import IdentityBadges from './IdentityBadges.jsx';
 import { networkFollowing } from './networkApi.js';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import './FollowingPage.css';
+import './FollowingLayoutFix.css';
 
 const ACTIVITY_ORDER = { hosting_room: 0, debating: 1, quick_match: 2, joining_room: 3, online: 4, offline: 5 };
 
