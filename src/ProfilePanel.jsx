@@ -393,6 +393,7 @@ export default function ProfilePanel({
 
   const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
   const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
+  const isStaffProfile = ['moderator', 'admin', 'owner'].includes(networkIdentityState.role);
   const openTags = () => {
     setTagDraft(interests);
     setTagsOpen(true);
@@ -417,7 +418,8 @@ export default function ProfilePanel({
       setTagBusy(false);
     }
   };
-  const interestBanner = interests.length > 0 && <div className="account-interest-banner" aria-label="Profile interests">
+  const interestBanner = (interests.length > 0 || isStaffProfile) && <div className="account-interest-banner" aria-label="Profile interests">
+    {isStaffProfile && <span className="account-staff-tag">STAFF</span>}
     {interests.map((interest) => <span key={interest}>{interest}</span>)}
   </div>;
 

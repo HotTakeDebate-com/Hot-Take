@@ -1,7 +1,8 @@
 import express from 'express';
 import admin from 'firebase-admin';
 
-const OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
+const PRIMARY_OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
+const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL, 'andrewbarless@gmail.com']);
 const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
 const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
 const PERMISSION_DEFAULTS = {
@@ -30,7 +31,7 @@ const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
 
 
 function roleOf(claims) {
-  if (claims?.email?.toLowerCase() === OWNER_EMAIL) return 'owner';
+  if (OWNER_EMAILS.has(claims?.email?.toLowerCase())) return 'owner';
   const role = String(claims?.role || 'user');
   return STAFF_ROLES.has(role) ? role : 'user';
 }
@@ -42,7 +43,7 @@ async function requireStaff(req, res, next) {
     const claims = await admin.auth().verifyIdToken(match[1].trim(), true);
     const role = roleOf(claims);
     if (!STAFF_ROLES.has(role)) return res.status(403).json({ error: 'Staff access required.' });
-    if (claims.email?.toLowerCase() === OWNER_EMAIL && claims.role !== 'owner') {
+    if (OWNER_EMAILS.has(claims.email?.toLowerCase()) && claims.role !== 'owner') {
       const user = await admin.auth().getUser(claims.uid);
       await admin.auth().setCustomUserClaims(claims.uid, { ...(user.customClaims || {}), role: 'owner' });
     }
@@ -218,7 +219,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
   });
   router.use(requireStaff);
 
-  router.get('/me', (req, res) => res.json({ ...req.staff, ownerEmail: OWNER_EMAIL }));
+  router.get('/me', (req, res) => res.json({ ...req.staff, ownerEmail: PRIMARY_OWNER_EMAIL, ownerEmails: [...OWNER_EMAILS] }));
 
   router.post('/access', async (req, res) => {
     await admin.firestore().collection('staff_access').doc(req.staff.uid).set({
@@ -307,7 +308,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     const accessByUid = new Map();
     try {
       const staffAccessRefs = result.users
-        .filter((user) => STAFF_ROLES.has(user.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (user.customClaims?.role || 'user')))
+        .filter((user) => STAFF_ROLES.has(OWNER_EMAILS.has(user.email?.toLowerCase()) ? 'owner' : (user.customClaims?.role || 'user')))
         .map((user) => admin.firestore().collection('staff_access').doc(user.uid));
       if (staffAccessRefs.length) {
         const staffAccessSnaps = await admin.firestore().getAll(...staffAccessRefs);
@@ -342,7 +343,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       lastSignInAt: u.metadata.lastSignInTime,
       lastAdminAccessAt: accessByUid.get(u.uid)?.lastAccessedAt || null,
       online: onlineUids.has(u.uid),
-      role: u.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (u.customClaims?.role || 'user'),
+      role: OWNER_EMAILS.has(u.email?.toLowerCase()) ? 'owner' : (u.customClaims?.role || 'user'),
       premium: u.customClaims?.premium === true,
       verifiedDebater: u.customClaims?.verifiedDebater === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
@@ -439,7 +440,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
   router.post('/users/:uid/update', requirePermission('viewUsers'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
-    const isOwner = target.email?.toLowerCase() === OWNER_EMAIL;
+    const isOwner = OWNER_EMAILS.has(target.email?.toLowerCase());
     const targetRole = isOwner ? 'owner' : (target.customClaims?.role || 'user');
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot edit an equal or higher role.' });
@@ -552,7 +553,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
   router.post('/users/:uid/password', requirePermission('manageCredentials'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
-    const targetRole = target.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (target.customClaims?.role || 'user');
+    const targetRole = OWNER_EMAILS.has(target.email?.toLowerCase()) ? 'owner' : (target.customClaims?.role || 'user');
     if (targetRole === 'owner') {
       return res.status(403).json({ error: 'The protected Owner password cannot be changed from the Admin panel.' });
     }
@@ -674,7 +675,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       return res.status(403).json({ error: 'Your role does not have permission to perform this action.' });
     }
     const target = await admin.auth().getUser(uid);
-    const targetRole = target.email?.toLowerCase() === OWNER_EMAIL ? 'owner' : (target.customClaims?.role || 'user');
+    const targetRole = OWNER_EMAILS.has(target.email?.toLowerCase()) ? 'owner' : (target.customClaims?.role || 'user');
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot punish an equal or higher role.' });
     }
@@ -731,7 +732,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     const premium = role === 'user' && req.body?.premium === true;
     if (!['user', 'moderator', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
     const target = await admin.auth().getUser(uid);
-    if (target.email?.toLowerCase() === OWNER_EMAIL) return res.status(400).json({ error: 'Owner role is protected.' });
+    if (OWNER_EMAILS.has(target.email?.toLowerCase())) return res.status(400).json({ error: 'Owner role is protected.' });
     const currentRole = target.customClaims?.role || 'user';
     if (req.staff.role !== 'owner' && ROLE_LEVEL[currentRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot change the access of an equal or higher role.' });

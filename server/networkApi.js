@@ -1,11 +1,14 @@
 import express from 'express';
 import admin from 'firebase-admin';
 
-const OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
+const OWNER_EMAILS = new Set([
+  (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase(),
+  'andrewbarless@gmail.com',
+]);
 const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
 
 function roleFromClaims(claims = {}) {
-  if (String(claims.email || '').toLowerCase() === OWNER_EMAIL) return 'owner';
+  if (OWNER_EMAILS.has(String(claims.email || '').toLowerCase())) return 'owner';
   const role = String(claims.role || 'user');
   return STAFF_ROLES.has(role) ? role : 'user';
 }
@@ -34,7 +37,7 @@ function serializeTime(value) {
 async function publicIdentity(uid) {
   const user = await admin.auth().getUser(uid);
   const email = String(user.email || '').toLowerCase();
-  const role = email === OWNER_EMAIL ? 'owner' : String(user.customClaims?.role || 'user');
+  const role = OWNER_EMAILS.has(email) ? 'owner' : String(user.customClaims?.role || 'user');
   let profile = {};
   if (email) {
     const snap = await admin.firestore().collection('publicProfiles').doc(email).get();

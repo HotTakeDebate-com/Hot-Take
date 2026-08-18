@@ -180,7 +180,7 @@ io.use(async (socket, next) => {
       if (ban.active === true && ban.permanent !== true) await banRef.delete().catch(() => {});
     }
     socket.data.uid = decoded.uid;
-    socket.data.role = decoded.email?.toLowerCase() === (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase()
+    socket.data.role = new Set([(process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase(), 'andrewbarless@gmail.com']).has(decoded.email?.toLowerCase())
       ? 'owner' : String(decoded.role || 'user');
     socket.data.verifiedDebater = decoded.verifiedDebater === true;
     socket.data.premium = decoded.premium === true;
