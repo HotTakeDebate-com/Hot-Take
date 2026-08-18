@@ -22,3 +22,55 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
 @media (max-width:1220px){.landing-nav-links{display:none!important}.landing-nav{grid-template-columns:1fr auto!important}}
 @media (max-width:760px){.landing-nav-brand .landing-logo-img--nav{width:165px!important}.landing-nav-brand-group .landing-admin-link{display:none!important}.landing-nav-actions{gap:7px!important}.member-search-trigger,.direct-message-trigger,.notification-trigger,.landing-account-avatar,.header-nav--landing .landing-nav-menu-trigger{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;flex-basis:38px!important}.landing-sign-out-compact{padding:0 10px!important;font-size:12px!important}}
 
+/* Keep the shared header anchored to the viewport instead of inheriting route widths. */
+.landing-nav,
+.account-page > .landing-nav,
+.following-page > .landing-nav {
+  width: 100vw !important;
+  max-width: none !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  grid-template-columns: minmax(330px, 1fr) auto minmax(430px, 1fr) !important;
+}
+
+.landing-nav-brand-group {
+  min-width: 0 !important;
+  justify-self: start !important;
+}
+
+.landing-nav-links {
+  justify-self: center !important;
+}
+
+.landing-nav-actions {
+  justify-self: end !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 1450px) {
+  .landing-nav,
+  .account-page > .landing-nav,
+  .following-page > .landing-nav {
+    grid-template-columns: minmax(280px, 1fr) auto minmax(360px, 1fr) !important;
+  }
+}
+
+@media (max-width: 1220px) {
+  .landing-nav,
+  .account-page > .landing-nav,
+  .following-page > .landing-nav {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .landing-nav,
+  .account-page > .landing-nav,
+  .following-page > .landing-nav {
+    width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+}
+
