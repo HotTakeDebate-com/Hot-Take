@@ -244,8 +244,8 @@ export default function HomePage({
   onPickHelp,
   onPickWhatsHot,
   onPickFollowing,
+  onProfile,
   brandExtras,
-  navExtras,
 }) {
   const heroRef = useRef(null);
   const howSectionRef = useRef(null);
@@ -334,9 +334,9 @@ export default function HomePage({
         onSignIn={onSignIn}
         onSignUp={onSignUp}
         onSignOut={onSignOut}
+        onProfile={onProfile}
         onPickLegal={onPickLegal}
         brandExtras={brandExtras}
-        navExtras={navExtras}
       />
 
       <section ref={heroRef} className="landing-hero landing-hero--versus">

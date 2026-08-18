@@ -1220,44 +1220,17 @@ export default function App() {
           onPickHelp={() => setHeaderOverlay('support')}
           onPickWhatsHot={() => setHeaderOverlay('whats-hot')}
           onPickFollowing={openFollowing}
+          onProfile={() => {
+            if (!requireAuth('signin')) return;
+            setSocialProfileEmail(null);
+            setSocialReturnStep('welcome');
+            setStep('profile');
+          }}
           brandExtras={
             staffRole ? (
               <button type="button" className="landing-admin-link" onClick={openAdminPanel}>
                 Admin
               </button>
-            ) : null
-          }
-          navExtras={
-            isSignedIn ? (
-              <>
-                <MemberSearchCenter />
-                <DirectMessageCenter socket={socketRef.current} />
-                <NotificationCenter
-                  socket={socketRef.current}
-                  onJoinRoom={(roomCode) => window.__hotTakeJoinNetworkRoom?.(roomCode)}
-                />
-                <button
-                  type="button"
-                  className={`landing-account-avatar${headerAvatarUrl ? ' has-image' : ''}`}
-                  onClick={() => {
-                    if (!requireAuth('signin')) return;
-                    setSocialProfileEmail(null);
-                    setSocialReturnStep('welcome');
-                    setStep('profile');
-                  }}
-                  aria-label="Account"
-                  title="Account"
-                >
-                  {headerAvatarUrl ? <img src={headerAvatarUrl} alt="" /> : <GenericAvatar />}
-                </button>
-                <HeaderNavMenu
-                  variant="landing"
-                  onPickLegal={(id) => setHeaderOverlay(id)}
-                  onPickMission={() => setHeaderOverlay('mission')}
-                  onPickFaq={() => setHeaderOverlay('faq')}
-                  onPickSupport={() => setHeaderOverlay('support')}
-                />
-              </>
             ) : null
           }
         />
