@@ -74,10 +74,4 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
   }
 }
 
-/* Following uses a full-width route wrapper. */
-.following-page > .landing-nav {
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
 
