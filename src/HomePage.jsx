@@ -10,6 +10,7 @@ import {
   StepIconDebate,
   StepIconMatch,
 } from './LandingAssets.jsx';
+import { SiteHeader } from './SiteChrome.jsx';
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -321,33 +322,22 @@ export default function HomePage({
 
   return (
     <div className="landing">
-      <header className="landing-nav">
-        <div className="landing-nav-brand-group">
-          <a href="/" className="landing-nav-brand" onClick={(e) => e.preventDefault()}>
-            <HotTakeWordmark variant="nav" />
-          </a>
-          {brandExtras}
-        </div>
-
-        <nav className="landing-nav-links" aria-label="Primary">
-          <button type="button" className="landing-nav-link" onClick={onPickMission}>About</button>
-          <button type="button" className="landing-nav-link" onClick={handleQuick}>Quick match</button>
-          <button type="button" className="landing-nav-link landing-nav-link--hot" onClick={onPickWhatsHot}>What&apos;s Hot</button>
-          {isSignedIn && <button type="button" className="landing-nav-link" onClick={onPickFollowing}>Following</button>}
-        </nav>
-
-        <div className="landing-nav-actions">
-          {navExtras}
-          {isSignedIn ? (
-            <button type="button" className="landing-btn landing-btn--ghost landing-sign-out-compact" onClick={onSignOut}>Sign out</button>
-          ) : (
-            <>
-              <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>Sign in</button>
-              <button type="button" className="landing-btn landing-btn--primary" onClick={onSignUp}>Create account</button>
-            </>
-          )}
-        </div>
-      </header>
+      <SiteHeader
+        onHome={() => {}}
+        onAbout={onPickMission}
+        onTopics={handleQuick}
+        onWhatsHot={onPickWhatsHot}
+        onFollowing={onPickFollowing}
+        onFaq={onPickSupport}
+        onSupport={onPickHelp}
+        isSignedIn={isSignedIn}
+        onSignIn={onSignIn}
+        onSignUp={onSignUp}
+        onSignOut={onSignOut}
+        onPickLegal={onPickLegal}
+        brandExtras={brandExtras}
+        navExtras={navExtras}
+      />
 
       <section ref={heroRef} className="landing-hero landing-hero--versus">
         <div className="landing-hero-atmosphere" aria-hidden="true">
