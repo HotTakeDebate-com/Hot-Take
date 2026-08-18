@@ -74,22 +74,8 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
   }
 }
 
-/* What’s Hot owns an internal scroller; Following uses the document scroller.
-   Resolve each against its visible content box so both headers land identically. */
+/* Following uses a full-width route wrapper. */
 .following-page > .landing-nav {
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-.whats-hot-page {
-  /* The route is a fixed scroll container. Padding it changes the header's
-     coordinate system and makes every header control jump on navigation. */
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.whats-hot-page > .landing-nav {
   width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
