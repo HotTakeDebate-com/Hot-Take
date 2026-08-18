@@ -80,6 +80,8 @@ export default function ProfilePanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tagBusy, setTagBusy] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [tagDraft, setTagDraft] = useState([]);
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followerMembers, setFollowerMembers] = useState([]);
@@ -391,20 +393,25 @@ export default function ProfilePanel({
 
   const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
   const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
-  const toggleInterest = async (interest) => {
-    setSavedMsg(null);
-    const previous = interests;
-    const next = previous.includes(interest)
-      ? previous.filter((item) => item !== interest)
-      : previous.length < MAX_PROFILE_INTERESTS ? [...previous, interest] : previous;
-    if (next === previous) return;
-    setInterests(next);
+  const openTags = () => {
+    setTagDraft(interests);
+    setTagsOpen(true);
+  };
+  const toggleDraftInterest = (interest) => {
+    setTagDraft((current) => current.includes(interest)
+      ? current.filter((item) => item !== interest)
+      : current.length < MAX_PROFILE_INTERESTS ? [...current, interest] : current);
+  };
+  const saveTags = async () => {
     setTagBusy(true);
     setError(null);
+    setSavedMsg(null);
     try {
-      await savePublicProfile({ displayName, bio, avatarUrl, interests: next });
+      await savePublicProfile({ displayName, bio, avatarUrl, interests: tagDraft });
+      setInterests(tagDraft);
+      setTagsOpen(false);
+      setSavedMsg('Profile tags saved.');
     } catch (tagError) {
-      setInterests(previous);
       setError(tagError?.message ?? 'Could not update your profile tags.');
     } finally {
       setTagBusy(false);
@@ -527,22 +534,7 @@ export default function ProfilePanel({
               <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
                 {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
               </span>
-              <details className="account-tags-dropdown">
-                <summary>Tags <b aria-hidden="true">+</b></summary>
-                <div className="account-tags-menu">
-                  <header><div><strong>Profile tags</strong><small>Choose up to {MAX_PROFILE_INTERESTS}</small></div><span>{interests.length}/{MAX_PROFILE_INTERESTS}</span></header>
-                  <div className="account-tags-menu-scroll">
-                    {PROFILE_INTEREST_GROUPS.map((group) => <section key={group.label}>
-                      <h3>{group.label}</h3>
-                      {group.options.map((interest) => {
-                        const selected = interests.includes(interest);
-                        const disabled = tagBusy || (!selected && interests.length >= MAX_PROFILE_INTERESTS);
-                        return <button key={interest} type="button" className={selected ? 'selected' : ''} aria-pressed={selected} disabled={disabled} onClick={() => toggleInterest(interest)}><span aria-hidden="true">{selected ? '✓' : '+'}</span>{interest}</button>;
-                      })}
-                    </section>)}
-                  </div>
-                </div>
-              </details>
+              <button type="button" className="account-tags-button" onClick={openTags}>Tags <b aria-hidden="true">+</b></button>
             </div>
           </section>
 
@@ -637,6 +629,26 @@ export default function ProfilePanel({
         </div>
       </div>
     </main>
+    {tagsOpen && <div className="account-tags-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !tagBusy) setTagsOpen(false); }}>
+      <section className="account-tags-modal" role="dialog" aria-modal="true" aria-labelledby="profile-tags-title">
+        <header>
+          <div><p className="account-eyebrow">Personalize your profile</p><h2 id="profile-tags-title">Choose your tags<span>.</span></h2><small>Select up to {MAX_PROFILE_INTERESTS} interests to display on your profile.</small></div>
+          <button type="button" onClick={() => setTagsOpen(false)} disabled={tagBusy} aria-label="Close tags menu">×</button>
+        </header>
+        <div className="account-tags-selected"><strong>Your selections</strong><span>{tagDraft.length}/{MAX_PROFILE_INTERESTS}</span><div>{tagDraft.length ? tagDraft.map((interest) => <button key={interest} type="button" onClick={() => toggleDraftInterest(interest)}>{interest} <b aria-hidden="true">×</b></button>) : <small>No tags selected yet.</small>}</div></div>
+        <div className="account-tags-modal-content">
+          {PROFILE_INTEREST_GROUPS.map((group) => <section key={group.label}>
+            <div><h3>{group.label}</h3><p>{group.description}</p></div>
+            <div className="account-tags-options">{group.options.map((interest) => {
+              const selected = tagDraft.includes(interest);
+              const disabled = !selected && tagDraft.length >= MAX_PROFILE_INTERESTS;
+              return <button key={interest} type="button" className={selected ? 'selected' : ''} aria-pressed={selected} disabled={disabled || tagBusy} onClick={() => toggleDraftInterest(interest)}><span aria-hidden="true">{selected ? '✓' : '+'}</span>{interest}</button>;
+            })}</div>
+          </section>)}
+        </div>
+        <footer><button type="button" className="account-tags-cancel" onClick={() => setTagsOpen(false)} disabled={tagBusy}>Cancel</button><button type="button" className="account-tags-save" onClick={saveTags} disabled={tagBusy}>{tagBusy ? 'Saving…' : 'Save selections'}</button></footer>
+      </section>
+    </div>}
     <SiteFooter onHome={onHome || onBack} onAbout={onAbout} onFaq={onFaq} onSupport={onSupport} onPickLegal={onPickLegal} />
   </div>;
 }

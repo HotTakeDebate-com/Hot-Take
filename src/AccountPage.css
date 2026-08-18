@@ -73,26 +73,42 @@
 .account-form-footer > span { color: #777781; font-size: .78rem; }
 .account-overview { position:relative;z-index:20;overflow:visible }
 .account-overview-tools { position:relative;display:flex;align-items:flex-end;flex-direction:column;gap:10px }
-.account-tags-dropdown { position:relative }
-.account-tags-dropdown>summary { display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:118px;min-height:42px;padding:0 12px 0 16px;border:1px solid #45464e;border-radius:10px;color:#f2f2f4;background:#101116;font-size:.82rem;font-weight:800;cursor:pointer;list-style:none;transition:.18s ease }
-.account-tags-dropdown>summary::-webkit-details-marker { display:none }
-.account-tags-dropdown>summary:hover,.account-tags-dropdown[open]>summary { border-color:#ef262d;background:rgba(255,32,39,.08) }
-.account-tags-dropdown>summary b { display:grid;place-items:center;width:23px;height:23px;border-radius:50%;color:#fff;background:#ed1e26;font-size:1rem;line-height:1 }
-.account-tags-dropdown[open]>summary b { transform:none }
-.account-tags-menu { position:absolute;z-index:40;top:calc(100% + 9px);right:0;width:min(390px,calc(100vw - 36px));border:1px solid #3b3d45;border-radius:14px;background:#111218;box-shadow:0 22px 65px rgba(0,0,0,.62);overflow:hidden }
-.account-tags-menu>header { display:flex;align-items:center;justify-content:space-between;padding:15px 16px;border-bottom:1px solid #2d2f36;background:linear-gradient(110deg,rgba(255,33,41,.1),transparent) }
-.account-tags-menu>header strong,.account-tags-menu>header small { display:block }
-.account-tags-menu>header small { margin-top:3px;color:#868993;font-size:.68rem;font-weight:600 }
-.account-tags-menu>header>span { color:#ff7479;font-size:.72rem;font-weight:850 }
-.account-tags-menu-scroll { max-height:390px;padding:5px 10px 12px;overflow-y:auto }
-.account-tags-menu section { padding:10px 2px 2px }
-.account-tags-menu h3 { margin:0 0 7px;padding:0 5px;color:#888b95;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase }
-.account-tags-menu section button { display:flex;align-items:center;gap:9px;width:100%;min-height:36px;padding:5px 8px;border:0;border-radius:8px;color:#c3c4ca;background:transparent;font:inherit;font-size:.76rem;font-weight:700;text-align:left;cursor:pointer }
-.account-tags-menu section button:hover:not(:disabled) { color:#fff;background:rgba(255,255,255,.055) }
-.account-tags-menu section button>span { display:grid;place-items:center;flex:0 0 20px;width:20px;height:20px;border:1px solid #4b4d55;border-radius:6px;color:#999;font-size:.7rem }
-.account-tags-menu section button.selected { color:#fff;background:rgba(255,32,39,.09) }
-.account-tags-menu section button.selected>span { border-color:#ff343b;color:#fff;background:#e51c24 }
-.account-tags-menu section button:disabled { opacity:.35;cursor:not-allowed }
+.account-tags-button { display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:118px;min-height:42px;padding:0 12px 0 16px;border:1px solid #45464e;border-radius:10px;color:#f2f2f4;background:#101116;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:.18s ease }
+.account-tags-button:hover { border-color:#ef262d;background:rgba(255,32,39,.08) }
+.account-tags-button b { display:grid;place-items:center;width:23px;height:23px;border-radius:50%;color:#fff;background:#ed1e26;font-size:1rem;line-height:1 }
+.account-tags-backdrop { position:fixed;z-index:5000;inset:0;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.8);backdrop-filter:blur(7px) }
+.account-tags-modal { display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;width:min(920px,calc(100vw - 32px));max-height:min(820px,calc(100vh - 48px));overflow:hidden;border:1px solid #383a43;border-radius:20px;background:linear-gradient(145deg,#15161c,#08090c);box-shadow:0 34px 110px rgba(0,0,0,.78) }
+.account-tags-modal>header { display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:26px 28px 22px;border-bottom:1px solid #2c2e35;background:radial-gradient(circle at 88% 0,rgba(255,31,39,.13),transparent 44%) }
+.account-tags-modal>header .account-eyebrow { margin-bottom:7px }
+.account-tags-modal>header h2 { margin:0;color:#fff;font-size:clamp(1.9rem,4vw,2.8rem);letter-spacing:-.04em }
+.account-tags-modal>header h2 span { color:#ff242b }
+.account-tags-modal>header small { display:block;margin-top:8px;color:#92949e;font-size:.82rem }
+.account-tags-modal>header>button { display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;padding:0;border:1px solid #454750;border-radius:50%;color:#fff;background:#15161b;font-size:1.4rem;cursor:pointer }
+.account-tags-modal>header>button:hover { border-color:#ff3038;background:rgba(255,32,39,.12) }
+.account-tags-selected { padding:16px 28px;border-bottom:1px solid #292b32;background:rgba(255,255,255,.015) }
+.account-tags-selected>strong { color:#f2f2f4;font-size:.78rem }
+.account-tags-selected>span { float:right;color:#ff7479;font-size:.75rem;font-weight:850 }
+.account-tags-selected>div { display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;min-height:30px;align-items:center }
+.account-tags-selected>div>button { padding:6px 10px;border:1px solid rgba(255,48,56,.42);border-radius:999px;color:#ff9397;background:rgba(255,32,39,.09);font:inherit;font-size:.7rem;font-weight:800;cursor:pointer }
+.account-tags-selected>div>button b { margin-left:5px;color:#fff }
+.account-tags-selected>div>small { color:#797c86 }
+.account-tags-modal-content { padding:4px 28px 24px;overflow-y:auto }
+.account-tags-modal-content>section { display:grid;grid-template-columns:180px minmax(0,1fr);gap:22px;padding:22px 0;border-bottom:1px solid #292b32 }
+.account-tags-modal-content>section:last-child { border-bottom:0 }
+.account-tags-modal-content h3 { margin:0 0 6px;color:#fff;font-size:1rem }
+.account-tags-modal-content p { margin:0;color:#7f828c;font-size:.72rem;line-height:1.45 }
+.account-tags-options { display:flex;flex-wrap:wrap;gap:8px }
+.account-tags-options button { display:flex;align-items:center;gap:7px;min-height:35px;padding:0 11px;border:1px solid #3b3d45;border-radius:999px;color:#bfc0c7;background:#0d0e12;font:inherit;font-size:.72rem;font-weight:750;cursor:pointer }
+.account-tags-options button:hover:not(:disabled) { border-color:#e52a31;color:#fff }
+.account-tags-options button>span { color:#8c8f98;font-size:.72rem }
+.account-tags-options button.selected { border-color:#ff3037;color:#fff;background:rgba(255,32,39,.14) }
+.account-tags-options button.selected>span { color:#ff555b }
+.account-tags-options button:disabled { opacity:.3;cursor:not-allowed }
+.account-tags-modal>footer { display:flex;justify-content:flex-end;gap:10px;padding:18px 28px;border-top:1px solid #2c2e35;background:#0e0f13 }
+.account-tags-modal>footer button { min-height:45px;padding:0 20px;border-radius:10px;font:inherit;font-size:.82rem;font-weight:850;cursor:pointer }
+.account-tags-cancel { border:1px solid #454750;color:#e7e7ea;background:#15161b }
+.account-tags-save { border:1px solid #fa2931;color:#fff;background:linear-gradient(135deg,#fa232b,#ca080f);box-shadow:0 9px 24px rgba(220,10,18,.2) }
+.account-tags-modal>footer button:disabled { opacity:.5;cursor:not-allowed }
 .account-primary-button, .account-secondary-button, .account-delete-button, .account-back, .account-empty button { min-height: 43px; padding: 0 19px; border-radius: 9px; font: inherit; font-size: .88rem; font-weight: 750; cursor: pointer; transition: transform .17s, border-color .17s, background .17s; }
 .account-primary-button { border: 1px solid #f22930; color: #fff; background: linear-gradient(135deg, #fb2229, #c90007); box-shadow: 0 10px 26px rgba(211,0,8,.2); }
 .account-secondary-button, .account-back { border: 1px solid #45464e; color: #f4f4f5; background: #101116; }
@@ -199,7 +215,8 @@
   .account-page .profile-task__actions { flex-direction: column; }
   .account-form-footer { align-items: flex-end; }
   .account-overview-tools { align-items:center }
-  .account-tags-menu { right:50%;transform:translateX(50%) }
+  .account-tags-modal-content>section { grid-template-columns:1fr;gap:12px }
+  .account-tags-modal>header,.account-tags-selected,.account-tags-modal-content,.account-tags-modal>footer { padding-left:18px;padding-right:18px }
 }
 
 
