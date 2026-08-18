@@ -75,4 +75,23 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
   }
 }
 
+/* About, FAQ, and Support are fixed overlays with their own vertical scroller.
+   Viewport-centering via 50vw is offset by that internal scrollbar and pushes
+   the header off the left edge. Size these headers from the overlay's padded
+   content box instead so both edges remain inside the visible scrollport. */
+.faq-page > .landing-nav,
+.mission-page > .landing-nav {
+  width: calc(100% + (2 * var(--site-page-pad))) !important;
+  margin-left: calc(0px - var(--site-page-pad)) !important;
+  margin-right: calc(0px - var(--site-page-pad)) !important;
+}
+
+@media (max-width: 680px) {
+  .faq-page > .landing-nav,
+  .mission-page > .landing-nav {
+    width: calc(100% + 36px) !important;
+    margin-left: -18px !important;
+    margin-right: -18px !important;
+  }
+}
 
