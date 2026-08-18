@@ -8,7 +8,7 @@ import './FollowingLayoutFix.css';
 
 const ACTIVITY_ORDER = { hosting_room: 0, debating: 1, quick_match: 2, joining_room: 3, online: 4, offline: 5 };
 
-export default function FollowingPage({ onHome, onAbout, onQuickMatch, onWhatsHot, onFaq, onSupport, onProfile, onSignOut, onPickLegal, onOpenProfile }) {
+export default function FollowingPage({ onHome, onAbout, onQuickMatch, onWhatsHot, onFaq, onSupport, onProfile, onSignOut, onPickLegal, onOpenProfile, brandExtras }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +48,7 @@ export default function FollowingPage({ onHome, onAbout, onQuickMatch, onWhatsHo
   const activeCount = members.filter((member) => member.activity?.key && member.activity.key !== 'offline').length;
 
   return <div className="following-page">
-    <SiteHeader onHome={onHome} onAbout={onAbout} onTopics={onQuickMatch} onWhatsHot={onWhatsHot} onFollowing={() => {}} onFaq={onFaq} onSupport={onSupport} isSignedIn onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} />
+    <SiteHeader onHome={onHome} onAbout={onAbout} onTopics={onQuickMatch} onWhatsHot={onWhatsHot} onFollowing={() => {}} onFaq={onFaq} onSupport={onSupport} isSignedIn onSignOut={onSignOut} onProfile={onProfile} onPickLegal={onPickLegal} brandExtras={brandExtras} />
     <main className="following-shell">
       <header className="following-heading">
         <div><p>YOUR NETWORK</p><h1>Following<span>.</span></h1><small>See what the debaters you follow are doing right now.</small></div>
