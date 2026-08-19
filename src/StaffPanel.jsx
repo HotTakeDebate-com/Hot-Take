@@ -607,6 +607,8 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     durationMs: totals.durationMs + (topic.averageDurationMs || 0) * topic.completedMatches,
     liveQueue: totals.liveQueue + topic.liveQueue.agree + topic.liveQueue.disagree,
   }), { queueJoins: 0, matches: 0, completedMatches: 0, durationMs: 0, liveQueue: 0 });
+  const rankedQuickMatchStats = [...quickMatchStats].sort((a, b) => b.queueJoins - a.queueJoins);
+  const largestQuickMatchCount = rankedQuickMatchStats[0]?.queueJoins || 0;
   const pageSlice = (items) => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activityRows = [
     { label: 'Moderation actions', source: audit, field: 'createdAt' },
@@ -696,6 +698,20 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             <article><h2>Average duration</h2><strong>{formatDuration(quickMatchTotals.completedMatches ? quickMatchTotals.durationMs / quickMatchTotals.completedMatches : null)}</strong><span>Across {quickMatchTotals.completedMatches.toLocaleString()} completed matches</span></article>
             <article><h2>Waiting now</h2><strong>{quickMatchTotals.liveQueue}</strong><span>Users currently in Quick Match</span></article>
           </div>
+          <section className="quick-match-popularity-chart">
+            <header><div><p>ACTUAL SEARCH DATA</p><h2>Popularity by Quick Match choice</h2></div><span>Most popular to least popular · {quickMatchTotals.queueJoins.toLocaleString()} total searches</span></header>
+            {quickMatchTotals.queueJoins > 0 ? <div className="quick-match-chart-rows">
+              {rankedQuickMatchStats.map((topic, index) => {
+                const share = topic.queueJoins / quickMatchTotals.queueJoins * 100;
+                return <div className="quick-match-chart-row" key={topic.id}>
+                  <b className="quick-match-chart-rank">#{index + 1}</b>
+                  <div className="quick-match-chart-label"><strong>{topic.label}</strong><span>{share.toFixed(1)}% of all searches</span></div>
+                  <div className="quick-match-chart-track"><i style={{ width: `${largestQuickMatchCount ? topic.queueJoins / largestQuickMatchCount * 100 : 0}%` }} /></div>
+                  <strong className="quick-match-chart-value">{topic.queueJoins.toLocaleString()}</strong>
+                </div>;
+              })}
+            </div> : <div className="quick-match-chart-empty">No Quick Match searches have been recorded yet. The chart will populate from real activity.</div>}
+          </section>
           <div className="quick-match-topic-grid">
             {quickMatchStats.map((topic, index) => {
               const selections = topic.agreeSelections + topic.disagreeSelections;
