@@ -163,6 +163,7 @@ export function createAnalyticsTracker({ io, queues, customQueues, isAdminReady 
     recordMatch,
     recordMatchEnd,
     scheduleSnapshot,
+    getLiveSnapshot: buildLiveSnapshot,
     async shutdown() {
       if (snapshotTimer) clearTimeout(snapshotTimer);
       if (periodicTimer) clearInterval(periodicTimer);

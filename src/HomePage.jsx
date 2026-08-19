@@ -239,6 +239,76 @@ function QuoteCarousel() {
   );
 }
 
+function LiveOnHotTake({ onQuickMatch, onCustomRoom }) {
+  const [stats, setStats] = useState(null);
+  const [unavailable, setUnavailable] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch('/api/live-stats', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Live activity unavailable');
+        const next = await response.json();
+        if (!active) return;
+        setStats({
+          onlineUsers: Math.max(0, Number(next.onlineUsers) || 0),
+          activeDebates: Math.max(0, Number(next.activeDebates) || 0),
+          searchingUsers: Math.max(0, Number(next.searchingUsers) || 0),
+        });
+        setUnavailable(false);
+      } catch {
+        if (active) setUnavailable(true);
+      }
+    };
+
+    void load();
+    const timer = window.setInterval(load, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const cards = [
+    { key: 'onlineUsers', label: 'Online now', detail: 'Members connected', tone: 'green' },
+    { key: 'activeDebates', label: 'Live debates', detail: 'Conversations happening', tone: 'red' },
+    { key: 'searchingUsers', label: 'Finding a match', detail: 'Ready to debate', tone: 'amber' },
+  ];
+
+  return (
+    <section className="landing-live-section" aria-labelledby="landing-live-title">
+      <div className="landing-live-intro">
+        <p className="landing-live-kicker"><span aria-hidden="true" />Live on Hot Take</p>
+        <h2 id="landing-live-title">The conversation is already happening<span>.</span></h2>
+        <p>Real people. Real disagreements. See what’s happening across Hot Take right now, then jump into the conversation.</p>
+        <div className="landing-live-actions">
+          <button type="button" onClick={onQuickMatch}><IconLightning />Find your match</button>
+          <button type="button" onClick={onCustomRoom}>Create a room <span aria-hidden="true">↗</span></button>
+        </div>
+      </div>
+
+      <div className="landing-live-board" aria-live="polite">
+        <header>
+          <span><i aria-hidden="true" />Platform activity</span>
+          <small>{unavailable ? 'Reconnecting…' : stats ? 'Updates every 30 seconds' : 'Connecting…'}</small>
+        </header>
+        <div className="landing-live-stats">
+          {cards.map((card) => (
+            <article key={card.key} className={`landing-live-stat landing-live-stat--${card.tone}`}>
+              <span className="landing-live-stat-icon" aria-hidden="true"><i /><i /><i /></span>
+              <strong>{stats ? stats[card.key].toLocaleString() : '—'}</strong>
+              <h3>{card.label}</h3>
+              <p>{unavailable ? 'Live count temporarily unavailable' : card.detail}</p>
+            </article>
+          ))}
+        </div>
+        <footer><span aria-hidden="true">●</span> Counts are live platform data—not estimates.</footer>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage({
   isSignedIn,
   onSignIn,
@@ -401,6 +471,8 @@ export default function HomePage({
       </section>
 
       <QuoteCarousel />
+
+      <LiveOnHotTake onQuickMatch={handleQuick} onCustomRoom={handleCustom} />
 
       <div id="topics" className="landing-anchor" aria-hidden="true" />
       <div id="faq" className="landing-anchor" aria-hidden="true" />

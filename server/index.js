@@ -223,6 +223,19 @@ const analytics = createAnalyticsTracker({
   customQueues,
   isAdminReady: () => firebaseAdminReady,
 });
+
+// Public, anonymous activity pulse for the homepage. This deliberately exposes
+// aggregate counts only—never identities, topics, room codes, or socket IDs.
+app.get('/api/live-stats', (_req, res) => {
+  const snapshot = analytics.getLiveSnapshot();
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    onlineUsers: snapshot.onlineUsers,
+    activeDebates: snapshot.activeDebates,
+    searchingUsers: snapshot.searchingUsers,
+    updatedAt: new Date().toISOString(),
+  });
+});
 /** Keep periodic timer handle for stale custom lobby cleanup. */
 let customLobbyCleanupTimer = null;
 let metricsLogTimer = null;
