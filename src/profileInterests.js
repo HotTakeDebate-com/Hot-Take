@@ -8,7 +8,7 @@ export const PROFILE_INTEREST_GROUPS = [
     'Christian', 'Muslim', 'Jewish', 'Buddhist', 'Atheist', 'Agnostic', 'Secular', 'Spiritual', 'Stoic', 'Existentialist', 'Theology', 'Moral Philosophy', 'Political Philosophy',
   ] },
   { label: 'Social Issues & Movements', description: 'The causes and social questions you care about.', options: [
-    'Black Lives Matter', 'All Lives Matter', 'Racial Justice', 'LGBTQ+ Rights', 'Gender Equality', 'Pro-Choice', 'Pro-Life', 'Modern Feminism', 'Men’s Issues', 'Women’s Issues', 'Disability Rights', 'Workers’ Rights', 'Human Rights', 'Animal Rights', 'Religious Freedom', 'Personal Freedom',
+    'Black Lives Matter', 'All Lives Matter', 'Racial Justice', 'LGBTQ+ Rights', 'Gender Equality', 'Pro-Choice', 'Pro-Life', 'Modern Feminism', 'Men’s Issues', 'Women’s Issues', 'Disability Rights', 'Workers’ Rights', 'Human Rights', 'Religious Freedom', 'Personal Freedom',
   ] },
   { label: 'Government, Law & Rights', description: 'Public policy, individual rights, and the role of government.', options: [
     'Pro-Democracy', 'Small Government', 'Electoral Reform', 'Free Speech', 'Gun Rights', 'Gun Control', 'Immigration Reform', 'Strong Borders', 'Criminal Justice Reform', 'Police Reform', 'Universal Healthcare', 'School Choice', 'Drug Decriminalization', 'Death Penalty', 'Education Reform', 'Social Media Reform',
@@ -18,6 +18,9 @@ export const PROFILE_INTEREST_GROUPS = [
   ] },
   { label: 'Science & Technology', description: 'New technology, scientific progress, energy, and the environment.', options: [
     'Science', 'Technology', 'Artificial Intelligence', 'AI Regulation', 'Online Privacy', 'Tech Ethics', 'Space Exploration', 'Nuclear Energy', 'Renewable Energy', 'Biotechnology', 'Transhumanism', 'Climate Action', 'Climate Skepticism',
+  ] },
+  { label: 'Health & Wellness', description: 'Diet, exercise, mental health, body image, and approaches to wellbeing.', options: [
+    'Vegan', 'Vegetarian', 'Plant-Based', 'Pescatarian', 'Omnivore', 'Carnivore', 'Raw Primal', 'Keto', 'Intermittent Fasting', 'Whole Foods', 'Animal Rights', 'Fitness', 'Resistance Training', 'Bodybuilding', 'Running', 'Yoga', 'Holistic Health', 'Mental Health', 'Public Health', 'Medical Freedom', 'Body Positivity', 'Fat Acceptance', 'Fatphobia',
   ] },
   { label: 'World Affairs', description: 'International relations, security, and regional politics.', options: [
     'Foreign Policy', 'National Security', 'Diplomacy', 'Military Affairs', 'Global Development', 'Israel–Palestine', 'Ukraine–Russia', 'China–US Relations', 'European Politics', 'Middle Eastern Politics',
