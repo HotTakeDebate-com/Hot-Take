@@ -460,7 +460,10 @@ export default function ProfilePanel({
                 <p className="account-eyebrow">Community profile</p>
                 <div className="public-profile-name-row"><h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1></div>
                 {interestBanner}
-                <p className="public-profile-bio">{bio || 'This member has not added a bio yet.'}</p>
+                <section className="public-profile-bio-card" aria-label={`About ${displayName || 'this member'}`}>
+                  <div><span aria-hidden="true" />About {displayName || 'this member'}</div>
+                  <p>{bio || 'This member has not added a bio yet.'}</p>
+                </section>
               </div>
               <div className="public-profile-actions">
                 <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>{followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}</button>
