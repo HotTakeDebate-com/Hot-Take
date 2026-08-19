@@ -445,29 +445,25 @@ export default function ProfilePanel({
       <main className="account-shell account-public-shell">
         <button type="button" className="account-back" onClick={onBack}>← Back</button>
         <section className="account-card account-public-card">
-          <p className="account-eyebrow">Community profile</p>
           {loading ? <p>Loading profile…</p> : <>
-            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
-            <div className="public-profile-name-row">
-              <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
-              <button type="button" className="public-profile-follower-count" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}>{followerCount.toLocaleString()} {followerCount === 1 ? 'follower' : 'followers'}</button>
-              <button type="button" className="public-profile-follower-count" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}>{followedMembers.length.toLocaleString()} following</button>
+            <div className="public-profile-hero">
+              <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
+              <div className="public-profile-identity">
+                <p className="account-eyebrow">Community profile</p>
+                <div className="public-profile-name-row"><h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1></div>
+                {interestBanner}
+                <p className="public-profile-bio">{bio || 'This member has not added a bio yet.'}</p>
+              </div>
+              <div className="public-profile-actions">
+                <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>{followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}</button>
+                <button type="button" className="public-profile-message-button" onClick={() => setMessageOpen((open) => !open)} aria-expanded={messageOpen}>{messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}</button>
+              </div>
             </div>
-            {interestBanner}
-            <p>{bio || 'No bio yet.'}</p>
-            <div className={`public-profile-activity public-profile-activity--${activity.key}`}>
-              <i aria-hidden="true" /><span>Current status</span><strong>{activity.label}</strong>
-            </div>
-            <div className="public-profile-stats">
-              <section><span>Debate rating</span><div><strong>{ratingDisplay}</strong><b className="public-profile-rating-star">★</b><small>{ratingCountLabel}</small></div></section>
-            </div>
-            <div className="public-profile-actions">
-              <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>
-                {followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}
-              </button>
-              <button type="button" className="public-profile-message-button" onClick={() => setMessageOpen((open) => !open)} aria-expanded={messageOpen}>
-                {messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}
-              </button>
+            <div className="public-profile-dashboard" aria-label="Profile statistics">
+              <button type="button" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }} className={followersPanelOpen ? 'is-active' : ''}><span>Followers</span><strong>{followerCount.toLocaleString()}</strong><small>View community <b>→</b></small></button>
+              <button type="button" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }} className={followingPanelOpen ? 'is-active' : ''}><span>Following</span><strong>{followedMembers.length.toLocaleString()}</strong><small>View network <b>→</b></small></button>
+              <section><span>Debate rating</span><div><strong>{ratingDisplay}</strong><b className="public-profile-rating-star">★</b></div><small>{ratingCountLabel}</small></section>
+              <section className={`public-profile-dashboard-status public-profile-activity--${activity.key}`}><span>Current status</span><div><i aria-hidden="true" /><strong>{activity.label}</strong></div><small>Activity visibility</small></section>
             </div>
             {(followersPanelOpen || followingPanelOpen) && <section className="public-profile-network-panel" aria-label={followersPanelOpen ? `${displayName}'s followers` : `Accounts ${displayName} follows`}>
               <header>
