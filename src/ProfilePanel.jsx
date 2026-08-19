@@ -117,12 +117,18 @@ export default function ProfilePanel({
     setLoading(true);
     setError(null);
     setSavedMsg(null);
+    setFollowerMembers([]);
+    setFollowedMembers([]);
+    setFollowersPanelOpen(false);
+    setFollowingPanelOpen(false);
     try {
       if (!own && targetUid) {
-        const [{ identity, activity: currentActivity, followerCount: currentFollowerCount }, follow, conversation] = await Promise.all([
+        const [{ identity, activity: currentActivity, followerCount: currentFollowerCount }, follow, conversation, followersResult, followingResult] = await Promise.all([
           networkIdentity(targetUid),
           networkFollowStatus(targetUid),
           networkDirectMessages(targetUid),
+          networkFollowers(targetUid),
+          networkFollowing(targetUid),
         ]);
         setDisplayName(identity?.displayName?.trim() || 'Hot Take member');
         setBio(identity?.bio ?? '');
@@ -134,6 +140,8 @@ export default function ProfilePanel({
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true);
+        setFollowerMembers(followersResult.members || []);
+        setFollowedMembers(followingResult.members || []);
         setRating(await fetchLiveRatingSummary(targetUid));
         return;
       }
@@ -146,10 +154,12 @@ export default function ProfilePanel({
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own && prof?.uid) {
-        const [{ identity, followerCount: currentFollowerCount }, follow] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid)]);
+        const [{ identity, followerCount: currentFollowerCount }, follow, followersResult, followingResult] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid), networkFollowers(prof.uid), networkFollowing(prof.uid)]);
         setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
         setFollowerCount(Number(currentFollowerCount || 0));
+        setFollowerMembers(followersResult.members || []);
+        setFollowedMembers(followingResult.members || []);
       } else if (own && auth.currentUser?.uid) {
         const [meResult, followersResult, followingResult] = await Promise.all([
           networkMe(),
@@ -317,6 +327,8 @@ export default function ProfilePanel({
         setFollowing(true);
         setFollowerCount(Number(result.followerCount || 0));
       }
+      const followersResult = await networkFollowers(networkIdentityState.uid);
+      setFollowerMembers(followersResult.members || []);
     } catch (followError) {
       setError(followError?.message ?? 'Could not update follow.');
     } finally {
@@ -438,7 +450,8 @@ export default function ProfilePanel({
             <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
             <div className="public-profile-name-row">
               <h1>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h1>
-              <span className="public-profile-follower-count">{followerCount.toLocaleString()} {followerCount === 1 ? 'follower' : 'followers'}</span>
+              <button type="button" className="public-profile-follower-count" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}>{followerCount.toLocaleString()} {followerCount === 1 ? 'follower' : 'followers'}</button>
+              <button type="button" className="public-profile-follower-count" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}>{followedMembers.length.toLocaleString()} following</button>
             </div>
             {interestBanner}
             <p>{bio || 'No bio yet.'}</p>
@@ -456,6 +469,20 @@ export default function ProfilePanel({
                 {messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}
               </button>
             </div>
+            {(followersPanelOpen || followingPanelOpen) && <section className="public-profile-network-panel" aria-label={followersPanelOpen ? `${displayName}'s followers` : `Accounts ${displayName} follows`}>
+              <header>
+                <div><span>DEBATE NETWORK</span><h2>{followersPanelOpen ? 'Followers' : 'Following'}</h2><p>{followersPanelOpen ? `People who follow ${displayName || 'this member'}.` : `Accounts ${displayName || 'this member'} follows.`}</p></div>
+                <b>{(followersPanelOpen ? followerMembers : followedMembers).length}</b>
+                <button type="button" onClick={() => { setFollowersPanelOpen(false); setFollowingPanelOpen(false); }} aria-label="Close network list">×</button>
+              </header>
+              {(followersPanelOpen ? followerMembers : followedMembers).length ? <div className="account-following-list">
+                {(followersPanelOpen ? followerMembers : followedMembers).map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
+                  <span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
+                  <span className="account-following-identity"><strong>{member.displayName || 'Hot Take member'} <IdentityBadges compact premium={member.premium} verified={member.verifiedDebater} role={member.role} /></strong><small><i className={`is-${member.activity?.key || 'offline'}`} aria-hidden="true" />{member.activity?.label || 'Offline'}</small></span>
+                  <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
+                </button>)}
+              </div> : <div className="account-following-empty"><strong>{followersPanelOpen ? 'No followers yet.' : 'Not following anyone yet.'}</strong><p>This list will update as connections are made.</p></div>}
+            </section>}
             {hostedRoom && <section className="public-profile-live-room" aria-label="Live public debate room">
               <div className="public-profile-live-room-copy">
                 <span className="public-profile-live-kicker"><i aria-hidden="true" /> Hosting now</span>
