@@ -44,4 +44,6 @@ export const staffNews = () => request('/news');
 export const staffSaveNews = (story) => story.id
   ? request('/news/' + encodeURIComponent(story.id), { method: 'POST', body: JSON.stringify(story) })
   : request('/news', { method: 'POST', body: JSON.stringify(story) });
+export const staffDailyTake = () => request('/daily-take');
+export const staffSaveDailyTake = (take) => request('/daily-take', { method: 'POST', body: JSON.stringify(take) });
 

@@ -3,7 +3,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
-import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffQuickMatchStats, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews, staffVerificationApplications, staffReviewVerification } from './staffApi.js';
+import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffQuickMatchStats, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews, staffVerificationApplications, staffReviewVerification, staffDailyTake, staffSaveDailyTake } from './staffApi.js';
 import IdentityBadges from './IdentityBadges.jsx';
 import './DebateNetwork.css';
 import './WhatsHotAdmin.css';
@@ -294,6 +294,28 @@ function NewsManager({ stories, onReload }) {
   );
 }
 
+function DailyTakeManager({ data, onReload }) {
+  const [statement, setStatement] = useState(data?.take?.statement || '');
+  const [topicId, setTopicId] = useState(data?.take?.topicId || data?.topics?.[0]?.id || '');
+  const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setStatement(data?.take?.statement || ''); setTopicId(data?.take?.topicId || data?.topics?.[0]?.id || ''); }, [data]);
+  const save = async () => {
+    setSaving(true); setMessage('');
+    try { await staffSaveDailyTake({ statement, topicId }); setMessage('The new Hot Take of the Day is live. Vote totals were reset for the new question.'); await onReload(); }
+    catch (error) { setMessage(error.message); }
+    finally { setSaving(false); }
+  };
+  return <section className="admin-daily-take-editor">
+    <header><div><p>HOMEPAGE FEATURE</p><h2>Hot Take of the Day</h2></div><span>{Number(data?.take?.agreeVotes || 0) + Number(data?.take?.disagreeVotes || 0)} current votes</span></header>
+    <label>Daily statement<textarea rows="4" maxLength="280" value={statement} onChange={(event) => setStatement(event.target.value)} /></label>
+    <label>Quick Match topic<select value={topicId} onChange={(event) => setTopicId(event.target.value)}>{(data?.topics || []).map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}</select><small>The debate button sends voters into this existing Quick Match queue.</small></label>
+    <div className="admin-daily-preview"><span>Homepage preview</span><blockquote>{statement || 'Enter a statement above.'}</blockquote><p><b>{data?.take?.agreeVotes || 0}</b> agree · <b>{data?.take?.disagreeVotes || 0}</b> disagree</p></div>
+    {message && <p className="admin-daily-message">{message}</p>}
+    <button className="admin-daily-publish" type="button" disabled={saving || statement.trim().length < 10 || !topicId} onClick={save}>{saving ? 'Publishing…' : 'Publish as today’s take'}</button>
+  </section>;
+}
+
 export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
   const [tab, setTab] = useState('dashboard');
   const [reports, setReports] = useState([]);
@@ -311,6 +333,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   const spectatorConnectionsRef = useRef(new Map());
   const [page, setPage] = useState(1);
   const [newsStories, setNewsStories] = useState([]);
+  const [dailyTake, setDailyTake] = useState({ take: null, topics: [] });
   const [verificationApplications, setVerificationApplications] = useState([]);
   const [punishmentNow, setPunishmentNow] = useState(Date.now());
   const [permissions, setPermissions] = useState({});
@@ -356,6 +379,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
       if (tab === 'news') setNewsStories((await staffNews()).stories || []);
+      if (tab === 'dailyTake') setDailyTake(await staffDailyTake());
       if (tab === 'verification') {
         const data = await staffVerificationApplications();
         setVerificationApplications(data.applications || []);
@@ -634,13 +658,14 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b><AdminIcon type="news" /></b>What&apos;s Hot</button>}
+        {(role === 'admin' || role === 'owner') && <button className={tab === 'dailyTake' ? 'active' : ''} onClick={() => setTab('dailyTake')}><b><AdminIcon type="statistics" /></b>Daily Take</button>}
         <button className={tab === 'verification' ? 'active' : ''} onClick={() => setTab('verification')}><b><AdminIcon type="verification" /></b>Verification {verificationApplications.filter((item) => item.status === 'pending').length > 0 && <i>{verificationApplications.filter((item) => item.status === 'pending').length}</i>}</button>
         <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b><AdminIcon type="punishments" /></b>Punishment Log</button>
         <span />
         <button onClick={onBack}><b><AdminIcon type="back" /></b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'quickMatch' ? 'Quick Match Statistics' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'quickMatch' ? 'Quick Match Statistics' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'dailyTake' ? 'Hot Take of the Day' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
         {error && <div className="admin-notice error"><b><AdminIcon type="close" /></b>{error}</div>}
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
@@ -900,6 +925,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
           </article>) : <div className="admin-notice">No verification applications found.</div>}
         </section>}
         {tab === 'news' && !busy && <NewsManager stories={newsStories} onReload={load} />}
+        {tab === 'dailyTake' && !busy && <DailyTakeManager data={dailyTake} onReload={load} />}
 
         {tab === 'punishments' && !busy && <section className="punishment-log">
           <div className="punishment-log-summary">

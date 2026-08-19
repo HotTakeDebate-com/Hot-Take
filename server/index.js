@@ -16,6 +16,7 @@ import { attachStaffRoutes } from './staffApi.js';
 import { attachWarningRoutes } from './warningApi.js';
 import { attachNetworkRoutes, notifyFollowersRoomCreated } from './networkApi.js';
 import { createAnalyticsTracker } from './analytics.js';
+import { attachDailyTakeRoutes } from './dailyTakeApi.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -503,6 +504,7 @@ app.delete('/api/account', async (req, res) => {
 });
 
 attachModerationRoutes(app, { isAdminReady: () => firebaseAdminReady });
+attachDailyTakeRoutes(app, { isAdminReady: () => firebaseAdminReady });
 attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady, io, customGames });
 attachWarningRoutes(app, { isAdminReady: () => firebaseAdminReady });
 attachNetworkRoutes(app, { isAdminReady: () => firebaseAdminReady, io });

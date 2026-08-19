@@ -1,6 +1,7 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import { TOPICS } from '../shared/topics.js';
+import { validateDailyTakeInput } from './dailyTakeApi.js';
 
 const PRIMARY_OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
 const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL, 'andrewbarless@gmail.com']);
@@ -892,6 +893,28 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     const snap = await db.collection('whats_hot_stories').limit(200).get();
     const stories = snap.docs.map(serializeStory).sort((a, b) => b.updatedAtMs - a.updatedAtMs);
     res.json({ stories });
+  });
+
+  router.get('/daily-take', requirePermission('manageNews'), async (_req, res) => {
+    const snap = await admin.firestore().collection('daily_take').doc('current').get();
+    res.json({ take: snap.exists ? snap.data() : null, topics: TOPICS });
+  });
+
+  router.post('/daily-take', requirePermission('manageNews'), async (req, res) => {
+    let input;
+    try { input = validateDailyTakeInput(req.body); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
+    const version = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    await admin.firestore().collection('daily_take').doc('current').set({
+      ...input,
+      version,
+      agreeVotes: 0,
+      disagreeVotes: 0,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedBy: req.staff.email,
+    });
+    await audit('daily_take_publish', req.staff, null, { statement: input.statement, topicId: input.topicId, version });
+    res.json({ ok: true, version });
   });
 
   router.post('/news', requirePermission('manageNews'), async (req, res) => {

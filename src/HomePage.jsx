@@ -11,6 +11,7 @@ import {
   StepIconMatch,
 } from './LandingAssets.jsx';
 import { SiteHeader } from './SiteChrome.jsx';
+import { auth } from './firebase.js';
 
 function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -309,6 +310,74 @@ function LiveOnHotTake({ onQuickMatch, onCustomRoom }) {
   );
 }
 
+function HotTakeOfTheDay({ isSignedIn, onSignIn, onDebate }) {
+  const [take, setTake] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const load = async () => {
+    try {
+      const token = await auth?.currentUser?.getIdToken();
+      const response = await fetch('/api/daily-take', { cache: 'no-store', headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!response.ok) throw new Error('Today’s take is unavailable.');
+      setTake(await response.json());
+    } catch (error) { setMessage(error.message); }
+  };
+
+  useEffect(() => { void load(); }, [isSignedIn]);
+
+  const vote = async (side) => {
+    if (!isSignedIn) { onSignIn(); return; }
+    setBusy(true); setMessage('');
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/daily-take/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ side }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'Your vote could not be saved.');
+      setTake((current) => ({ ...current, ...body }));
+    } catch (error) { setMessage(error.message); }
+    finally { setBusy(false); }
+  };
+
+  if (!take) return message ? null : <section className="landing-daily-take landing-daily-take--loading" aria-label="Loading Hot Take of the Day" />;
+  const total = take.agreeVotes + take.disagreeVotes;
+  const agreePercent = total ? Math.round(take.agreeVotes / total * 100) : 50;
+  const disagreePercent = total ? 100 - agreePercent : 50;
+  const oppositeSide = take.viewerVote === 'agree' ? 'disagree' : 'agree';
+
+  return (
+    <section className="landing-daily-take" aria-labelledby="daily-take-title">
+      <div className="landing-daily-heading">
+        <p><span>24H</span>Hot Take of the Day</p>
+        <h2 id="daily-take-title">Pick a side<span>.</span></h2>
+        <small>Vote once, change your mind anytime, then defend your position live.</small>
+      </div>
+      <div className="landing-daily-arena">
+        <div className="landing-daily-statement"><span>Today’s statement</span><blockquote>{take.statement}</blockquote><small>{total.toLocaleString()} verified vote{total === 1 ? '' : 's'}</small></div>
+        <div className="landing-daily-votes">
+          <button className={`landing-daily-side landing-daily-side--agree${take.viewerVote === 'agree' ? ' selected' : ''}`} disabled={busy} onClick={() => vote('agree')}>
+            <span>Agree</span><strong>{take.viewerVote ? `${agreePercent}%` : 'Vote'}</strong><small>{take.agreeVotes.toLocaleString()} vote{take.agreeVotes === 1 ? '' : 's'}</small>
+          </button>
+          <div className="landing-daily-vs"><span>VS</span></div>
+          <button className={`landing-daily-side landing-daily-side--disagree${take.viewerVote === 'disagree' ? ' selected' : ''}`} disabled={busy} onClick={() => vote('disagree')}>
+            <span>Disagree</span><strong>{take.viewerVote ? `${disagreePercent}%` : 'Vote'}</strong><small>{take.disagreeVotes.toLocaleString()} vote{take.disagreeVotes === 1 ? '' : 's'}</small>
+          </button>
+          <div className="landing-daily-result" style={{ '--agree-share': `${agreePercent}%` }} aria-label={`${agreePercent}% agree and ${disagreePercent}% disagree`}><i /><i /></div>
+        </div>
+        {message && <p className="landing-daily-message">{message}</p>}
+        <footer>
+          <p>{take.viewerVote ? <>You voted <strong>{take.viewerVote}</strong>. Ready to hear the other side?</> : 'Sign in, cast your vote, and see the live result.'}</p>
+          <button type="button" disabled={!take.viewerVote} onClick={() => onDebate(take.topicId, oppositeSide)}><IconLightning />Debate the other side</button>
+        </footer>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage({
   isSignedIn,
   onSignIn,
@@ -337,6 +406,11 @@ export default function HomePage({
   const handleCustom = () => {
     if (!isSignedIn) onSignIn();
     else onCustomRoom();
+  };
+
+  const handleDailyDebate = (topicId, side) => {
+    if (!isSignedIn) onSignIn();
+    else onQuickMatch({ topicId, side });
   };
 
   useEffect(() => {
@@ -473,6 +547,8 @@ export default function HomePage({
       <QuoteCarousel />
 
       <LiveOnHotTake onQuickMatch={handleQuick} onCustomRoom={handleCustom} />
+
+      <HotTakeOfTheDay isSignedIn={isSignedIn} onSignIn={onSignIn} onDebate={handleDailyDebate} />
 
       <div id="topics" className="landing-anchor" aria-hidden="true" />
       <div id="faq" className="landing-anchor" aria-hidden="true" />

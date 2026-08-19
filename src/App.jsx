@@ -891,12 +891,13 @@ export default function App() {
     setStep(matchMode === 'custom' ? 'custom' : 'topic');
   };
 
-  const startQuickMatch = () => {
+  const startQuickMatch = (options = null) => {
     if (!requireVerifiedEmail()) return;
+    const preset = options && typeof options === 'object' && typeof options.topicId === 'string' ? options : null;
     setError(null);
     setMatchMode('quick');
-    setTopicId(null);
-    setSide(null);
+    setTopicId(preset && TOPICS.some((topic) => topic.id === preset.topicId) ? preset.topicId : null);
+    setSide(preset && ['agree', 'disagree'].includes(preset.side) ? preset.side : null);
     setStep('topic');
   };
 
