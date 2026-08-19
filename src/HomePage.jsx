@@ -192,28 +192,36 @@ function QuoteCarousel() {
           <p className="landing-quotes-eyebrow">Ideas worth debating</p>
           <h2 id="landing-quotes-title">Think deeper<span>.</span></h2>
         </div>
-        <p>Words on disagreement, truth, freedom, and moral courage.</p>
+        <p>A rotating collection of ideas that shaped how we disagree, question, and speak freely.</p>
       </div>
 
       <div className="landing-quote-stage">
         <button className="landing-quote-arrow landing-quote-arrow--previous" type="button" onClick={() => show(index - 1)} aria-label="Previous quote">←</button>
         <article className={`landing-quote-card${isFading ? ' is-fading' : ''}`} aria-live="polite">
-          <div className="landing-quote-category"><span aria-hidden="true">◆</span>{quote.category}</div>
-          <blockquote>“{quote.quote}”</blockquote>
-          <footer>
-            <div>
-              <strong>— {quote.author}</strong>
-              <span>{quote.date}</span>
-            </div>
-            <span className="landing-quote-count">{String(index + 1).padStart(2, '0')} / {HOME_QUOTES.length}</span>
-          </footer>
-          {quote.source && <p className="landing-quote-source">Source: <cite>{quote.source}</cite></p>}
-          {quote.note && <p className="landing-quote-note"><span aria-hidden="true">!</span>{quote.note}</p>}
+          <span className="landing-quote-mark" aria-hidden="true">“</span>
+          <div className="landing-quote-content">
+            <div className="landing-quote-category"><span aria-hidden="true" />{quote.category}</div>
+            <blockquote>{quote.quote}</blockquote>
+            <footer>
+              <div className="landing-quote-author">
+                <strong>{quote.author}</strong>
+                <span>{quote.date}</span>
+              </div>
+              <span className="landing-quote-count"><b>{String(index + 1).padStart(2, '0')}</b><i />{String(HOME_QUOTES.length).padStart(2, '0')}</span>
+            </footer>
+            {(quote.source || quote.note) && (
+              <div className="landing-quote-context">
+                {quote.source && <p className="landing-quote-source"><span>Source</span><cite>{quote.source}</cite></p>}
+                {quote.note && <p className="landing-quote-note"><span aria-hidden="true">i</span>{quote.note}</p>}
+              </div>
+            )}
+          </div>
         </article>
         <button className="landing-quote-arrow landing-quote-arrow--next" type="button" onClick={() => show(index + 1)} aria-label="Next quote">→</button>
       </div>
 
       <div className="landing-quote-controls">
+        <span>Explore the collection</span>
         <div className="landing-quote-dots" aria-label="Choose a quote">
           {HOME_QUOTES.map((item, itemIndex) => (
             <button
