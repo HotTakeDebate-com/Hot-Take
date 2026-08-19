@@ -1,5 +1,6 @@
 import express from 'express';
 import admin from 'firebase-admin';
+import { MAX_PROFILE_INTERESTS, sanitizeProfileInterests } from '../src/profileInterests.js';
 
 const OWNER_EMAILS = new Set([
   (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase(),
@@ -48,7 +49,7 @@ async function publicIdentity(uid) {
     displayName: String(profile.displayName || user.displayName || 'Hot Take member'),
     avatarUrl: String(profile.avatarUrl || ''),
     bio: String(profile.bio || ''),
-    interests: Array.isArray(profile.interests) ? profile.interests.filter((interest) => typeof interest === 'string').slice(0, 5) : [],
+    interests: sanitizeProfileInterests(profile.interests).slice(0, MAX_PROFILE_INTERESTS),
     role: STAFF_ROLES.has(role) ? role : 'user',
     premium: user.customClaims?.premium === true,
     verifiedDebater: user.customClaims?.verifiedDebater === true,
@@ -62,6 +63,17 @@ async function followerCountForUid(uid) {
 
 export function attachNetworkRoutes(app, { isAdminReady, io }) {
   const router = express.Router();
+  router.put('/profile', requireUser, async (req, res) => {
+    if (!isAdminReady()) return res.status(503).json({ error: 'Profile updates are temporarily unavailable.' });
+    const email = String(req.networkUser.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ error: 'Your account does not have an email address.' });
+    const updates = { uid: req.networkUser.uid, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'bio')) updates.bio = String(req.body.bio || '').trim().slice(0, 500);
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'avatarUrl')) updates.avatarUrl = String(req.body.avatarUrl || '').trim().slice(0, 250000);
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'interests')) updates.interests = sanitizeProfileInterests(req.body.interests);
+    await admin.firestore().collection('publicProfiles').doc(email).set(updates, { merge: true });
+    res.json({ ok: true, interests: updates.interests });
+  });
   const activityForUid = async (uid) => {
     const privacy = await admin.firestore().collection('network_privacy').doc(uid).get();
     if (privacy.data()?.appearOffline === true) return { key: 'offline', label: 'Offline' };

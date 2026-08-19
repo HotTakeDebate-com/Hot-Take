@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import {
   fetchPublicProfile,
+  saveProfileInterests,
   savePublicProfile,
   userProfileDocId,
 } from './chitChatFirestore.js';
@@ -11,7 +12,7 @@ import ProfileEmailVerification from './ProfileEmailVerification.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
-import { MAX_PROFILE_INTERESTS, PROFILE_INTEREST_GROUPS, sanitizeProfileInterests } from './profileInterests.js';
+import { MAX_PROFILE_INTERESTS_PER_CATEGORY, PROFILE_INTEREST_GROUPS, sanitizeProfileInterests } from './profileInterests.js';
 import IdentityBadges from './IdentityBadges.jsx';
 import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowers, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
 import './DebateNetwork.css';
@@ -411,17 +412,20 @@ export default function ProfilePanel({
     setTagsOpen(true);
   };
   const toggleDraftInterest = (interest) => {
-    setTagDraft((current) => current.includes(interest)
-      ? current.filter((item) => item !== interest)
-      : current.length < MAX_PROFILE_INTERESTS ? [...current, interest] : current);
+    setTagDraft((current) => {
+      if (current.includes(interest)) return current.filter((item) => item !== interest);
+      const category = PROFILE_INTEREST_GROUPS.find((group) => group.options.includes(interest));
+      const selectedInCategory = category?.options.filter((option) => current.includes(option)).length || 0;
+      return selectedInCategory < MAX_PROFILE_INTERESTS_PER_CATEGORY ? [...current, interest] : current;
+    });
   };
   const saveTags = async () => {
     setTagBusy(true);
     setError(null);
     setSavedMsg(null);
     try {
-      await savePublicProfile({ displayName, bio, avatarUrl, interests: tagDraft });
-      setInterests(tagDraft);
+      const savedInterests = await saveProfileInterests(tagDraft);
+      setInterests(savedInterests);
       setTagsOpen(false);
       setSavedMsg('Profile tags saved.');
     } catch (tagError) {
@@ -433,6 +437,10 @@ export default function ProfilePanel({
   const interestBanner = (interests.length > 0 || isStaffProfile) && <div className="account-interest-banner" aria-label="Profile interests">
     {isStaffProfile && <span className="account-staff-tag">STAFF</span>}
     {interests.map((interest) => <span key={interest}>{interest}</span>)}
+  </div>;
+  const overviewInterestBanner = interests.length > 0 && <div className="account-overview-interests" aria-label="Your profile tags">
+    <small>Profile tags</small>
+    <div>{interests.map((interest) => <span key={interest}>{interest}</span>)}</div>
   </div>;
 
   if (!resolvedEmail && !targetUid) {
@@ -553,7 +561,7 @@ export default function ProfilePanel({
                   <strong>{followedMembers.length.toLocaleString()}</strong> following <span aria-hidden="true">→</span>
                 </button>
               </div>
-              {interestBanner}
+              {overviewInterestBanner}
             </div>
             <div className="account-overview-tools">
               <span className={`account-status ${auth.currentUser?.emailVerified ? 'verified' : ''}`}>
@@ -657,19 +665,21 @@ export default function ProfilePanel({
     {tagsOpen && <div className="account-tags-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !tagBusy) setTagsOpen(false); }}>
       <section className="account-tags-modal" role="dialog" aria-modal="true" aria-labelledby="profile-tags-title">
         <header>
-          <div><p className="account-eyebrow">Personalize your profile</p><h2 id="profile-tags-title">Choose your tags<span>.</span></h2><small>Select up to {MAX_PROFILE_INTERESTS} interests to display on your profile.</small></div>
+          <div><p className="account-eyebrow">Personalize your profile</p><h2 id="profile-tags-title">Choose your tags<span>.</span></h2><small>Select up to {MAX_PROFILE_INTERESTS_PER_CATEGORY} interests from each category.</small></div>
           <button type="button" onClick={() => setTagsOpen(false)} disabled={tagBusy} aria-label="Close tags menu">×</button>
         </header>
-        <div className="account-tags-selected"><strong>Your selections</strong><span>{tagDraft.length}/{MAX_PROFILE_INTERESTS}</span><div>{tagDraft.length ? tagDraft.map((interest) => <button key={interest} type="button" onClick={() => toggleDraftInterest(interest)}>{interest} <b aria-hidden="true">×</b></button>) : <small>No tags selected yet.</small>}</div></div>
+        <div className="account-tags-selected"><strong>Your selections</strong><span>{tagDraft.length} selected</span><div>{tagDraft.length ? tagDraft.map((interest) => <button key={interest} type="button" onClick={() => toggleDraftInterest(interest)}>{interest} <b aria-hidden="true">×</b></button>) : <small>No tags selected yet.</small>}</div></div>
         <div className="account-tags-modal-content">
-          {PROFILE_INTEREST_GROUPS.map((group) => <section key={group.label}>
-            <div><h3>{group.label}</h3><p>{group.description}</p></div>
+          {PROFILE_INTEREST_GROUPS.map((group) => {
+            const selectedInGroup = group.options.filter((interest) => tagDraft.includes(interest)).length;
+            return <section key={group.label}>
+            <div><h3>{group.label} <span>{selectedInGroup}/{MAX_PROFILE_INTERESTS_PER_CATEGORY}</span></h3><p>{group.description}</p></div>
             <div className="account-tags-options">{group.options.map((interest) => {
               const selected = tagDraft.includes(interest);
-              const disabled = !selected && tagDraft.length >= MAX_PROFILE_INTERESTS;
+              const disabled = !selected && selectedInGroup >= MAX_PROFILE_INTERESTS_PER_CATEGORY;
               return <button key={interest} type="button" className={selected ? 'selected' : ''} aria-pressed={selected} disabled={disabled || tagBusy} onClick={() => toggleDraftInterest(interest)}><span aria-hidden="true">{selected ? '✓' : '+'}</span>{interest}</button>;
             })}</div>
-          </section>)}
+          </section>;})}
         </div>
         <footer><button type="button" className="account-tags-cancel" onClick={() => setTagsOpen(false)} disabled={tagBusy}>Cancel</button><button type="button" className="account-tags-save" onClick={saveTags} disabled={tagBusy}>{tagBusy ? 'Saving…' : 'Save selections'}</button></footer>
       </section>

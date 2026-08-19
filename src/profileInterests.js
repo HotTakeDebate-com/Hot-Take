@@ -1,4 +1,4 @@
-export const MAX_PROFILE_INTERESTS = 5;
+export const MAX_PROFILE_INTERESTS_PER_CATEGORY = 3;
 
 export const PROFILE_INTEREST_GROUPS = [
   { label: 'Political Identity', description: 'How you identify politically or ideologically.', options: [
@@ -8,10 +8,10 @@ export const PROFILE_INTEREST_GROUPS = [
     'Christian', 'Muslim', 'Jewish', 'Buddhist', 'Atheist', 'Agnostic', 'Secular', 'Spiritual', 'Stoic', 'Existentialist', 'Theology', 'Moral Philosophy', 'Political Philosophy',
   ] },
   { label: 'Social Issues & Movements', description: 'The causes and social questions you care about.', options: [
-    'Black Lives Matter', 'All Lives Matter', 'Racial Justice', 'LGBTQ+ Rights', 'Gender Equality', 'Pro-Choice', 'Pro-Life', 'Modern Feminism', 'Men’s Issues', 'Women’s Issues', 'Disability Rights', 'Workers’ Rights', 'Human Rights', 'Religious Freedom', 'Personal Freedom',
+    'Black Lives Matter', 'All Lives Matter', 'Free Speech', 'Racial Justice', 'LGBTQ+ Rights', 'Gender Equality', 'Pro-Choice', 'Pro-Life', 'Modern Feminism', 'Men’s Issues', 'Women’s Issues', 'Disability Rights', 'Workers’ Rights', 'Human Rights', 'Religious Freedom', 'Personal Freedom',
   ] },
   { label: 'Government, Law & Rights', description: 'Public policy, individual rights, and the role of government.', options: [
-    'Pro-Democracy', 'Small Government', 'Electoral Reform', 'Free Speech', 'Gun Rights', 'Gun Control', 'Immigration Reform', 'Strong Borders', 'Criminal Justice Reform', 'Police Reform', 'Universal Healthcare', 'School Choice', 'Drug Decriminalization', 'Death Penalty', 'Education Reform', 'Social Media Reform',
+    'Pro-Democracy', 'Small Government', 'Electoral Reform', 'Gun Rights', 'Gun Control', 'Immigration Reform', 'Strong Borders', 'Criminal Justice Reform', 'Police Reform', 'Universal Healthcare', 'School Choice', 'Drug Decriminalization', 'Death Penalty', 'Education Reform', 'Social Media Reform',
   ] },
   { label: 'Economics', description: 'Economic systems, work, taxes, and public spending.', options: [
     'Free Markets', 'Capitalism', 'Social Democracy', 'Wealth Redistribution', 'Lower Taxes', 'Higher Minimum Wage', 'Universal Basic Income', 'Labor Unions', 'Affordable Housing', 'Fiscal Responsibility', 'Corporate Regulation', 'International Trade', 'Cryptocurrency',
@@ -34,6 +34,7 @@ export const PROFILE_INTEREST_GROUPS = [
 ];
 
 const PROFILE_INTEREST_OPTIONS = new Set(PROFILE_INTEREST_GROUPS.flatMap((group) => group.options));
+export const MAX_PROFILE_INTERESTS = PROFILE_INTEREST_GROUPS.length * MAX_PROFILE_INTERESTS_PER_CATEGORY;
 const LEGACY_INTEREST_LABELS = {
   Christianity: 'Christian', Islam: 'Muslim', Judaism: 'Jewish', Buddhism: 'Buddhist',
   Atheism: 'Atheist', Agnosticism: 'Agnostic', Secularism: 'Secular', Spirituality: 'Spiritual',
@@ -43,7 +44,15 @@ const LEGACY_INTEREST_LABELS = {
 
 export function sanitizeProfileInterests(value) {
   if (!Array.isArray(value)) return [];
+  const categoryCounts = new Map();
   return [...new Set(value.map((interest) => LEGACY_INTEREST_LABELS[interest] || interest))]
-    .filter((interest) => typeof interest === 'string' && PROFILE_INTEREST_OPTIONS.has(interest))
-    .slice(0, MAX_PROFILE_INTERESTS);
+    .filter((interest) => {
+      if (typeof interest !== 'string' || !PROFILE_INTEREST_OPTIONS.has(interest)) return false;
+      const category = PROFILE_INTEREST_GROUPS.find((group) => group.options.includes(interest))?.label;
+      if (!category) return false;
+      const count = categoryCounts.get(category) || 0;
+      if (count >= MAX_PROFILE_INTERESTS_PER_CATEGORY) return false;
+      categoryCounts.set(category, count + 1);
+      return true;
+    });
 }

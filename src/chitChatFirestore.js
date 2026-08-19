@@ -13,7 +13,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { networkUpdateDisplayName } from './networkApi.js';
+import { networkUpdateDisplayName, networkUpdateProfile } from './networkApi.js';
 import { auth, db, isFirebaseConfigured } from './firebase.js';
 import { sanitizeProfileInterests } from './profileInterests.js';
 
@@ -298,18 +298,7 @@ export async function savePublicProfile({ displayName, bio, avatarUrl = '', inte
   const avatar = String(avatarUrl ?? '').trim().slice(0, 250000);
   const selectedInterests = sanitizeProfileInterests(interests);
   await networkUpdateDisplayName(dn);
-  await setDoc(
-    doc(db, 'publicProfiles', key),
-    {
-      uid: auth.currentUser.uid,
-      displayName: dn,
-      bio: b,
-      avatarUrl: avatar,
-      interests: selectedInterests,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  await networkUpdateProfile({ bio: b, avatarUrl: avatar, interests: selectedInterests });
   try {
     await updateProfile(auth.currentUser, { displayName: dn || auth.currentUser.displayName || '' });
   } catch {
@@ -319,6 +308,13 @@ export async function savePublicProfile({ displayName, bio, avatarUrl = '', inte
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('hot-take-profile-updated', { detail: { avatarUrl: avatar } }));
   }
+}
+
+export async function saveProfileInterests(interests = []) {
+  if (!isFirebaseConfigured || !auth?.currentUser?.email) throw new Error('Not signed in.');
+  const selectedInterests = sanitizeProfileInterests(interests);
+  await networkUpdateProfile({ interests: selectedInterests });
+  return selectedInterests;
 }
 
 export async function fetchFollowingEmails() {

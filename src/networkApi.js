@@ -14,6 +14,7 @@ async function networkRequest(path, options = {}) {
 
 export const networkMe = () => networkRequest('/me');
 export const networkUpdatePresencePrivacy = (appearOffline) => networkRequest('/presence-privacy', { method: 'PUT', body: JSON.stringify({ appearOffline }) });
+export const networkUpdateProfile = (profile) => networkRequest('/profile', { method: 'PUT', body: JSON.stringify(profile) });
 export const networkSearchMembers = (query) => networkRequest('/members/search?q=' + encodeURIComponent(query));
 export const networkUpdateDisplayName = (displayName) => networkRequest('/display-name', { method: 'PUT', body: JSON.stringify({ displayName }) });
 export const networkIdentity = (uid) => networkRequest('/identity/' + encodeURIComponent(uid));
