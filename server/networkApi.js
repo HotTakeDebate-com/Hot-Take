@@ -347,50 +347,52 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     res.json({ following: snap.exists });
   });
 
+  const networkMembers = async (uid, relationship) => {
+    await admin.auth().getUser(uid);
+    const collectionName = relationship === 'followers' ? 'followers' : 'following';
+    const snap = await admin.firestore().collection(collectionName).doc(uid).collection('members').get();
+    const members = (await Promise.all(snap.docs.map(async (member) => {
+      const data = member.data() || {};
+      const memberUid = String(relationship === 'followers' ? data.followerUid || member.id : data.targetUid || member.id).trim();
+      if (!memberUid) return null;
+      try {
+        return {
+          ...(await publicIdentity(memberUid)),
+          followedAtMs: serializeTime(data.createdAt),
+          activity: await activityForUid(memberUid),
+        };
+      } catch {
+        return null;
+      }
+    }))).filter(Boolean);
+    members.sort((a, b) => (b.followedAtMs || 0) - (a.followedAtMs || 0) || a.displayName.localeCompare(b.displayName));
+    return members;
+  };
+
   router.get('/following', async (req, res) => {
     try {
-      const snap = await admin.firestore().collection('following').doc(req.networkUser.uid).collection('members').get();
-      const members = (await Promise.all(snap.docs.map(async (member) => {
-        const targetUid = String(member.data()?.targetUid || member.id || '').trim();
-        if (!targetUid) return null;
-        try {
-          return {
-            ...(await publicIdentity(targetUid)),
-            followedAtMs: serializeTime(member.data()?.createdAt),
-            activity: await activityForUid(targetUid),
-          };
-        } catch {
-          return null;
-        }
-      }))).filter(Boolean);
-      members.sort((a, b) => (b.followedAtMs || 0) - (a.followedAtMs || 0) || a.displayName.localeCompare(b.displayName));
-      res.json({ members });
+      res.json({ members: await networkMembers(req.networkUser.uid, 'following') });
     } catch {
       res.status(500).json({ error: 'Could not load the accounts you follow.' });
     }
   });
 
+  router.get('/following/:uid', async (req, res) => {
+    try { res.json({ members: await networkMembers(String(req.params.uid), 'following') }); }
+    catch { res.status(404).json({ error: 'Could not load this member’s following list.' }); }
+  });
+
   router.get('/followers', async (req, res) => {
     try {
-      const snap = await admin.firestore().collection('followers').doc(req.networkUser.uid).collection('members').get();
-      const members = (await Promise.all(snap.docs.map(async (member) => {
-        const followerUid = String(member.data()?.followerUid || member.id || '').trim();
-        if (!followerUid) return null;
-        try {
-          return {
-            ...(await publicIdentity(followerUid)),
-            followedAtMs: serializeTime(member.data()?.createdAt),
-            activity: await activityForUid(followerUid),
-          };
-        } catch {
-          return null;
-        }
-      }))).filter(Boolean);
-      members.sort((a, b) => (b.followedAtMs || 0) - (a.followedAtMs || 0) || a.displayName.localeCompare(b.displayName));
-      res.json({ members });
+      res.json({ members: await networkMembers(req.networkUser.uid, 'followers') });
     } catch {
       res.status(500).json({ error: 'Could not load your followers.' });
     }
+  });
+
+  router.get('/followers/:uid', async (req, res) => {
+    try { res.json({ members: await networkMembers(String(req.params.uid), 'followers') }); }
+    catch { res.status(404).json({ error: 'Could not load this member’s followers.' }); }
   });
 
   router.post('/follow/:uid', async (req, res) => {

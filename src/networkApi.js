@@ -18,8 +18,8 @@ export const networkSearchMembers = (query) => networkRequest('/members/search?q
 export const networkUpdateDisplayName = (displayName) => networkRequest('/display-name', { method: 'PUT', body: JSON.stringify({ displayName }) });
 export const networkIdentity = (uid) => networkRequest('/identity/' + encodeURIComponent(uid));
 export const networkFollowStatus = (uid) => networkRequest('/follow/' + encodeURIComponent(uid));
-export const networkFollowing = () => networkRequest('/following');
-export const networkFollowers = () => networkRequest('/followers');
+export const networkFollowing = (uid = '') => networkRequest('/following' + (uid ? '/' + encodeURIComponent(uid) : ''));
+export const networkFollowers = (uid = '') => networkRequest('/followers' + (uid ? '/' + encodeURIComponent(uid) : ''));
 export const networkFollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'POST' });
 export const networkUnfollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'DELETE' });
 export const networkDirectMessages = (uid) => networkRequest('/messages/' + encodeURIComponent(uid));
