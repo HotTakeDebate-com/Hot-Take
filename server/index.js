@@ -127,13 +127,15 @@ tryInitFirebaseAdmin();
  */
 function rejectIfSocketUnverified(socket) {
   if (!firebaseAdminReady) return false;
-  if (socket.data.uid) return false;
+  if (socket.data.uid && socket.data.emailVerified === true) return false;
   metrics.queueErrors += 1;
   if (!socket.data.uidRejectNotified) {
     socket.data.uidRejectNotified = true;
     socket.emit('queue-error', {
-      code: 'auth_required',
-      message: 'Could not verify your account. Refresh the page and sign in again.',
+      code: socket.data.uid ? 'email_unverified' : 'auth_required',
+      message: socket.data.uid
+        ? 'Verify your email address before using matchmaking or creating a debate room.'
+        : 'Could not verify your account. Refresh the page and sign in again.',
     });
   }
   return true;
