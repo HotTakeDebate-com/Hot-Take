@@ -3,7 +3,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
-import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews, staffVerificationApplications, staffReviewVerification } from './staffApi.js';
+import { staffAccess, staffAction, staffAudit, staffDashboardActivity, staffDebateDetails, staffDebates, staffDeleteReport, staffEndDebate, staffPermissions, staffPunishments, staffQuickMatchStats, staffReports, staffRespond, staffRole, staffSetPassword, staffSetPermission, staffUpdateUser, staffUsers, staffNews, staffSaveNews, staffVerificationApplications, staffReviewVerification } from './staffApi.js';
 import IdentityBadges from './IdentityBadges.jsx';
 import './DebateNetwork.css';
 import './WhatsHotAdmin.css';
@@ -15,6 +15,7 @@ function AdminIcon({ type }) {
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
     reports: <><path d="M5 21V4" /><path d="M5 5h11l-1.5 3L17 12H5" /></>,
     debates: <><path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12h5" /></>,
+    statistics: <><path d="M4 20V10M10 20V4M16 20v-7M22 20V7" /><path d="M2 20h22" /></>,
     users: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 21c.4-4.7 2.4-7 6-7s5.6 2.3 6 7M15 15c3.5.1 5.5 2.1 6 6" /></>,
     roles: <><path d="M12 3 5 6v5c0 4.5 2.7 8 7 10 4.3-2 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-5" /></>,
     audit: <><path d="M4 5v5h5" /><path d="M5.5 9A8 8 0 1 1 4 14" /><path d="M12 8v5l3 2" /></>,
@@ -54,6 +55,14 @@ function timestampValue(value) {
 function countSince(items, field, days) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return items.filter((item) => timestampValue(item[field]) >= cutoff).length;
+}
+
+function formatDuration(milliseconds) {
+  if (milliseconds == null || !Number.isFinite(milliseconds) || milliseconds < 0) return 'Collecting data';
+  const totalSeconds = Math.round(milliseconds / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
 const PAGE_SIZE = 20;
@@ -293,6 +302,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   const [punishments, setPunishments] = useState([]);
   const [debates, setDebates] = useState([]);
   const [debateLog, setDebateLog] = useState([]);
+  const [quickMatchStats, setQuickMatchStats] = useState([]);
   const [watchingDebate, setWatchingDebate] = useState(null);
   const [spectatorStreams, setSpectatorStreams] = useState({});
   const [spectatorError, setSpectatorError] = useState('');
@@ -342,6 +352,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
       }
       if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
       if (tab === 'debates') setDebateLog((await staffDebates()).debates || []);
+      if (tab === 'quickMatch') setQuickMatchStats((await staffQuickMatchStats()).topics || []);
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
       if (tab === 'audit') setAudit((await staffAudit()).audit || []);
       if (tab === 'news') setNewsStories((await staffNews()).stories || []);
@@ -363,6 +374,11 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   useEffect(() => {
     if (tab !== 'debates') return undefined;
     const timer = window.setInterval(() => { staffDebates().then((data) => setDebateLog(data.debates || [])).catch(() => {}); }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [tab]);
+  useEffect(() => {
+    if (tab !== 'quickMatch') return undefined;
+    const timer = window.setInterval(() => { staffQuickMatchStats().then((data) => setQuickMatchStats(data.topics || [])).catch(() => {}); }, 15_000);
     return () => window.clearInterval(timer);
   }, [tab]);
   useEffect(() => {
@@ -584,6 +600,13 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     .sort((a, b) => timestampValue(b.lastAdminAccessAt) - timestampValue(a.lastAdminAccessAt))
     .slice(0, 6);
   const onlineStaff = users.filter((user) => ['moderator', 'admin', 'owner'].includes(user.role) && user.online);
+  const quickMatchTotals = quickMatchStats.reduce((totals, topic) => ({
+    queueJoins: totals.queueJoins + topic.queueJoins,
+    matches: totals.matches + topic.matches,
+    completedMatches: totals.completedMatches + topic.completedMatches,
+    durationMs: totals.durationMs + (topic.averageDurationMs || 0) * topic.completedMatches,
+    liveQueue: totals.liveQueue + topic.liveQueue.agree + topic.liveQueue.disagree,
+  }), { queueJoins: 0, matches: 0, completedMatches: 0, durationMs: 0, liveQueue: 0 });
   const pageSlice = (items) => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activityRows = [
     { label: 'Moderation actions', source: audit, field: 'createdAt' },
@@ -604,6 +627,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}><b><AdminIcon type="dashboard" /></b>Dashboard</button>
         <button className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}><b><AdminIcon type="reports" /></b>Reports <i>{openReports}</i></button>
         <button className={tab === 'debates' ? 'active' : ''} onClick={() => setTab('debates')}><b><AdminIcon type="debates" /></b>Active Debates</button>
+        <button className={tab === 'quickMatch' ? 'active' : ''} onClick={() => setTab('quickMatch')}><b><AdminIcon type="statistics" /></b>Quick Match Stats</button>
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b><AdminIcon type="users" /></b>Users</button>
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
@@ -614,7 +638,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         <button onClick={onBack}><b><AdminIcon type="back" /></b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'quickMatch' ? 'Quick Match Statistics' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
         {error && <div className="admin-notice error"><b><AdminIcon type="close" /></b>{error}</div>}
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
@@ -664,6 +688,35 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             </article>
           </section>
         </>}
+
+        {tab === 'quickMatch' && !busy && <section className="quick-match-analytics">
+          <div className="admin-stat-grid quick-match-summary">
+            <article><h2>Match searches</h2><strong>{quickMatchTotals.queueJoins.toLocaleString()}</strong><span>All topic and side selections</span></article>
+            <article><h2>Matches found</h2><strong>{quickMatchTotals.matches.toLocaleString()}</strong><span>{quickMatchTotals.queueJoins ? Math.min(100, quickMatchTotals.matches * 2 / quickMatchTotals.queueJoins * 100).toFixed(1) : '0.0'}% of searches matched</span></article>
+            <article><h2>Average duration</h2><strong>{formatDuration(quickMatchTotals.completedMatches ? quickMatchTotals.durationMs / quickMatchTotals.completedMatches : null)}</strong><span>Across {quickMatchTotals.completedMatches.toLocaleString()} completed matches</span></article>
+            <article><h2>Waiting now</h2><strong>{quickMatchTotals.liveQueue}</strong><span>Users currently in Quick Match</span></article>
+          </div>
+          <div className="quick-match-topic-grid">
+            {quickMatchStats.map((topic, index) => {
+              const selections = topic.agreeSelections + topic.disagreeSelections;
+              const agreePercent = selections ? Math.round(topic.agreeSelections / selections * 100) : 50;
+              return <article className="quick-match-topic-card" key={topic.id}>
+                <header><span>CHOICE {index + 1}</span><strong className={topic.matchRate >= 60 ? 'healthy' : topic.matchRate >= 35 ? 'watch' : 'low'}>{topic.matchRate}% match rate</strong></header>
+                <h2>{topic.label}</h2>
+                <div className="quick-match-topic-metrics">
+                  <div><span>Matches found</span><b>{topic.matches.toLocaleString()}</b></div>
+                  <div><span>Searches</span><b>{topic.queueJoins.toLocaleString()}</b></div>
+                  <div><span>Avg. duration</span><b>{formatDuration(topic.averageDurationMs)}</b></div>
+                  <div><span>Waiting now</span><b>{topic.liveQueue.agree + topic.liveQueue.disagree}</b></div>
+                </div>
+                <div className="quick-match-side-labels"><span>Agree {agreePercent}%</span><span>Disagree {100 - agreePercent}%</span></div>
+                <div className="quick-match-side-bar" aria-label={`${agreePercent}% agree and ${100 - agreePercent}% disagree`}><i style={{ width: `${agreePercent}%` }} /></div>
+                <footer><span>{topic.liveQueue.agree} agree waiting · {topic.liveQueue.disagree} disagree waiting</span><span>Last match: {dateValue(topic.lastMatchedAt)}</span></footer>
+              </article>;
+            })}
+          </div>
+          <p className="quick-match-analytics-note">Match rate compares successful participants with total searches. Duration tracking starts with this release; historical matches remain included in search and match totals.</p>
+        </section>}
 
         {tab === 'reports' && !busy && <section className="staff-report-list">
           {reports.length ? pageSlice(reports).map((r) => <details className="staff-report-row" key={r.id}>
