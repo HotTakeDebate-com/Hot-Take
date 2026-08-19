@@ -31,6 +31,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server ./server
 COPY shared ./shared
+# The profile API shares the same tag allowlist and per-category limits as the client.
+COPY src/profileInterests.js ./src/profileInterests.js
 COPY --from=build /app/dist ./dist
 EXPOSE 3001
 CMD ["node", "server/index.js"]
