@@ -7,7 +7,7 @@ import SocialFeed from './SocialFeed.jsx';
 import UserSearchPanel from './UserSearchPanel.jsx';
 import { fetchPublicProfile, fetchRecentDebates, syncUserPresence } from './chitChatFirestore.js';
 import ReportIssue from './ReportIssue.jsx';
-import { GoogleAuthProvider, onIdTokenChanged, reauthenticateWithPopup, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, onIdTokenChanged, reauthenticateWithPopup, reload, signOut } from 'firebase/auth';
 import AuthScreen from './AuthScreen.jsx';
 import BrandLogo from './BrandLogo.jsx';
 import HeaderNavMenu from './HeaderNavMenu.jsx';
@@ -35,6 +35,7 @@ import DirectMessageCenter from './DirectMessageCenter.jsx';
 import MemberSearchCenter from './MemberSearchCenter.jsx';
 import GenericAvatar from './GenericAvatar.jsx';
 import FollowingPage from './FollowingPage.jsx';
+import { sendHotTakeEmailVerification } from './firebaseEmailVerification.js';
 import './App.css';
 import './HomePage.css';
 import './QuickMatchPage.css';
@@ -153,6 +154,10 @@ export default function App() {
   const [authModal, setAuthModal] = useState(null);
   const [debateRatingOpen, setDebateRatingOpen] = useState(false);
   const [debateRating, setDebateRating] = useState(0);
+  const [verificationPromptOpen, setVerificationPromptOpen] = useState(false);
+  const [verificationPromptBusy, setVerificationPromptBusy] = useState(false);
+  const [verificationPromptMessage, setVerificationPromptMessage] = useState('');
+  const [verificationPromptError, setVerificationPromptError] = useState('');
 
   const isSignedIn = Boolean(firebaseUserId);
   const showHeaderSocialTabs =
@@ -171,6 +176,53 @@ export default function App() {
     },
     [firebaseUserId, openAuth]
   );
+
+  const requireVerifiedEmail = useCallback(() => {
+    if (!requireAuth('signin')) return false;
+    if (auth?.currentUser?.emailVerified === true) return true;
+    setVerificationPromptMessage('');
+    setVerificationPromptError('');
+    setVerificationPromptOpen(true);
+    return false;
+  }, [requireAuth]);
+
+  const sendVerificationFromPrompt = useCallback(async () => {
+    const user = auth?.currentUser;
+    if (!user) return;
+    setVerificationPromptBusy(true);
+    setVerificationPromptMessage('');
+    setVerificationPromptError('');
+    try {
+      await sendHotTakeEmailVerification(user);
+      setVerificationPromptMessage(`Verification email sent to ${user.email || 'your inbox'}.`);
+    } catch (verificationError) {
+      setVerificationPromptError(verificationError?.code === 'auth/too-many-requests' ? 'Too many emails were sent. Wait a few minutes and try again.' : 'Could not send the verification email. Please try again.');
+    } finally {
+      setVerificationPromptBusy(false);
+    }
+  }, []);
+
+  const checkVerificationFromPrompt = useCallback(async () => {
+    const user = auth?.currentUser;
+    if (!user) return;
+    setVerificationPromptBusy(true);
+    setVerificationPromptMessage('');
+    setVerificationPromptError('');
+    try {
+      await reload(user);
+      await user.getIdToken(true);
+      if (!auth.currentUser?.emailVerified) {
+        setVerificationPromptError('Your email is still unverified. Open the link in your inbox, then check again.');
+        return;
+      }
+      setVerificationPromptOpen(false);
+      setVerificationPromptMessage('');
+    } catch {
+      setVerificationPromptError('Could not refresh your verification status. Try again.');
+    } finally {
+      setVerificationPromptBusy(false);
+    }
+  }, []);
 
   const openFollowing = useCallback(() => {
     if (!requireAuth('signin')) return;
@@ -709,6 +761,11 @@ export default function App() {
         );
       } else if (code === 'auth_required') {
         setError(message ?? 'Could not verify your account. Refresh the page and sign in again.');
+      } else if (code === 'email_unverified') {
+        setError(null);
+        setVerificationPromptMessage('');
+        setVerificationPromptError('Verify your email address before starting a debate.');
+        setVerificationPromptOpen(true);
       } else {
         setError(message ?? 'Could not join the queue.');
       }
@@ -811,6 +868,7 @@ export default function App() {
   };
 
   const joinQueue = (s) => {
+    if (!requireVerifiedEmail()) return;
     setSide(s);
     setError(null);
     const sock = socketRef.current;
@@ -834,7 +892,7 @@ export default function App() {
   };
 
   const startQuickMatch = () => {
-    if (!requireAuth('signin')) return;
+    if (!requireVerifiedEmail()) return;
     setError(null);
     setMatchMode('quick');
     setTopicId(null);
@@ -858,6 +916,7 @@ export default function App() {
   };
 
   const createCustomGame = () => {
+    if (!requireVerifiedEmail()) return;
     const sock = socketRef.current;
     if (!sock) {
       setError('Realtime connection is still starting. Please try again in a second.');
@@ -1828,6 +1887,23 @@ export default function App() {
           onClose={() => setAuthModal(null)}
         />
       )}
+
+      {verificationPromptOpen && <div className="email-verification-gate" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVerificationPromptOpen(false); }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="email-verification-gate-title">
+          <button type="button" className="email-verification-gate-close" onClick={() => setVerificationPromptOpen(false)} aria-label="Close verification prompt">×</button>
+          <div className="email-verification-gate-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6.5 12 13l9-6.5"/><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m9.5 16 1.6 1.6 3.5-4"/></svg></div>
+          <p>EMAIL VERIFICATION REQUIRED</p>
+          <h2 id="email-verification-gate-title">Verify before you debate<span>.</span></h2>
+          <p className="email-verification-gate-copy">Quick Match and room creation are available only to members with a verified email address. We’ll send a secure link to <strong>{auth?.currentUser?.email || 'your inbox'}</strong>.</p>
+          {verificationPromptMessage && <div className="email-verification-gate-message success" role="status">{verificationPromptMessage}</div>}
+          {verificationPromptError && <div className="email-verification-gate-message error" role="alert">{verificationPromptError}</div>}
+          <div className="email-verification-gate-actions">
+            <button type="button" className="primary" onClick={sendVerificationFromPrompt} disabled={verificationPromptBusy}>{verificationPromptBusy ? 'Please wait…' : 'Send verification email'}</button>
+            <button type="button" onClick={checkVerificationFromPrompt} disabled={verificationPromptBusy}>I’ve verified — check again</button>
+          </div>
+          <small>You’ll be able to start searching or publish a room as soon as verification is confirmed.</small>
+        </section>
+      </div>}
 
       {showAppShell && LEGAL_OVERLAY_IDS.has(headerOverlay) && (
         <LegalViewer documentId={headerOverlay} onBack={() => setHeaderOverlay(null)} />
