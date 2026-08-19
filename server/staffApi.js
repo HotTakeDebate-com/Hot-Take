@@ -1,5 +1,6 @@
 import express from 'express';
 import admin from 'firebase-admin';
+import { TOPICS } from '../shared/topics.js';
 
 const PRIMARY_OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
 const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL, 'andrewbarless@gmail.com']);
@@ -366,6 +367,38 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       if (!existing || startedAtMs < existing.startedAtMs) debatesByRoom.set(roomId, { roomId, startedAtMs });
     });
     res.json({ debates: [...debatesByRoom.values()] });
+  });
+
+  router.get('/quick-match-stats', requirePermission('viewReports'), async (_req, res) => {
+    const snapshot = await admin.firestore().collection('topicAnalytics').get();
+    const stored = new Map(snapshot.docs.map((doc) => [doc.id, doc.data() || {}]));
+    const liveByTopic = new Map(TOPICS.map((topic) => [topic.id, { agree: 0, disagree: 0 }]));
+    for (const socket of io?.sockets?.sockets?.values?.() || []) {
+      if (socket.data?.matchType !== 'quick' || socket.data?.roomId || !liveByTopic.has(socket.data?.topicId)) continue;
+      const side = socket.data.side === 'disagree' ? 'disagree' : 'agree';
+      liveByTopic.get(socket.data.topicId)[side] += 1;
+    }
+    const topics = TOPICS.map((topic) => {
+      const data = stored.get(topic.id) || {};
+      const queueJoins = Number(data.queueJoins || 0);
+      const matches = Number(data.matches || 0);
+      const completedMatches = Number(data.completedMatches || 0);
+      const totalDurationMs = Number(data.totalDurationMs || 0);
+      return {
+        id: topic.id,
+        label: topic.label,
+        queueJoins,
+        matches,
+        completedMatches,
+        averageDurationMs: completedMatches ? Math.round(totalDurationMs / completedMatches) : null,
+        matchRate: queueJoins ? Math.min(100, Number(((matches * 2 / queueJoins) * 100).toFixed(1))) : 0,
+        agreeSelections: Number(data.agreeSelections || 0),
+        disagreeSelections: Number(data.disagreeSelections || 0),
+        liveQueue: liveByTopic.get(topic.id),
+        lastMatchedAt: data.lastMatchedAt || null,
+      };
+    });
+    res.json({ topics, generatedAt: Date.now() });
   });
 
   router.get('/debates', requirePermission('viewReports'), async (_req, res) => {

@@ -583,7 +583,7 @@ async function matchCustomChallenger(game, challengerSocket) {
   hostSocket.emit('matched', { roomId, isOfferer: false, topicId: null, yourSide: 'agree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: challengerSocket.data.uid ?? null, peerDisplayName: challengerSocket.data.displayName ?? null, peerAvatarUrl: challengerSocket.data.avatarUrl ?? '', peerRole: challengerSocket.data.role ?? 'user', peerVerified: challengerSocket.data.verifiedDebater === true, peerPremium: challengerSocket.data.premium === true });
   challengerSocket.emit('matched', { roomId, isOfferer: true, topicId: null, yourSide: 'disagree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: hostSocket.data.uid ?? null, peerDisplayName: hostSocket.data.displayName ?? game.creatorDisplayName ?? null, peerAvatarUrl: hostSocket.data.avatarUrl ?? game.creatorAvatarUrl ?? '', peerRole: hostSocket.data.role ?? game.creatorRole ?? 'user', peerVerified: hostSocket.data.verifiedDebater === true || game.creatorVerified === true, peerPremium: hostSocket.data.premium === true || game.creatorPremium === true });
   metrics.matches += 1;
-  analytics.recordMatch('custom', 'custom');
+  analytics.recordMatch('custom', 'custom', roomId);
   emitCustomQueuePositions(game.roomCode);
   io.emit('custom-games-updated', listCustomGames());
   return true;
@@ -887,7 +887,7 @@ io.on('connection', (socket) => {
         peerPremium: peerSocket.data.premium === true,
       });
       metrics.matches += 1;
-      analytics.recordMatch(topicId, 'quick');
+      analytics.recordMatch(topicId, 'quick', roomId);
       return;
     }
 
@@ -1143,6 +1143,7 @@ io.on('connection', (socket) => {
     }
 
     socket.leave(roomId);
+    analytics.recordMatchEnd(roomId);
     socket.data.roomId = null;
     game.activeRoomId = null;
     queueHostForCustomLobby(game);
@@ -1169,6 +1170,8 @@ io.on('connection', (socket) => {
       }
       return;
     }
+
+    analytics.recordMatchEnd(rid);
 
     if (socket.data.matchType === 'custom' && socket.data.customRoomCode) {
       const game = customGames.get(socket.data.customRoomCode);
@@ -1304,6 +1307,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', async () => {
     debateChatRate.delete(socket.id);
     const rid = socket.data.roomId;
+    if (rid) analytics.recordMatchEnd(rid);
     const gameCode = socket.data.customRoomCode;
     let handledCustomDisconnect = false;
     if (socket.data.matchType === 'custom' && rid && gameCode) {

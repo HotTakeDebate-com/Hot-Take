@@ -8,6 +8,7 @@ import admin from 'firebase-admin';
 export function createAnalyticsTracker({ io, queues, customQueues, isAdminReady }) {
   let snapshotTimer = null;
   let periodicTimer = null;
+  const activeMatches = new Map();
 
   const firestore = () => admin.firestore();
 
@@ -102,8 +103,9 @@ export function createAnalyticsTracker({ io, queues, customQueues, isAdminReady 
     scheduleSnapshot();
   };
 
-  const recordMatch = (topicId, matchMode = 'quick') => {
+  const recordMatch = (topicId, matchMode = 'quick', roomId = null) => {
     if (!isAdminReady()) return;
+    if (roomId) activeMatches.set(roomId, { topicId, matchMode, startedAtMs: Date.now() });
     void safeWrite('match', async () => {
       const batch = firestore().batch();
       batch.set(
@@ -130,6 +132,23 @@ export function createAnalyticsTracker({ io, queues, customQueues, isAdminReady 
     scheduleSnapshot();
   };
 
+  const recordMatchEnd = (roomId) => {
+    const match = activeMatches.get(roomId);
+    if (!match) return;
+    activeMatches.delete(roomId);
+    if (!isAdminReady()) return;
+    const durationMs = Math.max(0, Date.now() - match.startedAtMs);
+    const topicKey = match.matchMode === 'custom' ? 'custom' : String(match.topicId || 'unknown');
+    void safeWrite('match end', () =>
+      firestore().collection('topicAnalytics').doc(topicKey).set({
+        completedMatches: admin.firestore.FieldValue.increment(1),
+        totalDurationMs: admin.firestore.FieldValue.increment(durationMs),
+        lastCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true })
+    );
+    scheduleSnapshot();
+  };
+
   io.on('connection', (socket) => {
     scheduleSnapshot();
     socket.on('disconnect', scheduleSnapshot);
@@ -142,6 +161,7 @@ export function createAnalyticsTracker({ io, queues, customQueues, isAdminReady 
   return {
     recordQueueJoin,
     recordMatch,
+    recordMatchEnd,
     scheduleSnapshot,
     async shutdown() {
       if (snapshotTimer) clearTimeout(snapshotTimer);
