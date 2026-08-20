@@ -20,7 +20,7 @@ import { auth, isFirebaseConfigured } from './firebase.js';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DeviceSettings from './DeviceSettings.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
-import { getMediaErrorMessage, getUserMediaWithFallback } from './mediaUtils.js';
+import { getMediaErrorMessage, getUserMediaWithFallback, getUserMediaWithRecovery } from './mediaUtils.js';
 import HomePage from './HomePage.jsx';
 import QuickMatchPage from './QuickMatchPage.jsx';
 import WarningNotice from './WarningNotice.jsx';
@@ -915,7 +915,7 @@ export default function App() {
     setStep('custom');
   };
 
-  const createCustomGame = () => {
+  const createCustomGame = async () => {
     if (!requireVerifiedEmail()) return;
     const sock = socketRef.current;
     if (!sock) {
@@ -928,6 +928,19 @@ export default function App() {
       return;
     }
     setError(null);
+    try {
+      const currentStream = localStreamRef.current;
+      const hasLiveTrack = currentStream?.getTracks().some((track) => track.readyState === 'live');
+      if (!hasLiveTrack) {
+        currentStream?.getTracks().forEach((track) => track.stop());
+        const stream = await getUserMediaWithRecovery(videoDeviceId, audioDeviceId);
+        localStreamRef.current = stream;
+        setLocalStream(stream);
+      }
+    } catch (mediaError) {
+      setError(getMediaErrorMessage(mediaError));
+      return;
+    }
     if (!sock.connected) sock.connect();
     // Clear any stale quick/custom queue on the server before creating a lobby
     sock.emit('leave-queue');
@@ -1101,6 +1114,14 @@ export default function App() {
   useEffect(() => {
     if (step === 'debate') attachRemoteVideo();
   }, [step, debateInfo?.roomId, attachRemoteVideo]);
+
+  useEffect(() => {
+    if (step !== 'debate' || !localVideoRef.current || !localStreamRef.current) return;
+    if (localVideoRef.current.srcObject !== localStreamRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+    void localVideoRef.current.play?.().catch(() => {});
+  }, [step, debateInfo?.roomId, localStream]);
 
   const showAppShell = authReady && isFirebaseConfigured;
 

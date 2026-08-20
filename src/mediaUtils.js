@@ -60,3 +60,24 @@ export async function getUserMediaWithFallback(videoDeviceId, audioDeviceId) {
   }
   throw lastErr;
 }
+
+/**
+ * Browsers can briefly report devices as missing/busy immediately after a prior
+ * debate releases them. Retry defaults after a short settle period instead of
+ * showing a false permission error to someone whose devices just worked.
+ */
+export async function getUserMediaWithRecovery(videoDeviceId, audioDeviceId) {
+  try {
+    return await getUserMediaWithFallback(videoDeviceId, audioDeviceId);
+  } catch (firstError) {
+    const retryable = ['NotFoundError', 'DevicesNotFoundError', 'NotReadableError', 'TrackStartError', 'AbortError'].includes(firstError?.name);
+    if (!retryable) throw firstError;
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
+    try {
+      return await getUserMediaWithFallback('', '');
+    } catch {
+      await new Promise((resolve) => window.setTimeout(resolve, 850));
+      return getUserMediaWithFallback('', '');
+    }
+  }
+}
