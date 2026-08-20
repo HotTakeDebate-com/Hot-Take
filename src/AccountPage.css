@@ -536,3 +536,50 @@
   .account-tags-modal-content,
   .account-tags-modal > footer { padding-left: 14px; padding-right: 14px; }
 }
+
+.public-profile-mobile-network-picker{display:none}
+
+/* Public friend profile on phones: compact identity, uniform actions, and an inline network dropdown. */
+@media (max-width: 640px) {
+  .account-public-shell { width: calc(100% - 16px); padding: 18px 0 48px; }
+  .account-public-shell .account-back { min-height: 40px; margin: 0 0 12px; padding: 0 14px; }
+  .account-public-card { padding: 17px 14px; border-radius: 16px; }
+  .public-profile-hero { display:flex; align-items:center; flex-direction:column; gap:14px; padding-bottom:20px; text-align:center; }
+  .account-public-card .public-profile-hero > .account-avatar { width:82px; height:82px; margin:0; }
+  .public-profile-identity { width:100%; }
+  .public-profile-identity .account-eyebrow { margin-bottom:7px; }
+  .account-public-card .public-profile-identity h1 { justify-content:center; font-size:clamp(1.65rem,8vw,2.05rem); line-height:1.08; overflow-wrap:anywhere; }
+  .public-profile-identity .account-interest-banner { justify-content:center; gap:6px; margin-top:11px; }
+  .account-interest-banner span { padding:6px 9px; font-size:.66rem; }
+  .public-profile-bio-card { max-width:none; margin:16px 0 0; padding:12px 13px; text-align:left; }
+  .public-profile-bio-card > div { justify-content:flex-start; }
+
+  .account-public-card .public-profile-actions { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; width:100%; }
+  .account-public-card .public-profile-actions .account-secondary-button,
+  .account-public-card .public-profile-message-button,
+  .account-public-card .public-profile-report-button { display:flex; align-items:center; justify-content:center; width:100%; min-height:46px; margin:0; padding:0 12px; border-radius:10px; font-size:.83rem; line-height:1.2; }
+  .account-public-card .public-profile-message-button { order:-1; }
+
+  .public-profile-mobile-network-picker { display:grid; gap:7px; margin:16px 0 10px; text-align:left; }
+  .public-profile-mobile-network-picker > span { color:#8c8f99; font-size:.66rem; font-weight:900; letter-spacing:.13em; text-transform:uppercase; }
+  .public-profile-mobile-network-picker select { width:100%; min-height:48px; padding:0 40px 0 14px; border:1px solid rgba(255,48,57,.38); border-radius:11px; outline:0; color:#fff; background:#111218; font:inherit; font-size:.85rem; font-weight:800; }
+  .public-profile-mobile-network-picker select:focus { border-color:#ff3039; box-shadow:0 0 0 3px rgba(255,39,48,.1); }
+
+  .public-profile-dashboard { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0 16px; }
+  .public-profile-dashboard > .public-profile-network-stat { display:none; }
+  .public-profile-dashboard > section { min-height:108px; padding:14px; }
+  .public-profile-dashboard > section > div { margin:7px 0 4px; }
+  .public-profile-dashboard > section > div > strong { font-size:.92rem; }
+
+  .account-public-card .public-profile-network-panel { margin:0 0 16px; padding:14px; border-color:rgba(255,43,52,.3); }
+  .public-profile-network-panel > header { grid-template-columns:minmax(0,1fr) auto; gap:9px; }
+  .public-profile-network-panel > header > b { display:none; }
+  .public-profile-network-panel > header > button { width:34px; height:34px; }
+  .public-profile-network-panel .account-following-list { grid-template-columns:minmax(0,1fr); }
+  .public-profile-network-panel .account-following-member { grid-template-columns:auto minmax(0,1fr); padding:11px; }
+  .public-profile-network-panel .account-following-view { display:none; }
+}
+
+@media (max-width: 360px) {
+  .public-profile-dashboard { grid-template-columns:minmax(0,1fr); }
+}

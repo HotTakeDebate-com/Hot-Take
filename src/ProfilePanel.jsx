@@ -473,9 +473,21 @@ export default function ProfilePanel({
                 <button type="button" className="public-profile-report-button" onClick={() => setProfileReportOpen(true)} disabled={!liveTargetUid}>Report profile</button>
               </div>
             </div>
+            <label className="public-profile-mobile-network-picker">
+              <span>Debate network</span>
+              <select value={followersPanelOpen ? 'followers' : followingPanelOpen ? 'following' : ''} onChange={(event) => {
+                const view = event.target.value;
+                setFollowersPanelOpen(view === 'followers');
+                setFollowingPanelOpen(view === 'following');
+              }}>
+                <option value="">View followers or following</option>
+                <option value="followers">Followers ({followerCount.toLocaleString()})</option>
+                <option value="following">Following ({followedMembers.length.toLocaleString()})</option>
+              </select>
+            </label>
             <div className="public-profile-dashboard" aria-label="Profile statistics">
-              <button type="button" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }} className={followersPanelOpen ? 'is-active' : ''}><span>Followers</span><strong>{followerCount.toLocaleString()}</strong><small>View community <b>→</b></small></button>
-              <button type="button" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }} className={followingPanelOpen ? 'is-active' : ''}><span>Following</span><strong>{followedMembers.length.toLocaleString()}</strong><small>View network <b>→</b></small></button>
+              <button type="button" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }} className={`public-profile-network-stat ${followersPanelOpen ? 'is-active' : ''}`}><span>Followers</span><strong>{followerCount.toLocaleString()}</strong><small>View community <b>→</b></small></button>
+              <button type="button" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }} className={`public-profile-network-stat ${followingPanelOpen ? 'is-active' : ''}`}><span>Following</span><strong>{followedMembers.length.toLocaleString()}</strong><small>View network <b>→</b></small></button>
               <section><span>Debate rating</span><div><strong>{ratingDisplay}</strong><b className="public-profile-rating-star">★</b></div><small>{ratingCountLabel}</small></section>
               <section className={`public-profile-dashboard-status public-profile-activity--${activity.key}`}><span>Current status</span><div><i aria-hidden="true" /><strong>{activity.label}</strong></div><small>Activity visibility</small></section>
             </div>
