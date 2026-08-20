@@ -63,6 +63,7 @@ export default function ProfilePanel({
   onPickLegal,
   onDeleted,
   onOpenProfile,
+  embedded = false,
 }) {
   const own = targetEmail == null;
   const targetUid = !own && String(targetEmail ?? '').startsWith('uid:')
@@ -497,10 +498,10 @@ export default function ProfilePanel({
   }
 
   if (!own) {
-    return <div className="account-page">
-      {sharedHeader}
+    return <div className={`account-page${embedded ? ' account-page--embedded' : ''}`}>
+      {!embedded && sharedHeader}
       <main className="account-shell account-public-shell">
-        <button type="button" className="account-back" onClick={onBack}>← Back</button>
+        {!embedded && <button type="button" className="account-back" onClick={onBack}>← Back</button>}
         <section className="account-card account-public-card">
           {loading ? <p>Loading profile…</p> : <>
             <div className="public-profile-hero">
@@ -583,7 +584,7 @@ export default function ProfilePanel({
         </section>
       </main>
       <ProfileReportDialog open={profileReportOpen} onClose={() => setProfileReportOpen(false)} profile={{ uid: liveTargetUid, displayName, bio, avatarUrl }} />
-      <SiteFooter onHome={onHome || onBack} onAbout={onAbout} onFaq={onFaq} onSupport={onSupport} onPickLegal={onPickLegal} />
+      {!embedded && <SiteFooter onHome={onHome || onBack} onAbout={onAbout} onFaq={onFaq} onSupport={onSupport} onPickLegal={onPickLegal} />}
     </div>;
   }
 

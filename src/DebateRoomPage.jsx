@@ -6,6 +6,7 @@ import { auth } from './firebase.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
 import DirectMessageCenter from './DirectMessageCenter.jsx';
+import ProfilePanel from './ProfilePanel.jsx';
 import './debateRatingCapture.js';
 
 async function fetchLiveRatingSummary(uid) {
@@ -60,6 +61,7 @@ function LeaveDebateModal({ onCancel, onConfirm }) {
 
 export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Opponent', opponentRole = 'user', opponentVerified = false, opponentPremium = false, isSearching = false, hostQueueCount = null, connState, connectionText, localVideoRef, remoteVideoRef, remoteAudioBlocked = false, onEnableRemoteAudio, localStream, micOn, camOn, onToggleMic, onToggleCam, onReport, onLeave, onMenu, onProfile, onSignOut, messages, draft, onDraftChange, onSend, socket, socketId, reportOpen, onCloseReport, onReportSubmitted, kickOpponent, canKick }) {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [opponentProfileOpen, setOpponentProfileOpen] = useState(false);
   const [opponentRating, setOpponentRating] = useState(null);
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
 
@@ -88,6 +90,15 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     };
   }, [debateInfo?.peerUid, debateInfo?.roomId]);
 
+  useEffect(() => {
+    if (!opponentProfileOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setOpponentProfileOpen(false);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [opponentProfileOpen]);
+
   const confirmLeave = () => {
     setLeaveConfirmOpen(false);
     const nativeConfirm = window.confirm;
@@ -101,9 +112,9 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
 
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><DirectMessageCenter socket={socket} /><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
-    <div className="live-topic"><p className="live-topic-copy" title={`Topic: ${topic} • You: ${side}`}><strong>TOPIC:</strong><span className="live-topic-title">{topic}</span><span className="live-topic-separator">&bull;</span><em>You:</em><b>{side}</b></p><div className={`live-topic-statuses ${hostQueueCount != null ? 'has-queue-count' : ''}`}>{hostQueueCount != null && <span className={`live-queue-count ${hostQueueCount > 0 ? 'has-waiters' : ''}`} aria-live="polite"><i aria-hidden="true" />{hostQueueCount} {hostQueueCount === 1 ? 'user' : 'users'} in queue</span>}<div className={`live-opponent-name ${isSearching ? 'live-opponent-name--searching' : ''}`} role="status" aria-live="polite" aria-label={isSearching ? 'Finding you a match' : `Debating: ${opponentName}`}>
+    <div className="live-topic"><p className="live-topic-copy" title={`Topic: ${topic} • You: ${side}`}><strong>TOPIC:</strong><span className="live-topic-title">{topic}</span><span className="live-topic-separator">&bull;</span><em>You:</em><b>{side}</b></p><div className={`live-topic-statuses ${hostQueueCount != null ? 'has-queue-count' : ''}`}>{hostQueueCount != null && <span className={`live-queue-count ${hostQueueCount > 0 ? 'has-waiters' : ''}`} aria-live="polite"><i aria-hidden="true" />{hostQueueCount} {hostQueueCount === 1 ? 'user' : 'users'} in queue</span>}<button type="button" className={`live-opponent-name ${isSearching ? 'live-opponent-name--searching' : ''}`} disabled={isSearching || !debateInfo.peerUid} onClick={() => setOpponentProfileOpen(true)} aria-label={isSearching ? 'Finding you a match' : `View ${opponentName}'s profile`}>
       {isSearching ? <><span className="live-search-mini" aria-hidden="true"><i /><i /><i /></span><span>Finding you a match<strong>...</strong></span></> : <><span className={'live-opponent-avatar' + (debateInfo.peerAvatarUrl ? ' has-image' : '')}>{debateInfo.peerAvatarUrl ? <img src={debateInfo.peerAvatarUrl} alt="" /> : <GenericAvatar />}</span><span>Debating: <strong>{opponentName}</strong><IdentityBadges compact premium={opponentPremium} verified={opponentVerified} role={opponentRole} />{opponentRating != null && <span className="live-opponent-rating">★ {opponentRating.toFixed(2)}</span>}</span></>}
-    </div></div></div>
+    </button></div></div>
     <main className="live-layout"><section className="live-stage"><div className="live-videos">
       <div className="live-video live-video--local">
         <video ref={localVideoRef} autoPlay playsInline muted />
@@ -115,6 +126,12 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
       <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} />
     </main>
     <ReportIssue open={reportOpen} onClose={onCloseReport} topicId={debateInfo.topicId} roomId={debateInfo.roomId} yourSide={debateInfo.yourSide} peerUid={debateInfo.peerUid ?? null} matchMode={debateInfo.matchMode ?? null} onSubmitted={onReportSubmitted} />
+    {opponentProfileOpen && debateInfo.peerUid && <div className="debate-profile-backdrop" role="dialog" aria-modal="true" aria-label={`${opponentName}'s profile`} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpponentProfileOpen(false); }}>
+      <section className="debate-profile-modal">
+        <header className="debate-profile-modal-header"><div><span>Debater profile</span><strong>{opponentName}</strong></div><button type="button" onClick={() => setOpponentProfileOpen(false)} aria-label="Close profile">×</button></header>
+        <div className="debate-profile-modal-scroll"><ProfilePanel embedded targetEmail={`uid:${debateInfo.peerUid}`} onBack={() => setOpponentProfileOpen(false)} /></div>
+      </section>
+    </div>}
     {leaveConfirmOpen && <LeaveDebateModal onCancel={() => setLeaveConfirmOpen(false)} onConfirm={confirmLeave} />}
   </div>;
 }
