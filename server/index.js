@@ -333,8 +333,8 @@ app.get('/health', (_req, res) => {
   });
 });
 
-app.get('/api/rtc-config', (_req, res) => {
-  res.json(getRtcConfigForClient());
+app.get('/api/rtc-config', async (_req, res) => {
+  res.json(await getRtcConfigForClient());
 });
 
 // Profile pictures are cropped and compressed in the browser, then sent as a data URL.
