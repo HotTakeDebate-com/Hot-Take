@@ -116,6 +116,7 @@ export default function App() {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [connState, setConnState] = useState(null);
+  const [remoteAudioBlocked, setRemoteAudioBlocked] = useState(false);
   const [firebaseUserId, setFirebaseUserId] = useState(null);
   const [headerAvatarUrl, setHeaderAvatarUrl] = useState('');
   const [staffRole, setStaffRole] = useState(null);
@@ -328,6 +329,7 @@ export default function App() {
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     roomIdRef.current = null;
     setConnState(null);
+    setRemoteAudioBlocked(false);
     setLocalStream(null);
   }, []);
 
@@ -338,7 +340,20 @@ export default function App() {
     if (el.srcObject !== stream) {
       el.srcObject = stream;
     }
-    void el.play?.().catch(() => {});
+    el.muted = false;
+    el.volume = 1;
+    const playback = el.play?.();
+    if (playback?.then) {
+      playback.then(() => setRemoteAudioBlocked(false)).catch(() => setRemoteAudioBlocked(true));
+    }
+  }, []);
+
+  const resumeRemoteAudio = useCallback(() => {
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.muted = false;
+    el.volume = 1;
+    void el.play().then(() => setRemoteAudioBlocked(false)).catch(() => setRemoteAudioBlocked(true));
   }, []);
 
   const handleRemoteTrack = useCallback(
@@ -356,6 +371,10 @@ export default function App() {
         }
       }
       remoteStreamRef.current = stream;
+      if (track.kind === 'audio') {
+        track.enabled = true;
+        track.onunmute = attachRemoteVideo;
+      }
       attachRemoteVideo();
     },
     [attachRemoteVideo]
@@ -533,6 +552,7 @@ export default function App() {
     socket.on('matched', async (payload) => {
       setDebateChatMessages([]);
       setDebateChatDraft('');
+      setRemoteAudioBlocked(false);
       setWaiting(false);
       setError(null);
       setCustomHostWaiting(false);
@@ -1732,7 +1752,7 @@ export default function App() {
         </div>
       )}
 
-      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} opponentPremium={debateInfo.peerPremium} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} hostQueueCount={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' ? customHostQueueCount : null} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socket={socketRef.current} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
+      {isSignedIn && step === 'debate' && debateInfo && <DebateRoomPage debateInfo={debateInfo} topic={debateInfo.matchMode === 'custom' ? debateInfo.statement ?? 'Custom debate' : topicLabel(debateInfo.topicId)} opponentName={debateInfo.peerDisplayName ?? 'Opponent'} opponentRole={debateInfo.peerRole} opponentVerified={debateInfo.peerVerified} opponentPremium={debateInfo.peerPremium} isSearching={customHostWaiting && debateInfo.matchMode === 'custom'} hostQueueCount={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' ? customHostQueueCount : null} connState={connState} connectionText={connectionLabel(connState)} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} remoteAudioBlocked={remoteAudioBlocked} onEnableRemoteAudio={resumeRemoteAudio} localStream={localStream} micOn={micOn} camOn={camOn} onToggleMic={() => setMicOn((m) => !m)} onToggleCam={() => setCamOn((c) => !c)} onReport={() => setReportOpen(true)} onLeave={requestEndDebate} onMenu={() => setHeaderOverlay('support')} onProfile={() => setStep('profile')} onSignOut={handleSignOut} messages={debateChatMessages} draft={debateChatDraft} onDraftChange={setDebateChatDraft} onSend={sendDebateChat} socket={socketRef.current} socketId={socketId} reportOpen={reportOpen} onCloseReport={() => setReportOpen(false)} onReportSubmitted={(reportId) => socketRef.current?.emit('mark-debate-reported', { roomId: debateInfo.roomId, reportId })} kickOpponent={kickOpponent} canKick={debateInfo.matchMode === 'custom' && debateInfo.yourSide === 'agree' && !customHostWaiting && !!debateInfo.roomId} />}
 
       {false && isSignedIn && step === 'debate' && debateInfo && (
         <div className="panel">
