@@ -268,6 +268,7 @@ export default function App() {
   const localVideoRef = useRef(null);
   const roomIdRef = useRef(null);
   const pendingSignalsRef = useRef([]);
+  const pendingIceCandidatesRef = useRef([]);
   const spectatorPeerConnectionsRef = useRef(new Map());
   /** Set when a debate session successfully starts (after mic/cam acquired). */
   const debateSessionRef = useRef(null);
@@ -325,6 +326,8 @@ export default function App() {
       pcRef.current = null;
     }
     remoteStreamRef.current = null;
+    pendingSignalsRef.current = [];
+    pendingIceCandidatesRef.current = [];
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     roomIdRef.current = null;
@@ -521,6 +524,18 @@ export default function App() {
       }
     });
 
+    const flushPendingIceCandidates = async (pc) => {
+      if (!pc.remoteDescription) return;
+      const queued = pendingIceCandidatesRef.current.splice(0);
+      for (const candidate of queued) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (candidateError) {
+          console.warn('[hot-take] rejected queued ICE candidate', candidateError);
+        }
+      }
+    };
+
     const processSignal = async ({ type, payload }) => {
       const pc = pcRef.current;
       const roomId = roomIdRef.current;
@@ -528,16 +543,22 @@ export default function App() {
 
       if (type === 'offer') {
         await pc.setRemoteDescription(new RTCSessionDescription(payload));
+        await flushPendingIceCandidates(pc);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         socket.emit('signal', { roomId, type: 'answer', payload: answer });
       } else if (type === 'answer') {
         await pc.setRemoteDescription(new RTCSessionDescription(payload));
+        await flushPendingIceCandidates(pc);
       } else if (type === 'ice' && payload) {
+        if (!pc.remoteDescription) {
+          pendingIceCandidatesRef.current.push(payload);
+          return;
+        }
         try {
           await pc.addIceCandidate(new RTCIceCandidate(payload));
-        } catch {
-          /* may arrive slightly early; connection often still succeeds */
+        } catch (candidateError) {
+          console.warn('[hot-take] rejected ICE candidate', candidateError);
         }
       }
     };
@@ -565,6 +586,8 @@ export default function App() {
         remoteVideoRef.current.srcObject = null;
       }
       remoteStreamRef.current = null;
+      pendingSignalsRef.current = [];
+      pendingIceCandidatesRef.current = [];
       roomIdRef.current = payload.roomId;
       setDebateInfo({
         roomId: payload.roomId,
