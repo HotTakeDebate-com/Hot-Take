@@ -62,6 +62,30 @@ function addLocalTracksToPeerConnection(pc, stream) {
   }
 }
 
+/** Prefer codecs implemented consistently by desktop Chrome and mobile Chromium/WebKit. */
+function configureCrossDeviceCodecs(pc) {
+  if (typeof RTCRtpReceiver === 'undefined' || typeof RTCRtpReceiver.getCapabilities !== 'function') return;
+  const preference = {
+    audio: ['audio/opus', 'audio/pcmu', 'audio/pcma'],
+    video: ['video/h264', 'video/vp8', 'video/vp9', 'video/av1'],
+  };
+  pc.getTransceivers().forEach((transceiver) => {
+    if (typeof transceiver.setCodecPreferences !== 'function') return;
+    const kind = transceiver.receiver?.track?.kind || transceiver.sender?.track?.kind;
+    if (!preference[kind]) return;
+    const codecs = RTCRtpReceiver.getCapabilities(kind)?.codecs || [];
+    const ranked = codecs.map((codec, index) => {
+      const rank = preference[kind].indexOf(String(codec.mimeType || '').toLowerCase());
+      return { codec, index, rank: rank === -1 ? preference[kind].length : rank };
+    }).sort((a, b) => a.rank - b.rank || a.index - b.index).map(({ codec }) => codec);
+    try {
+      transceiver.setCodecPreferences(ranked);
+    } catch (codecError) {
+      console.warn('[hot-take] browser rejected codec preferences', codecError);
+    }
+  });
+}
+
 function connectionLabel(state) {
   if (!state) return '';
   const map = {
@@ -365,12 +389,11 @@ export default function App() {
       if (!track) return;
 
       let stream = remoteStreamRef.current;
-      if (ev.streams?.[0]) {
-        stream = ev.streams[0];
-      } else {
-        if (!stream) stream = new MediaStream();
-        if (!stream.getTracks().some((t) => t.id === track.id)) {
-          stream.addTrack(track);
+      if (!stream) stream = new MediaStream();
+      const incomingTracks = ev.streams?.[0]?.getTracks?.() || [track];
+      for (const incomingTrack of incomingTracks) {
+        if (!stream.getTracks().some((existingTrack) => existingTrack.id === incomingTrack.id)) {
+          stream.addTrack(incomingTrack);
         }
       }
       remoteStreamRef.current = stream;
@@ -633,6 +656,7 @@ export default function App() {
         setConnState(pc.connectionState);
 
         addLocalTracksToPeerConnection(pc, stream);
+        configureCrossDeviceCodecs(pc);
 
         pc.onconnectionstatechange = () => {
           setConnState(pc.connectionState);
