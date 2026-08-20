@@ -20,7 +20,7 @@ import { auth, isFirebaseConfigured } from './firebase.js';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DeviceSettings from './DeviceSettings.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
-import { getMediaErrorMessage, getUserMediaWithRecovery } from './mediaUtils.js';
+import { getMediaErrorMessage, getRequiredDebateMedia, getUserMediaWithRecovery } from './mediaUtils.js';
 import HomePage from './HomePage.jsx';
 import QuickMatchPage from './QuickMatchPage.jsx';
 import WarningNotice from './WarningNotice.jsx';
@@ -160,6 +160,8 @@ export default function App() {
   const [verificationPromptBusy, setVerificationPromptBusy] = useState(false);
   const [verificationPromptMessage, setVerificationPromptMessage] = useState('');
   const [verificationPromptError, setVerificationPromptError] = useState('');
+  const [mediaPrompt, setMediaPrompt] = useState(null);
+  const [mediaPromptBusy, setMediaPromptBusy] = useState(false);
 
   const isSignedIn = Boolean(firebaseUserId);
   const showHeaderSocialTabs =
@@ -280,6 +282,7 @@ export default function App() {
   /** True while effect cleanup is disconnecting the socket (ignore disconnect UI). */
   const socketDisconnectIntentionalRef = useRef(false);
   const socketEverConnectedRef = useRef(false);
+  const pendingMediaActionRef = useRef(null);
   /** Realtime signaling: Socket.IO connection to the debate server. */
   const [realtimeStatus, setRealtimeStatus] = useState('connecting');
 
@@ -856,7 +859,40 @@ export default function App() {
     setStep('side');
   };
 
-  const joinQueue = (s) => {
+  const ensureDebateMedia = useCallback(async (action) => {
+    pendingMediaActionRef.current = action;
+    setMediaPromptBusy(true);
+    try {
+      let stream = localStreamRef.current;
+      const hasLiveAudio = stream?.getAudioTracks().some((track) => track.readyState === 'live');
+      const hasLiveVideo = stream?.getVideoTracks().some((track) => track.readyState === 'live');
+      if (!hasLiveAudio || !hasLiveVideo) {
+        stream?.getTracks().forEach((track) => track.stop());
+        stream = await getRequiredDebateMedia(videoDeviceId, audioDeviceId);
+        localStreamRef.current = stream;
+        setLocalStream(stream);
+      }
+      setMicOn(true);
+      setCamOn(true);
+      setMediaPrompt(null);
+      pendingMediaActionRef.current = null;
+      action();
+    } catch (mediaError) {
+      setMediaPrompt({
+        title: mediaError?.name === 'NotAllowedError' ? 'Allow camera and microphone' : 'Connect your camera and microphone',
+        message: getMediaErrorMessage(mediaError),
+      });
+    } finally {
+      setMediaPromptBusy(false);
+    }
+  }, [audioDeviceId, videoDeviceId]);
+
+  const retryDebateMedia = () => {
+    const action = pendingMediaActionRef.current;
+    if (action) void ensureDebateMedia(action);
+  };
+
+  const joinQueueNow = (s) => {
     if (!requireVerifiedEmail()) return;
     setSide(s);
     setError(null);
@@ -870,6 +906,11 @@ export default function App() {
     // Optimistic UI: server will confirm with `queued` or reject with `queue-error`.
     setWaiting(true);
     sock.emit('join-queue', { topicId, side: s, displayName: signedInDisplayName() });
+  };
+
+  const joinQueue = (s) => {
+    if (!requireVerifiedEmail()) return;
+    void ensureDebateMedia(() => joinQueueNow(s));
   };
 
   const cancelWaiting = () => {
@@ -905,7 +946,7 @@ export default function App() {
     setStep('custom');
   };
 
-  const createCustomGame = () => {
+  const createCustomGameNow = () => {
     if (!requireVerifiedEmail()) return;
     const sock = socketRef.current;
     if (!sock) {
@@ -924,7 +965,12 @@ export default function App() {
     sock.emit('create-custom-game', { statement, joinMode: customJoinMode, displayName: signedInDisplayName() });
   };
 
-  const joinCustomGame = (roomCode) => {
+  const createCustomGame = () => {
+    if (!requireVerifiedEmail()) return;
+    void ensureDebateMedia(createCustomGameNow);
+  };
+
+  const joinCustomGameNow = (roomCode) => {
     const sock = socketRef.current;
     if (!sock) {
       setError('Realtime connection is still starting. Please try again in a second.');
@@ -936,6 +982,11 @@ export default function App() {
     if (!sock.connected) sock.connect();
     setWaiting(true);
     sock.emit('join-custom-room', { side: 'disagree', roomCode, displayName: signedInDisplayName() });
+  };
+
+  const joinCustomGame = (roomCode) => {
+    if (!requireVerifiedEmail()) return;
+    void ensureDebateMedia(() => joinCustomGameNow(roomCode));
   };
 
   const joinByCode = () => {
@@ -1880,6 +1931,27 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {mediaPrompt && <div className="media-readiness-gate" role="presentation">
+        <section role="dialog" aria-modal="true" aria-labelledby="media-readiness-title">
+          <div className="media-readiness-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/><path d="M8 10v4M6 12h4"/></svg>
+          </div>
+          <p>DEVICE CHECK REQUIRED</p>
+          <h2 id="media-readiness-title">{mediaPrompt.title}<span>.</span></h2>
+          <p className="media-readiness-copy">{mediaPrompt.message}</p>
+          <ol>
+            <li>Click the camera icon beside the address bar.</li>
+            <li>Allow both camera and microphone access.</li>
+            <li>Connect or enable both devices, then retry.</li>
+          </ol>
+          <div className="media-readiness-actions">
+            <button type="button" className="primary" onClick={retryDebateMedia} disabled={mediaPromptBusy}>{mediaPromptBusy ? 'Checking devices…' : 'Enable and retry'}</button>
+            <button type="button" onClick={() => { pendingMediaActionRef.current = null; setMediaPrompt(null); }} disabled={mediaPromptBusy}>Cancel</button>
+          </div>
+          <small>You won’t enter matchmaking until both devices are ready.</small>
+        </section>
+      </div>}
 
       <WarningNotice />
 

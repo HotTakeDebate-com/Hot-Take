@@ -15,6 +15,9 @@ export function getMediaErrorMessage(err) {
   if (name === 'OverconstrainedError') {
     return 'Your camera doesn’t support the requested settings. Try another browser or device.';
   }
+  if (name === 'NotSupportedError') {
+    return 'This browser cannot access a camera and microphone. Try the latest Chrome, Edge, or Safari over HTTPS.';
+  }
   return `Could not start camera or microphone (${name || 'unknown'}). Check your device and try again.`;
 }
 
@@ -80,4 +83,31 @@ export async function getUserMediaWithRecovery(videoDeviceId, audioDeviceId) {
       return getUserMediaWithFallback('', '');
     }
   }
+}
+
+/**
+ * Matchmaking preflight: debates require one live microphone and camera track.
+ * Unlike the in-room recovery helper, this intentionally does not fall back to
+ * audio-only/video-only because that would strand the opponent in a half-started call.
+ */
+export async function getRequiredDebateMedia(videoDeviceId, audioDeviceId) {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new DOMException('Camera and microphone access is unavailable in this browser.', 'NotSupportedError');
+  }
+  const attempts = [buildMediaConstraints(videoDeviceId, audioDeviceId)];
+  if (videoDeviceId || audioDeviceId) attempts.push(buildMediaConstraints('', ''));
+  let lastError;
+  for (const constraints of attempts) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const audioTrack = stream.getAudioTracks()[0];
+      const videoTrack = stream.getVideoTracks()[0];
+      if (audioTrack?.readyState === 'live' && videoTrack?.readyState === 'live') return stream;
+      stream.getTracks().forEach((track) => track.stop());
+      throw new DOMException('A working camera and microphone are required.', 'DevicesNotFoundError');
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }
