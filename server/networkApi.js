@@ -352,8 +352,16 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     const ref = admin.firestore().collection('direct_conversations').doc(conversationId);
     const snap = await ref.get();
     const data = snap.exists ? snap.data() : null;
-    const canDecide = data?.requestedRecipientUid === req.networkUser.uid
-      && (data.status === 'pending' || (data.status === 'declined' && decision === 'accept'));
+    const statusNow = String(data?.status || '').trim().toLowerCase();
+    const participants = Array.isArray(data?.participants) ? data.participants : [];
+    const isParticipant = participants.includes(req.networkUser.uid) && participants.includes(otherUid);
+    const isRecipient = data?.requestedRecipientUid === req.networkUser.uid
+      || (isParticipant && data?.requestedByUid && data.requestedByUid !== req.networkUser.uid);
+    if (decision === 'accept' && isRecipient && statusNow === 'accepted') {
+      return res.json({ ok: true, status: 'accepted' });
+    }
+    const canDecide = isRecipient
+      && (statusNow === 'pending' || (statusNow === 'declined' && decision === 'accept'));
     if (!canDecide) {
       return res.status(404).json({ error: 'That message request is no longer pending.' });
     }
