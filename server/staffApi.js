@@ -2,6 +2,7 @@ import express from 'express';
 import admin from 'firebase-admin';
 import { TOPICS } from '../shared/topics.js';
 import { validateDailyTakeInput } from './dailyTakeApi.js';
+import { releaseDisplayNameClaim } from './displayNameClaims.js';
 
 const PRIMARY_OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
 const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL, 'andrewbarless@gmail.com']);
@@ -751,6 +752,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       await admin.auth().revokeRefreshTokens(uid);
     } else if (action === 'delete') {
       if (ROLE_LEVEL[req.staff.role] < ROLE_LEVEL.admin) return res.status(403).json({ error: 'Admin access required.' });
+      await releaseDisplayNameClaim(uid);
       await admin.auth().deleteUser(uid);
     } else {
       return res.status(400).json({ error: 'Invalid action.' });
@@ -842,6 +844,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
   });
 
   router.get('/punishments', requirePermission('viewPunishments'), async (_req, res) => {
+    const nowMs = Date.now();
     const snap = await admin.firestore().collection('staff_audit').orderBy('createdAt', 'desc').get();
     const events = snap.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
@@ -884,7 +887,28 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
         infractionCount: event.targetUid ? (infractionCounts.get(event.targetUid) || 0) : 0,
       };
     });
-    res.json({ punishments, capabilities: (await permissionConfig())[_req.staff.role] || {} });
+    const activeBanSnap = await admin.firestore().collection('user_bans').where('active', '==', true).get();
+    const activeBans = activeBanSnap.docs.map((doc) => {
+      const ban = doc.data() || {};
+      const expiresAtMs = ban.banUntil?.toMillis?.() || null;
+      return {
+        id: `active-${doc.id}`,
+        type: 'ban',
+        issuedByEmail: ban.issuedBy || '',
+        issuedByRole: ban.issuedByRole || 'moderator',
+        punishedUid: ban.uid || doc.id,
+        punishedEmail: ban.email || emailByUid.get(ban.uid || doc.id) || '',
+        reason: ban.reason || 'No reason recorded.',
+        issuedAt: ban.bannedAt || null,
+        issuedAtMs: ban.bannedAt?.toMillis?.() || null,
+        durationMinutes: Number.isFinite(Number(ban.durationMinutes)) ? Number(ban.durationMinutes) : null,
+        permanent: ban.permanent === true,
+        expiresAtMs,
+        infractionCount: infractionCounts.get(ban.uid || doc.id) || 0,
+      };
+    }).filter((ban) => ban.permanent || Number(ban.expiresAtMs) > nowMs)
+      .sort((a, b) => (a.permanent === b.permanent ? (a.expiresAtMs || 0) - (b.expiresAtMs || 0) : Number(a.permanent) - Number(b.permanent)));
+    res.json({ punishments, activeBans, capabilities: (await permissionConfig())[_req.staff.role] || {} });
   });
 
   router.get('/news', requirePermission('manageNews'), async (_req, res) => {

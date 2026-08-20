@@ -65,6 +65,15 @@ function formatDuration(milliseconds) {
   return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
+function formatBanRemaining(milliseconds) {
+  const totalMinutes = Math.max(0, Math.ceil(Number(milliseconds || 0) / 60_000));
+  if (totalMinutes < 60) return `${totalMinutes} minute${totalMinutes === 1 ? '' : 's'}`;
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  return [days && `${days}d`, hours && `${hours}h`, minutes && `${minutes}m`].filter(Boolean).join(' ');
+}
+
 const PAGE_SIZE = 20;
 function Pagination({ page, total, onChange }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -322,6 +331,8 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
   const [punishments, setPunishments] = useState([]);
+  const [activeBans, setActiveBans] = useState([]);
+  const [punishmentView, setPunishmentView] = useState('history');
   const [debates, setDebates] = useState([]);
   const [debateLog, setDebateLog] = useState([]);
   const [quickMatchStats, setQuickMatchStats] = useState([]);
@@ -364,6 +375,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         setReports(reportData.reports || []);
         setUsers(userData.users || []);
         setPunishments(punishmentData.punishments || []);
+        setActiveBans(punishmentData.activeBans || []);
         setDebates(activityData.debates || []);
         setAudit(auditData?.audit || []);
         setCapabilities(userData.capabilities || {});
@@ -388,13 +400,14 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
       if (tab === 'punishments') {
         const punishmentData = await staffPunishments();
         setPunishments(punishmentData.punishments || []);
+        setActiveBans(punishmentData.activeBans || []);
         setCapabilities(punishmentData.capabilities || {});
         setPunishmentNow(Date.now());
       }
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
   useEffect(() => { load(); }, [tab]);
-  useEffect(() => { setPage(1); }, [tab, query]);
+  useEffect(() => { setPage(1); }, [tab, query, punishmentView]);
   useEffect(() => {
     if (tab !== 'debates') return undefined;
     const timer = window.setInterval(() => { staffDebates().then((data) => setDebateLog(data.debates || [])).catch(() => {}); }, 10_000);
@@ -633,6 +646,9 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   }), { queueJoins: 0, matches: 0, completedMatches: 0, durationMs: 0, liveQueue: 0 });
   const rankedQuickMatchStats = [...quickMatchStats].sort((a, b) => b.queueJoins - a.queueJoins);
   const largestQuickMatchCount = rankedQuickMatchStats[0]?.queueJoins || 0;
+  const activeTemporaryBans = activeBans.filter((item) => !item.permanent && Number(item.expiresAtMs) > punishmentNow);
+  const permanentBans = activeBans.filter((item) => item.permanent);
+  const visiblePunishments = punishmentView === 'active' ? activeTemporaryBans : punishmentView === 'permanent' ? permanentBans : punishments;
   const pageSlice = (items) => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activityRows = [
     { label: 'Moderation actions', source: audit, field: 'createdAt' },
@@ -930,12 +946,17 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         {tab === 'punishments' && !busy && <section className="punishment-log">
           <div className="punishment-log-summary">
             <div><span>Total recorded infractions</span><strong>{punishments.length}</strong></div>
-            <div><span>Warnings</span><strong>{punishments.filter((item) => item.type === 'warning').length}</strong></div>
-            <div><span>Bans</span><strong>{punishments.filter((item) => item.type === 'ban').length}</strong></div>
+            <div><span>Active temporary bans</span><strong>{activeTemporaryBans.length}</strong></div>
+            <div><span>Permanently banned</span><strong>{permanentBans.length}</strong></div>
           </div>
+          <nav className="punishment-view-tabs" aria-label="Punishment log views">
+            <button type="button" className={punishmentView === 'history' ? 'active' : ''} onClick={() => setPunishmentView('history')}>Full history <b>{punishments.length}</b></button>
+            <button type="button" className={punishmentView === 'active' ? 'active' : ''} onClick={() => setPunishmentView('active')}>Active bans <b>{activeTemporaryBans.length}</b></button>
+            <button type="button" className={punishmentView === 'permanent' ? 'active' : ''} onClick={() => setPunishmentView('permanent')}>Permanent bans <b>{permanentBans.length}</b></button>
+          </nav>
           <div className="staff-table-wrap punishment-table"><table>
             <thead><tr><th>Issued</th><th>Punishment</th><th>Issued by</th><th>Punished user</th><th>Reason</th><th>Initial duration</th><th>Time remaining</th><th>Total infractions</th></tr></thead>
-            <tbody>{pageSlice(punishments).map((item) => {
+            <tbody>{pageSlice(visiblePunishments).map((item) => {
               const remainingMinutes = item.expiresAtMs ? Math.max(0, Math.ceil((item.expiresAtMs - punishmentNow) / 60000)) : null;
               const expired = item.type === 'ban' && !item.permanent && remainingMinutes === 0;
               return <tr key={item.id}>
@@ -955,13 +976,13 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                     ? <span className="punishment-time permanent">Permanent</span>
                     : expired
                       ? <span className="punishment-time expired">Expired</span>
-                      : <span className="punishment-time active">{remainingMinutes} minute{remainingMinutes === 1 ? '' : 's'}</span>}</td>
+                      : <><span className="punishment-time active">{formatBanRemaining(item.expiresAtMs - punishmentNow)}</span><small>Ends {new Date(item.expiresAtMs).toLocaleString()}</small></>}</td>
                 <td data-label="Total infractions"><strong className="infraction-count">{item.infractionCount}</strong></td>
               </tr>;
             })}</tbody>
           </table></div>
-          {!punishments.length && <div className="admin-notice">No warnings or bans have been issued.</div>}
-          <Pagination page={page} total={punishments.length} onChange={setPage} />
+          {!visiblePunishments.length && <div className="admin-notice">{punishmentView === 'active' ? 'No temporary bans are currently active.' : punishmentView === 'permanent' ? 'No users are permanently banned.' : 'No warnings or bans have been issued.'}</div>}
+          <Pagination page={page} total={visiblePunishments.length} onChange={setPage} />
         </section>}
 
         {tab === 'audit' && !busy && <section><div className="staff-table-wrap"><table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{pageSlice(audit).map((a) => <tr key={a.id}><td>{dateValue(a.createdAt)}</td><td>{a.actorEmail}<small>{a.actorRole}</small></td><td>{a.action}</td><td className="staff-uid">{a.targetUid || '—'}</td><td><pre>{JSON.stringify(a.details || {}, null, 2)}</pre></td></tr>)}</tbody></table></div><Pagination page={page} total={audit.length} onChange={setPage} /></section>}

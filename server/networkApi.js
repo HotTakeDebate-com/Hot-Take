@@ -1,5 +1,6 @@
 import express from 'express';
 import admin from 'firebase-admin';
+import { removeStaleDisplayNameClaim } from './displayNameClaims.js';
 import { MAX_PROFILE_INTERESTS, sanitizeProfileInterests } from '../src/profileInterests.js';
 
 const OWNER_EMAILS = new Set([
@@ -141,6 +142,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
       const db = admin.firestore();
       const claimRef = db.collection('display_name_claims').doc(encodeURIComponent(normalized));
       const ownerRef = db.collection('display_name_owners').doc(req.networkUser.uid);
+      await removeStaleDisplayNameClaim(claimRef, req.networkUser.uid, db);
       await db.runTransaction(async (transaction) => {
         const [claim, owner] = await Promise.all([transaction.get(claimRef), transaction.get(ownerRef)]);
         if (claim.exists && claim.data()?.uid !== req.networkUser.uid) throw Object.assign(new Error('taken'), { code: 'name-taken' });

@@ -17,6 +17,7 @@ import { attachWarningRoutes } from './warningApi.js';
 import { attachNetworkRoutes, notifyFollowersRoomCreated } from './networkApi.js';
 import { createAnalyticsTracker } from './analytics.js';
 import { attachDailyTakeRoutes } from './dailyTakeApi.js';
+import { releaseDisplayNameClaim } from './displayNameClaims.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -487,6 +488,7 @@ app.delete('/api/account', async (req, res) => {
     await deleteMatchingDocuments('posts', 'authorUid', uid);
     await deleteMatchingDocuments('reports', 'reporterUid', uid);
     await deleteMatchingDocuments('debates', 'uid', uid);
+    await releaseDisplayNameClaim(uid, firestore);
 
     // Authentication is removed last so a partial Firestore failure can be retried safely.
     await admin.auth().deleteUser(uid);
