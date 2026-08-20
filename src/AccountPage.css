@@ -446,3 +446,92 @@
 .account-public-card .public-profile-network-panel{margin:0 0 20px;padding:20px;background:linear-gradient(145deg,#15161c,#0e0f13)}
 @media(max-width:900px){.public-profile-hero{grid-template-columns:96px minmax(0,1fr)}.account-public-card .public-profile-hero>.account-avatar{width:90px;height:90px}.account-public-card .public-profile-actions{grid-column:1/-1;justify-content:flex-start}.public-profile-dashboard{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.account-public-shell{width:min(100% - 20px,1180px)}.account-public-card{padding:20px}.public-profile-hero{grid-template-columns:72px minmax(0,1fr);gap:16px}.account-public-card .public-profile-hero>.account-avatar{width:68px;height:68px}.account-public-card .public-profile-identity h1{font-size:1.8rem}.account-public-card .public-profile-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.account-public-card .public-profile-actions button{width:100%;padding-inline:10px}.public-profile-dashboard{grid-template-columns:1fr}.public-profile-network-panel{padding:15px}.public-profile-network-panel>header{grid-template-columns:minmax(0,1fr) auto}.public-profile-network-panel>header>b{display:none}}
+
+/* Final small-screen layer. Keep the account experience fluid instead of maintaining a separate mobile page. */
+@media (max-width: 640px) {
+  .account-page { overflow-x: clip; }
+  .account-shell { width: calc(100% - 16px); padding: 22px 0 52px; }
+  .account-heading { margin-bottom: 16px; padding: 0 4px 18px; }
+  .account-heading h1 { font-size: clamp(2.15rem, 12vw, 2.7rem); line-height: 1; }
+  .account-heading > p:last-child { margin-top: 12px; font-size: .9rem; line-height: 1.5; }
+
+  .account-layout { min-width: 0; gap: 14px; }
+  .account-nav {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+    padding: 7px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .account-nav::-webkit-scrollbar { display: none; }
+  .account-nav a,
+  .account-nav button { flex: 0 0 auto; width: auto; min-height: 42px; padding: 9px 11px; white-space: nowrap; }
+  .account-nav a:hover,
+  .account-nav button:hover { transform: none; }
+
+  .account-content { min-width: 0; gap: 14px; }
+  .account-card { min-width: 0; padding: 16px; border-radius: 13px; }
+  .account-overview { min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 15px; padding: 20px 16px; text-align: center; }
+  .account-overview > div:nth-child(2) { min-width: 0; }
+  .account-overview h2,
+  .account-overview p { overflow-wrap: anywhere; }
+  .account-overview h2 { font-size: 1.35rem; }
+  .account-overview-stats { justify-content: center; gap: 7px; }
+  .account-overview-rating,
+  .account-overview-followers { min-height: 36px; }
+  .account-overview-interests > div { justify-content: center; }
+  .account-overview-tools { width: 100%; align-items: center; justify-content: center; flex-direction: row; flex-wrap: wrap; }
+  .account-status { grid-column: auto; justify-self: auto; }
+
+  .account-card-heading { align-items: flex-start; flex-wrap: wrap; gap: 11px; margin-bottom: 16px; padding-bottom: 14px; }
+  .account-card-heading > div { min-width: 0; flex: 1 1 180px; }
+  .account-card-heading p { font-size: .81rem; overflow-wrap: anywhere; }
+  .account-avatar-editor { gap: 14px; padding: 14px; }
+  .account-avatar-actions { align-items: stretch; flex-direction: column; }
+  .account-avatar-actions .account-secondary-button { width: 100%; }
+  .account-form input,
+  .account-form textarea,
+  .account-delete-row input { font-size: 16px; }
+  .account-setting-row { gap: 13px; padding: 16px 0; }
+  .account-setting-row > :last-child,
+  .account-setting-row .account-secondary-button,
+  .account-setting-row .account-privacy-toggle,
+  .account-page .profile-task { width: 100%; justify-self: stretch; }
+  .account-page .profile-task__actions { align-items: stretch; }
+  .account-page .profile-task .btn { width: 100%; }
+  .account-delete-row { gap: 10px; }
+  .account-delete-button { width: 100%; }
+
+  .account-following-member { gap: 11px; padding: 12px; }
+  .account-following-avatar { width: 44px; height: 44px; }
+  .account-following-count { margin-left: auto; }
+  .account-following-close { flex: 0 0 34px; width: 34px; height: 34px; }
+
+  .account-tags-backdrop { align-items: end; padding: 8px; }
+  .account-tags-modal { width: 100%; max-height: calc(100dvh - 16px); border-radius: 18px 18px 12px 12px; }
+  .account-tags-modal > header { gap: 12px; padding-top: 20px; padding-bottom: 16px; }
+  .account-tags-modal > header h2 { font-size: 1.75rem; }
+  .account-tags-selected { max-height: 130px; overflow-y: auto; }
+  .account-tags-modal-content { padding-bottom: 16px; }
+  .account-tags-modal-content > section { padding: 17px 0; }
+  .account-tags-modal > footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .account-tags-modal > footer button { width: 100%; padding: 0 10px; }
+}
+
+@media (max-width: 420px) {
+  .account-card { padding: 14px; }
+  .account-overview { padding: 18px 13px; }
+  .account-overview-stats { align-items: stretch; flex-direction: column; }
+  .account-overview-rating,
+  .account-overview-followers { justify-content: center; width: 100%; }
+  .account-form-footer { align-items: stretch; flex-direction: column; gap: 9px; }
+  .account-form-footer .account-primary-button { width: 100%; }
+  .account-danger-warning { padding: 14px; }
+  .account-tags-modal > header,
+  .account-tags-selected,
+  .account-tags-modal-content,
+  .account-tags-modal > footer { padding-left: 14px; padding-right: 14px; }
+}
