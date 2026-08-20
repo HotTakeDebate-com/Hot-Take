@@ -1285,6 +1285,11 @@ export default function App() {
             setSocialReturnStep('welcome');
             setStep('profile');
           }}
+          onOpenProfile={(uid) => {
+            setSocialProfileEmail(`uid:${uid}`);
+            setSocialReturnStep('welcome');
+            setStep('profile');
+          }}
           brandExtras={
             staffRole ? (
               <button type="button" className="landing-admin-link" onClick={openAdminPanel}>

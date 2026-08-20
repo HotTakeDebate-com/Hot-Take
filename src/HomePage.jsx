@@ -314,7 +314,7 @@ function LiveOnHotTake({ onQuickMatch, onCustomRoom }) {
   );
 }
 
-function HotTakeOfTheDay({ isSignedIn, onSignIn }) {
+function HotTakeOfTheDay({ isSignedIn, onSignIn, onOpenProfile }) {
   const [take, setTake] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -371,6 +371,11 @@ function HotTakeOfTheDay({ isSignedIn, onSignIn }) {
     finally { setCommentBusy(false); }
   };
 
+  const openCommenterProfile = (uid) => {
+    if (!isSignedIn) { onSignIn(); return; }
+    if (uid) onOpenProfile(uid);
+  };
+
   if (!take) return message ? null : <section className="landing-daily-take landing-daily-take--loading" aria-label="Loading Hot Take of the Day" />;
   const total = take.agreeVotes + take.disagreeVotes;
   const agreePercent = total ? Math.round(take.agreeVotes / total * 100) : 50;
@@ -414,8 +419,10 @@ function HotTakeOfTheDay({ isSignedIn, onSignIn }) {
           {comments.length === 0 && <p className="landing-daily-comments-empty">No comments yet. Cast your vote and start the conversation.</p>}
           {comments.map((entry) => (
             <article key={entry.id}>
-              {entry.avatarUrl ? <img src={entry.avatarUrl} alt="" /> : <span className="landing-daily-comment-avatar" aria-hidden="true">{entry.displayName?.charAt(0)?.toUpperCase() || '?'}</span>}
-              <div><header><strong>{entry.displayName}</strong><span className={`landing-daily-comment-side landing-daily-comment-side--${entry.side}`}>{entry.side}</span><time>{entry.createdAtMs ? new Date(entry.createdAtMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Just now'}</time></header><p>{entry.text}</p></div>
+              <button type="button" className="landing-daily-comment-profile landing-daily-comment-profile--avatar" onClick={() => openCommenterProfile(entry.uid)} aria-label={`View ${entry.displayName}'s profile`}>
+                {entry.avatarUrl ? <img src={entry.avatarUrl} alt="" /> : <span className="landing-daily-comment-avatar" aria-hidden="true">{entry.displayName?.charAt(0)?.toUpperCase() || '?'}</span>}
+              </button>
+              <div><header><button type="button" className="landing-daily-comment-profile landing-daily-comment-profile--name" onClick={() => openCommenterProfile(entry.uid)}>{entry.displayName}</button><span className={`landing-daily-comment-side landing-daily-comment-side--${entry.side}`}>{entry.side}</span><time>{entry.createdAtMs ? new Date(entry.createdAtMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Just now'}</time></header><p>{entry.text}</p></div>
             </article>
           ))}
         </div>
@@ -438,6 +445,7 @@ export default function HomePage({
   onPickWhatsHot,
   onPickFollowing,
   onProfile,
+  onOpenProfile,
   brandExtras,
 }) {
   const heroRef = useRef(null);
@@ -587,7 +595,7 @@ export default function HomePage({
 
       {SHOW_HOME_QUOTES && <QuoteCarousel />}
 
-      <HotTakeOfTheDay isSignedIn={isSignedIn} onSignIn={onSignIn} />
+      <HotTakeOfTheDay isSignedIn={isSignedIn} onSignIn={onSignIn} onOpenProfile={onOpenProfile} />
 
       <LiveOnHotTake onQuickMatch={handleQuick} onCustomRoom={handleCustom} />
 
