@@ -1524,7 +1524,7 @@ export default function App() {
           )}
 
           {customTab === 'join' && (
-            <div className="custom-tab-panel">
+            <div className="custom-tab-panel custom-find-panel">
               <div className="custom-create-heading"><p>OPEN CHALLENGES</p><h2>Find your opposition.</h2><span>Browse public rooms or enter a private invitation code.</span></div>
               <div className="custom-code-join">
                 <input
@@ -1581,7 +1581,7 @@ export default function App() {
                               aria-label={`View ${g.creatorDisplayName || 'host'}'s profile`}
                               onClick={() => {
                                 if (!g.creatorUid) return;
-                                setSocialProfileEmail(`uid:${g.creatorUid}`);
+                                setSocialProfileEmail(g.creatorUid === firebaseUserId ? null : `uid:${g.creatorUid}`);
                                 setSocialReturnStep('custom');
                                 setStep('profile');
                               }}
