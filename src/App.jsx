@@ -20,7 +20,7 @@ import { auth, isFirebaseConfigured } from './firebase.js';
 import AudioLevelMeter from './AudioLevelMeter.jsx';
 import DeviceSettings from './DeviceSettings.jsx';
 import DebateChatPanel from './DebateChatPanel.jsx';
-import { getMediaErrorMessage, getUserMediaWithFallback, getUserMediaWithRecovery } from './mediaUtils.js';
+import { getMediaErrorMessage, getUserMediaWithRecovery } from './mediaUtils.js';
 import HomePage from './HomePage.jsx';
 import QuickMatchPage from './QuickMatchPage.jsx';
 import WarningNotice from './WarningNotice.jsx';
@@ -566,7 +566,7 @@ export default function App() {
       try {
         let stream = localStreamRef.current;
         if (!stream) {
-          stream = await getUserMediaWithFallback(videoDeviceId, audioDeviceId);
+          stream = await getUserMediaWithRecovery(videoDeviceId, audioDeviceId);
           localStreamRef.current = stream;
           setLocalStream(stream);
           if (localVideoRef.current) {
@@ -669,7 +669,7 @@ export default function App() {
       });
       setStep('debate');
       if (!localStreamRef.current) {
-        getUserMediaWithFallback(videoDeviceId, audioDeviceId)
+        getUserMediaWithRecovery(videoDeviceId, audioDeviceId)
           .then((stream) => {
             localStreamRef.current = stream;
             setLocalStream(stream);
@@ -688,9 +688,10 @@ export default function App() {
             };
           })
           .catch((e) => {
-            setError(getMediaErrorMessage(e));
-            cleanupMedia();
-            setStep('custom');
+            console.warn('[hot-take] custom lobby media unavailable; retrying when matched', e);
+            localStreamRef.current = null;
+            setLocalStream(null);
+            setError('Your room is live. Camera and microphone will be tried again when someone joins.');
           });
       }
     });
@@ -915,7 +916,7 @@ export default function App() {
     setStep('custom');
   };
 
-  const createCustomGame = async () => {
+  const createCustomGame = () => {
     if (!requireVerifiedEmail()) return;
     const sock = socketRef.current;
     if (!sock) {
@@ -928,19 +929,6 @@ export default function App() {
       return;
     }
     setError(null);
-    try {
-      const currentStream = localStreamRef.current;
-      const hasLiveTrack = currentStream?.getTracks().some((track) => track.readyState === 'live');
-      if (!hasLiveTrack) {
-        currentStream?.getTracks().forEach((track) => track.stop());
-        const stream = await getUserMediaWithRecovery(videoDeviceId, audioDeviceId);
-        localStreamRef.current = stream;
-        setLocalStream(stream);
-      }
-    } catch (mediaError) {
-      setError(getMediaErrorMessage(mediaError));
-      return;
-    }
     if (!sock.connected) sock.connect();
     // Clear any stale quick/custom queue on the server before creating a lobby
     sock.emit('leave-queue');
