@@ -1484,7 +1484,7 @@ export default function App() {
           )}
 
           {customTab === 'create' && (
-            <div className="custom-tab-panel">
+            <div className="custom-tab-panel custom-create-panel">
               <div className="custom-create-heading"><p>BUILD YOUR ROOM</p><h2>What&apos;s your hot take?</h2><span>You&apos;ll argue in favor. The person joining will take the opposing side.</span></div>
               <label className="custom-statement-field" htmlFor="statementInput">
                 <span>Debate statement</span>
