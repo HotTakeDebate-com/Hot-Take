@@ -412,10 +412,6 @@ export default function App() {
   }, [authReady, firebaseUserId, cleanupMedia]);
 
   useEffect(() => {
-    if (firebaseUserId && authModal) setAuthModal(null);
-  }, [firebaseUserId, authModal]);
-
-  useEffect(() => {
     if (!authReady || firebaseUserId) return;
     if (step !== 'welcome') {
       setStep('welcome');
@@ -1886,6 +1882,7 @@ export default function App() {
           variant="modal"
           initialMode={authModal}
           onClose={() => setAuthModal(null)}
+          onAuthenticated={() => setAuthModal(null)}
         />
       )}
 

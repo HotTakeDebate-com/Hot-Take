@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   OAuthProvider,
+  getAdditionalUserInfo,
   signInWithPopup,
   signInWithEmailAndPassword,
   deleteUser,
@@ -41,7 +42,7 @@ function mapAuthError(code) {
   }
 }
 
-export default function AuthScreen({ variant = 'page', initialMode = 'signin', onClose = null }) {
+export default function AuthScreen({ variant = 'page', initialMode = 'signin', onClose = null, onAuthenticated = null }) {
   const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -60,6 +61,15 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
   const avatarInputRef = useRef(null);
   const signupCertifyRef = useRef(null);
+
+  const validatedDisplayName = () => {
+    const name = displayName.normalize('NFKC').trim().replace(/\s+/g, ' ');
+    if (name.length < 2 || name.length > 40) throw new Error('Display name must be between 2 and 40 characters.');
+    if (!/^[\p{L}\p{N}][\p{L}\p{N} ._'’-]*$/u.test(name)) {
+      throw new Error('Use letters, numbers, spaces, periods, apostrophes, underscores, or hyphens.');
+    }
+    return name;
+  };
 
   const resetLegal = () => {
     setSignupPhase('legal');
@@ -136,11 +146,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         );
         return;
       }
-      const name = displayName.trim();
-      if (name.length < 2 || name.length > 40) {
-        setError('Display name must be between 2 and 40 characters.');
-        return;
-      }
+      try { validatedDisplayName(); } catch (nameError) { setError(nameError.message); return; }
     }
     setBusy(true);
     try {
@@ -178,6 +184,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
+      onAuthenticated?.();
     } catch (err) {
       setError(
         err?.code === 'email-validation/failed'
@@ -216,15 +223,40 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
       requestAnimationFrame(() => signupCertifyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
       return;
     }
+    let requestedDisplayName = '';
+    if (mode === 'signup') {
+      try {
+        requestedDisplayName = validatedDisplayName();
+      } catch (nameError) {
+        setError(nameError.message);
+        document.getElementById('auth-display-name')?.focus();
+        return;
+      }
+    }
     setBusy(true);
     try {
       const provider = kind === 'google' ? new GoogleAuthProvider() : new OAuthProvider('apple.com');
       if (kind === 'google') provider.setCustomParameters({ prompt: 'select_account' });
       else provider.addScope('email');
-      await signInWithPopup(auth, provider);
+      const credential = await signInWithPopup(auth, provider);
+      const isNewAccount = getAdditionalUserInfo(credential)?.isNewUser === true;
+      if (mode === 'signin' && isNewAccount) {
+        await deleteUser(credential.user).catch(() => {});
+        throw new Error('No Hot Take account was found for that provider. Choose Create account and pick a unique display name first.');
+      }
+      if (mode === 'signup' && isNewAccount) {
+        try {
+          await networkUpdateDisplayName(requestedDisplayName);
+          await updateProfile(credential.user, { displayName: requestedDisplayName });
+        } catch (nameError) {
+          await deleteUser(credential.user).catch(() => {});
+          throw nameError;
+        }
+      }
+      onAuthenticated?.();
     } catch (err) {
       if (err?.code === 'auth/operation-not-allowed') setError(`${kind === 'google' ? 'Google' : 'Apple'} sign-in is not enabled in Firebase yet.`);
-      else if (err?.code !== 'auth/popup-closed-by-user') setError(mapAuthError(err?.code));
+      else if (err?.code !== 'auth/popup-closed-by-user') setError(err?.message && !String(err.message).startsWith('Firebase:') ? err.message : mapAuthError(err?.code));
     } finally { setBusy(false); }
   };
 
@@ -392,7 +424,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             {mode === 'signup' && (
               <>
                 <label className="auth-label" htmlFor="auth-display-name">
-                  Display name <span className="auth-optional">(optional)</span>
+                  Display name
                 </label>
                 <input
                   id="auth-display-name"
@@ -402,7 +434,9 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
                   placeholder="How should others see you?"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  maxLength={100}
+                  minLength={2}
+                  maxLength={40}
+                  required
                 />
               </>
             )}
