@@ -23,6 +23,10 @@ export const networkFollowing = (uid = '') => networkRequest('/following' + (uid
 export const networkFollowers = (uid = '') => networkRequest('/followers' + (uid ? '/' + encodeURIComponent(uid) : ''));
 export const networkFollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'POST' });
 export const networkUnfollow = (uid) => networkRequest('/follow/' + encodeURIComponent(uid), { method: 'DELETE' });
+export const networkBlockStatus = (uid) => networkRequest('/block/' + encodeURIComponent(uid));
+export const networkBlockedAccounts = () => networkRequest('/blocks');
+export const networkBlock = (uid) => networkRequest('/block/' + encodeURIComponent(uid), { method: 'POST' });
+export const networkUnblock = (uid) => networkRequest('/block/' + encodeURIComponent(uid), { method: 'DELETE' });
 export const networkDirectMessages = (uid) => networkRequest('/messages/' + encodeURIComponent(uid));
 export const networkDirectConversations = () => networkRequest('/messages');
 export const networkSendDirectMessage = (uid, text) => networkRequest('/messages/' + encodeURIComponent(uid), { method: 'POST', body: JSON.stringify({ text }) });

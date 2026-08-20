@@ -15,7 +15,7 @@ import GenericAvatar from './GenericAvatar.jsx';
 import { MAX_PROFILE_INTERESTS_PER_CATEGORY, PROFILE_INTEREST_GROUPS, sanitizeProfileInterests } from './profileInterests.js';
 import IdentityBadges from './IdentityBadges.jsx';
 import ProfileReportDialog from './ProfileReportDialog.jsx';
-import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowers, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
+import { networkBlock, networkBlockedAccounts, networkBlockStatus, networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowers, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnblock, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
 
@@ -101,6 +101,9 @@ export default function ProfilePanel({
   const [followingPanelOpen, setFollowingPanelOpen] = useState(false);
   const [followersPanelOpen, setFollowersPanelOpen] = useState(false);
   const [privacyBusy, setPrivacyBusy] = useState(false);
+  const [blockState, setBlockState] = useState({ blocked: false, youBlocked: false, blockedYou: false });
+  const [blockedMembers, setBlockedMembers] = useState([]);
+  const [blockBusy, setBlockBusy] = useState(false);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(null);
   const [resetBusy, setResetBusy] = useState(false);
@@ -124,14 +127,16 @@ export default function ProfilePanel({
     setFollowedMembers([]);
     setFollowersPanelOpen(false);
     setFollowingPanelOpen(false);
+    setBlockState({ blocked: false, youBlocked: false, blockedYou: false });
     try {
       if (!own && targetUid) {
-        const [{ identity, activity: currentActivity, followerCount: currentFollowerCount }, follow, conversation, followersResult, followingResult] = await Promise.all([
+        const [{ identity, activity: currentActivity, followerCount: currentFollowerCount }, follow, conversation, followersResult, followingResult, blocking] = await Promise.all([
           networkIdentity(targetUid),
           networkFollowStatus(targetUid),
           networkDirectMessages(targetUid),
           networkFollowers(targetUid),
           networkFollowing(targetUid),
+          networkBlockStatus(targetUid),
         ]);
         setDisplayName(identity?.displayName?.trim() || 'Hot Take member');
         setBio(identity?.bio ?? '');
@@ -143,6 +148,7 @@ export default function ProfilePanel({
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true);
+        setBlockState(blocking);
         setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
         setRating(await fetchLiveRatingSummary(targetUid));
@@ -157,23 +163,26 @@ export default function ProfilePanel({
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own && prof?.uid) {
-        const [{ identity, followerCount: currentFollowerCount }, follow, followersResult, followingResult] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid), networkFollowers(prof.uid), networkFollowing(prof.uid)]);
+        const [{ identity, followerCount: currentFollowerCount }, follow, followersResult, followingResult, blocking] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid), networkFollowers(prof.uid), networkFollowing(prof.uid), networkBlockStatus(prof.uid)]);
         setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
         setFollowerCount(Number(currentFollowerCount || 0));
         setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
+        setBlockState(blocking);
       } else if (own && auth.currentUser?.uid) {
-        const [meResult, followersResult, followingResult] = await Promise.all([
+        const [meResult, followersResult, followingResult, blocksResult] = await Promise.all([
           networkMe(),
           networkFollowers(),
           networkFollowing(),
+          networkBlockedAccounts(),
         ]);
         setNetworkIdentityState(meResult.identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowerCount(Number(meResult.followerCount || 0));
         setAppearOffline(meResult.privacy?.appearOffline === true);
         setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
+        setBlockedMembers(blocksResult.members || []);
       }
     } catch (loadError) {
       setError(loadError?.message ?? 'Could not load account.');
@@ -195,14 +204,17 @@ export default function ProfilePanel({
     if (own || !liveTargetUid) return undefined;
     const refreshLiveProfile = async () => {
       try {
-        const [{ activity: currentActivity, followerCount: currentFollowerCount }, conversation] = await Promise.all([
+        const [{ activity: currentActivity, followerCount: currentFollowerCount }, conversation, blocking] = await Promise.all([
           networkIdentity(liveTargetUid),
           networkDirectMessages(liveTargetUid),
+          networkBlockStatus(liveTargetUid),
         ]);
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setFollowerCount(Number(currentFollowerCount || 0));
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true);
+        setBlockState(blocking);
+        if (blocking.blocked) setMessageOpen(false);
       } catch {
         // Keep the last successful profile state during a brief network interruption.
       }
@@ -394,6 +406,41 @@ export default function ProfilePanel({
     }
   };
 
+  const toggleBlock = async () => {
+    if (!liveTargetUid || blockBusy || blockState.blockedYou && !blockState.youBlocked) return;
+    const willBlock = !blockState.youBlocked;
+    if (willBlock && !window.confirm(`Block ${displayName || 'this member'}? You will not be able to match, join rooms, follow, or message each other.`)) return;
+    setBlockBusy(true);
+    setError(null);
+    try {
+      const result = willBlock ? await networkBlock(liveTargetUid) : await networkUnblock(liveTargetUid);
+      setBlockState(result);
+      if (willBlock) {
+        setFollowing(false);
+        setMessageOpen(false);
+        setDirectMessages([]);
+        setMessageRequestPending(false);
+      }
+    } catch (blockError) {
+      setError(blockError?.message || 'Could not update this block.');
+    } finally {
+      setBlockBusy(false);
+    }
+  };
+
+  const unblockFromList = async (uid) => {
+    setBlockBusy(true);
+    setError(null);
+    try {
+      await networkUnblock(uid);
+      setBlockedMembers((current) => current.filter((member) => member.uid !== uid));
+    } catch (blockError) {
+      setError(blockError?.message || 'Could not unblock this account.');
+    } finally {
+      setBlockBusy(false);
+    }
+  };
+
   const sharedHeader = <SiteHeader
     onHome={onHome || onBack}
     onAbout={onAbout}
@@ -468,9 +515,10 @@ export default function ProfilePanel({
                 </section>
               </div>
               <div className="public-profile-actions">
-                <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>{followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}</button>
-                <button type="button" className="public-profile-message-button" onClick={() => setMessageOpen((open) => !open)} aria-expanded={messageOpen}>{messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}</button>
+                <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy || blockState.blocked}>{followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}</button>
+                <button type="button" className="public-profile-message-button" disabled={blockState.blocked} onClick={() => setMessageOpen((open) => !open)} aria-expanded={messageOpen}>{blockState.blocked ? 'Messages unavailable' : messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}</button>
                 <button type="button" className="public-profile-report-button" onClick={() => setProfileReportOpen(true)} disabled={!liveTargetUid}>Report profile</button>
+                <button type="button" className={`public-profile-block-button${blockState.youBlocked ? ' is-blocked' : ''}`} onClick={toggleBlock} disabled={!liveTargetUid || blockBusy || (blockState.blockedYou && !blockState.youBlocked)}>{blockBusy ? 'Updating…' : blockState.youBlocked ? 'Unblock user' : blockState.blockedYou ? 'Interaction unavailable' : 'Block user'}</button>
               </div>
             </div>
             <label className="public-profile-mobile-network-picker">
@@ -511,9 +559,9 @@ export default function ProfilePanel({
                 <h2>{hostedRoom.statement}</h2>
                 <p>A public opponent spot is open.</p>
               </div>
-              {canJoinHostedRoom && onJoinHostedRoom
+              {!blockState.blocked && canJoinHostedRoom && onJoinHostedRoom
                 ? <button type="button" className="public-profile-join-room" onClick={() => onJoinHostedRoom(hostedRoom.roomCode)}>Join debate →</button>
-                : <span className="public-profile-your-room">Your room</span>}
+                : <span className="public-profile-your-room">{blockState.blocked ? 'Unable to join' : 'Your room'}</span>}
             </section>}
             {messageOpen && <section className="public-profile-messages" aria-label="Direct messages" role="dialog" aria-modal="false">
               <header><div><span>Direct messages</span><h2>Message {displayName || 'this member'}</h2><small>Private conversation</small></div><button type="button" className="public-profile-message-close" onClick={() => setMessageOpen(false)} aria-label="Close messages">×</button></header>
@@ -660,6 +708,7 @@ export default function ProfilePanel({
               <div className="account-setting-row"><div><strong>Sign-in method</strong><p>{providerLabel}</p></div><span className="account-setting-value">{providerLabel}</span></div>
               <div className="account-setting-row"><div><strong>Activity privacy</strong><p>Appear offline to other members without signing out or disabling debates and messages.</p></div><button type="button" className={`account-privacy-toggle${appearOffline ? ' is-active' : ''}`} role="switch" aria-checked={appearOffline} onClick={toggleAppearOffline} disabled={privacyBusy}><span aria-hidden="true" />{privacyBusy ? 'Saving…' : appearOffline ? 'Appearing offline' : 'Activity visible'}</button></div>
               <div className="account-setting-row"><div><strong>Password recovery</strong><p>Send secure reset instructions to {resolvedEmail}.</p></div><button type="button" className="account-secondary-button" onClick={sendPasswordReset} disabled={resetBusy}>{resetBusy ? 'Sending…' : 'Send reset email'}</button></div>
+              <div className="account-blocked-section"><div><strong>Blocked accounts</strong><p>Blocked accounts cannot match, join your rooms, follow, or message you.</p></div>{blockedMembers.length ? <div className="account-blocked-list">{blockedMembers.map((member) => <div key={member.uid}><span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span><strong>{member.displayName || 'Hot Take member'}</strong><button type="button" onClick={() => unblockFromList(member.uid)} disabled={blockBusy}>Unblock</button></div>)}</div> : <small>You have not blocked anyone.</small>}</div>
             </section>
 
             <section id="account-danger" className="account-card account-danger">

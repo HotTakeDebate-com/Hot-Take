@@ -2,6 +2,7 @@ import express from 'express';
 import admin from 'firebase-admin';
 import { removeStaleDisplayNameClaim } from './displayNameClaims.js';
 import { MAX_PROFILE_INTERESTS, sanitizeProfileInterests } from '../src/profileInterests.js';
+import { blockRef, blockRelationship } from './blocks.js';
 
 const OWNER_EMAILS = new Set([
   (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase(),
@@ -205,7 +206,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     try {
       const snap = await admin.firestore().collection('direct_conversations')
         .where('participants', 'array-contains', req.networkUser.uid).limit(100).get();
-      const visibleDocs = snap.docs.filter((doc) => doc.data()?.status !== 'declined');
+      const visibleDocs = snap.docs.filter((doc) => !['declined', 'blocked'].includes(doc.data()?.status));
       const conversations = await Promise.all(visibleDocs.map(async (doc) => {
         const data = doc.data() || {};
         const otherUid = (data.participants || []).find((uid) => uid !== req.networkUser.uid) || '';
@@ -237,6 +238,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     const otherUid = String(req.params.uid || '').trim();
     if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
     try {
+      if ((await blockRelationship(req.networkUser.uid, otherUid)).blocked) return res.json({ blocked: true, messages: [], pendingForRecipient: false });
       const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
       const conversationRef = admin.firestore().collection('direct_conversations').doc(conversationId);
       const [conversation, snap] = await Promise.all([
@@ -268,6 +270,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
     if (!text || text.length > 1000) return res.status(400).json({ error: 'Messages must be between 1 and 1,000 characters.' });
     try {
+      if ((await blockRelationship(req.networkUser.uid, otherUid)).blocked) return res.status(403).json({ error: 'You cannot message this account because blocking is active.' });
       await admin.auth().getUser(otherUid);
       const db = admin.firestore();
       const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
@@ -280,6 +283,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
       if (existingData?.status === 'declined') {
         return res.status(403).json({ error: 'This member is not accepting messages from you.' });
       }
+      const startsNewRequest = !existingConversation.exists || existingData?.status === 'closed';
       const messageRef = conversationRef.collection('messages').doc();
       const [senderIdentity, recipientIdentity] = await Promise.all([
         publicIdentity(req.networkUser.uid),
@@ -295,9 +299,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         })),
         lastMessage: text.slice(0, 180),
         lastSenderUid: req.networkUser.uid,
-        status: existingConversation.exists ? (existingData?.status || 'accepted') : 'pending',
-        requestedByUid: existingConversation.exists ? (existingData?.requestedByUid || null) : req.networkUser.uid,
-        requestedRecipientUid: existingConversation.exists ? (existingData?.requestedRecipientUid || null) : otherUid,
+        status: startsNewRequest ? 'pending' : (existingData?.status || 'accepted'),
+        requestedByUid: startsNewRequest ? req.networkUser.uid : (existingData?.requestedByUid || null),
+        requestedRecipientUid: startsNewRequest ? otherUid : (existingData?.requestedRecipientUid || null),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
       batch.set(messageRef, {
@@ -306,7 +310,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         text,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      if (!existingConversation.exists) {
+      if (startsNewRequest) {
         const notificationRef = db.collection('user_notifications').doc(otherUid).collection('items').doc();
         batch.set(notificationRef, {
           type: 'dm_request',
@@ -321,7 +325,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         });
       }
       await batch.commit();
-      io?.to(`user:${otherUid}`).emit(existingConversation.exists ? 'direct-message' : 'dm-request', {
+      io?.to(`user:${otherUid}`).emit(startsNewRequest ? 'dm-request' : 'direct-message', {
         fromUid: req.networkUser.uid,
         conversationId,
         hostDisplayName: senderIdentity.displayName || 'A Hot Take member',
@@ -360,8 +364,60 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
   });
 
   router.get('/follow/:uid', async (req, res) => {
+    const relationship = await blockRelationship(req.networkUser.uid, String(req.params.uid));
+    if (relationship.blocked) return res.json({ following: false, ...relationship });
     const snap = await admin.firestore().collection('followers').doc(String(req.params.uid)).collection('members').doc(req.networkUser.uid).get();
     res.json({ following: snap.exists });
+  });
+
+  router.get('/blocks', async (req, res) => {
+    const snap = await admin.firestore().collection('user_blocks').doc(req.networkUser.uid).collection('blocked').orderBy('createdAt', 'desc').get();
+    const members = (await Promise.all(snap.docs.map(async (doc) => {
+      try { return { ...(await publicIdentity(doc.id)), blockedAtMs: serializeTime(doc.data()?.createdAt) }; }
+      catch { return null; }
+    }))).filter(Boolean);
+    res.json({ members });
+  });
+
+  router.get('/block/:uid', async (req, res) => {
+    const targetUid = String(req.params.uid || '').trim();
+    if (!targetUid || targetUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another account.' });
+    res.json(await blockRelationship(req.networkUser.uid, targetUid));
+  });
+
+  router.post('/block/:uid', async (req, res) => {
+    const targetUid = String(req.params.uid || '').trim();
+    if (!targetUid || targetUid === req.networkUser.uid) return res.status(400).json({ error: 'You cannot block yourself.' });
+    await admin.auth().getUser(targetUid);
+    const db = admin.firestore();
+    const conversationId = [req.networkUser.uid, targetUid].sort().join('__');
+    const batch = db.batch();
+    batch.set(blockRef(req.networkUser.uid, targetUid), { targetUid, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+    batch.delete(db.collection('followers').doc(targetUid).collection('members').doc(req.networkUser.uid));
+    batch.delete(db.collection('following').doc(req.networkUser.uid).collection('members').doc(targetUid));
+    batch.delete(db.collection('followers').doc(req.networkUser.uid).collection('members').doc(targetUid));
+    batch.delete(db.collection('following').doc(targetUid).collection('members').doc(req.networkUser.uid));
+    batch.set(db.collection('direct_conversations').doc(conversationId), { status: 'blocked', blockedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await batch.commit();
+    const [targetFollowerCount, ownFollowerCount] = await Promise.all([followerCountForUid(targetUid), followerCountForUid(req.networkUser.uid)]);
+    io?.emit?.('follower-count-updated', { uid: targetUid, followerCount: targetFollowerCount, updatedAtMs: Date.now() });
+    io?.emit?.('follower-count-updated', { uid: req.networkUser.uid, followerCount: ownFollowerCount, updatedAtMs: Date.now() });
+    io?.to(`user:${req.networkUser.uid}`).emit('user-blocked', { uid: targetUid });
+    io?.to(`user:${targetUid}`).emit('user-blocked', { uid: req.networkUser.uid });
+    res.json({ blocked: true, youBlocked: true, blockedYou: false });
+  });
+
+  router.delete('/block/:uid', async (req, res) => {
+    const targetUid = String(req.params.uid || '').trim();
+    await blockRef(req.networkUser.uid, targetUid).delete();
+    const relationship = await blockRelationship(req.networkUser.uid, targetUid);
+    if (!relationship.blocked) {
+      const conversationId = [req.networkUser.uid, targetUid].sort().join('__');
+      const conversationRef = admin.firestore().collection('direct_conversations').doc(conversationId);
+      const conversation = await conversationRef.get();
+      if (conversation.data()?.status === 'blocked') await conversationRef.set({ status: 'closed', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    }
+    res.json(relationship);
   });
 
   const networkMembers = async (uid, relationship) => {
@@ -416,6 +472,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     const targetUid = String(req.params.uid || '');
     if (!targetUid || targetUid === req.networkUser.uid) return res.status(400).json({ error: 'You cannot follow yourself.' });
     await admin.auth().getUser(targetUid);
+    if ((await blockRelationship(req.networkUser.uid, targetUid)).blocked) return res.status(403).json({ error: 'You cannot follow this account because blocking is active.' });
     const db = admin.firestore();
     const batch = db.batch();
     batch.set(db.collection('followers').doc(targetUid).collection('members').doc(req.networkUser.uid), {

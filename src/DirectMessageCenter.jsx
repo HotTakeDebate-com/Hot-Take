@@ -69,13 +69,26 @@ export default function DirectMessageCenter({ socket }) {
         return null;
       });
     };
+    const userBlocked = (event = {}) => {
+      if (!event.uid) return;
+      setConversations((current) => current.filter((item) => item.otherUid !== event.uid));
+      setActive((current) => {
+        if (current?.otherUid !== event.uid) return current;
+        setThread(null);
+        setText('');
+        setError('');
+        return null;
+      });
+    };
     socket.on('direct-message', refresh);
     socket.on('dm-request', refresh);
     socket.on('dm-request-decided', requestDecided);
+    socket.on('user-blocked', userBlocked);
     return () => {
       socket.off('direct-message', refresh);
       socket.off('dm-request', refresh);
       socket.off('dm-request-decided', requestDecided);
+      socket.off('user-blocked', userBlocked);
     };
   }, [active, loadConversations, loadThread, socket]);
   useEffect(() => {

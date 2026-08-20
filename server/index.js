@@ -18,6 +18,7 @@ import { attachNetworkRoutes, notifyFollowersRoomCreated } from './networkApi.js
 import { createAnalyticsTracker } from './analytics.js';
 import { attachDailyTakeRoutes } from './dailyTakeApi.js';
 import { releaseDisplayNameClaim } from './displayNameClaims.js';
+import { blockRelationship, usersHaveBlock } from './blocks.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -589,6 +590,7 @@ function closeCustomWaitingLine(roomCode, message = 'This debate room has closed
 async function matchCustomChallenger(game, challengerSocket) {
   const hostSocket = io.sockets.sockets.get(game.createdBy);
   if (!hostSocket?.connected || !challengerSocket?.connected || hostSocket.data.roomId || challengerSocket.data.roomId) return false;
+  if (firebaseAdminReady && await usersHaveBlock(hostSocket.data.uid, challengerSocket.data.uid)) return false;
   const roomId = `custom-${game.roomCode}-${challengerSocket.id}-${hostSocket.id}`;
   hostSocket.data.matchType = 'custom';
   hostSocket.data.side = 'agree';
@@ -844,6 +846,7 @@ io.on('connection', (socket) => {
     const q = getQueue(topicId);
     const opposite = side === 'agree' ? 'disagree' : 'agree';
     const oppositeList = q[opposite];
+    const blockedPeers = [];
 
     while (oppositeList.length > 0) {
       const peerId = oppositeList.shift();
@@ -858,6 +861,11 @@ io.on('connection', (socket) => {
       ) {
         continue;
       }
+      if (firebaseAdminReady && await usersHaveBlock(socket.data.uid, peerSocket.data.uid)) {
+        blockedPeers.push(peerId);
+        continue;
+      }
+      oppositeList.unshift(...blockedPeers);
       const roomId = `${topicId}-${socket.id}-${peerId}`;
 
       socket.data.roomId = roomId;
@@ -909,6 +917,7 @@ io.on('connection', (socket) => {
       analytics.recordMatch(topicId, 'quick', roomId);
       return;
     }
+    oppositeList.unshift(...blockedPeers);
 
     const myList = side === 'agree' ? q.agree : q.disagree;
     if (!myList.includes(socket.id)) myList.push(socket.id);
@@ -1036,6 +1045,19 @@ io.on('connection', (socket) => {
       metrics.queueErrors += 1;
       socket.emit('queue-error', { message: 'That custom game is no longer available.' });
       return;
+    }
+    if (firebaseAdminReady && game.creatorUid && socket.data.uid) {
+      const relationship = await blockRelationship(socket.data.uid, game.creatorUid);
+      if (relationship.blocked) {
+        metrics.queueErrors += 1;
+        socket.emit('queue-error', {
+          code: 'blocked_user',
+          message: relationship.youBlocked
+            ? 'You have this user blocked and are unable to join or queue for their room.'
+            : 'You are unable to join or queue for this room.',
+        });
+        return;
+      }
     }
     clearMatchmaking();
 
