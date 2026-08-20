@@ -86,6 +86,18 @@ function configureCrossDeviceCodecs(pc) {
   });
 }
 
+function peerConnectionConfig(rtcConfig) {
+  const { relayConfigured, ...browserConfig } = rtcConfig || FALLBACK_RTC;
+  return {
+    ...browserConfig,
+    bundlePolicy: 'max-bundle',
+    // When production TURN is available, prefer a deterministic relay route.
+    // This avoids Windows/router combinations that advertise direct candidates
+    // and then leave Chrome stuck in a disconnected state.
+    iceTransportPolicy: relayConfigured ? 'relay' : 'all',
+  };
+}
+
 function connectionLabel(state) {
   if (!state) return '';
   const map = {
@@ -664,7 +676,7 @@ export default function App() {
         };
 
         const loadedRtcConfig = await rtcConfigPromiseRef.current;
-        const pc = new RTCPeerConnection(loadedRtcConfig);
+        const pc = new RTCPeerConnection(peerConnectionConfig(loadedRtcConfig));
         pcRef.current = pc;
         setConnState(pc.connectionState);
 
@@ -685,7 +697,7 @@ export default function App() {
               if (pcRef.current !== pc || !['disconnected', 'failed'].includes(pc.connectionState)) return;
               iceRestartAttempted = true;
               try {
-                pc.setConfiguration(await rtcConfigPromiseRef.current);
+                pc.setConfiguration(peerConnectionConfig(await rtcConfigPromiseRef.current));
                 pc.restartIce();
                 const restartOffer = await pc.createOffer({ iceRestart: true });
                 await pc.setLocalDescription(restartOffer);
