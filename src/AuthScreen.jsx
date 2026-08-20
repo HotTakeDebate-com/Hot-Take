@@ -43,7 +43,7 @@ function mapAuthError(code) {
 }
 
 export default function AuthScreen({ variant = 'page', initialMode = 'signin', onClose = null, onAuthenticated = null }) {
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState(initialMode === 'display-name' ? 'signup' : initialMode);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -55,7 +55,8 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const [resetSent, setResetSent] = useState(false);
   const [legalDoc, setLegalDoc] = useState(null);
   /** Signup only: must complete full legal review before account fields appear. */
-  const [signupPhase, setSignupPhase] = useState('legal');
+  const [signupPhase, setSignupPhase] = useState(initialMode === 'display-name' ? 'account' : 'legal');
+  const [providerSetupPending, setProviderSetupPending] = useState(initialMode === 'display-name');
   const [agreeAge18, setAgreeAge18] = useState(false);
   const [agreePolicies, setAgreePolicies] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
@@ -223,16 +224,6 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
       requestAnimationFrame(() => signupCertifyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
       return;
     }
-    let requestedDisplayName = '';
-    if (mode === 'signup') {
-      try {
-        requestedDisplayName = validatedDisplayName();
-      } catch (nameError) {
-        setError(nameError.message);
-        document.getElementById('auth-display-name')?.focus();
-        return;
-      }
-    }
     setBusy(true);
     try {
       const provider = kind === 'google' ? new GoogleAuthProvider() : new OAuthProvider('apple.com');
@@ -245,19 +236,36 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         throw new Error('No Hot Take account was found for that provider. Choose Create account and pick a unique display name first.');
       }
       if (mode === 'signup' && isNewAccount) {
-        try {
-          await networkUpdateDisplayName(requestedDisplayName);
-          await updateProfile(credential.user, { displayName: requestedDisplayName });
-        } catch (nameError) {
-          await deleteUser(credential.user).catch(() => {});
-          throw nameError;
-        }
+        await updateProfile(credential.user, { displayName: '' });
+        setDisplayName('');
+        setProviderSetupPending(true);
+        setError(null);
+        return;
       }
       onAuthenticated?.();
     } catch (err) {
       if (err?.code === 'auth/operation-not-allowed') setError(`${kind === 'google' ? 'Google' : 'Apple'} sign-in is not enabled in Firebase yet.`);
       else if (err?.code !== 'auth/popup-closed-by-user') setError(err?.message && !String(err.message).startsWith('Firebase:') ? err.message : mapAuthError(err?.code));
     } finally { setBusy(false); }
+  };
+
+  const completeProviderDisplayName = async (event) => {
+    event.preventDefault();
+    setError(null);
+    let name;
+    try { name = validatedDisplayName(); } catch (nameError) { setError(nameError.message); return; }
+    if (!auth?.currentUser) { setError('Your sign-in session expired. Please try again.'); return; }
+    setBusy(true);
+    try {
+      await networkUpdateDisplayName(name);
+      await updateProfile(auth.currentUser, { displayName: name });
+      setProviderSetupPending(false);
+      onAuthenticated?.();
+    } catch (nameError) {
+      setError(nameError?.message || 'Could not reserve that display name.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const flipMode = () => {
@@ -269,9 +277,9 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
   const signupReady = signupPhase === 'account' && agreeAge18 && agreePolicies;
 
   const screen = (
-    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal', mode === 'signin' && 'auth-screen--signin', mode === 'signup' && 'auth-screen--signup', mode === 'signup' && signupPhase === 'account' && 'auth-screen--signup-account'].filter(Boolean).join(' ')}>
-      {mode === 'signup' && signupPhase === 'account' && <header className="signup-new-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
-      {mode === 'signup' && signupPhase === 'account' && <aside className="signup-new-story"><h1>Real debates.<strong>Real people.</strong></h1><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul></aside>}
+    <div className={['auth-screen', variant === 'modal' && 'auth-screen--modal', mode === 'signin' && 'auth-screen--signin', mode === 'signup' && 'auth-screen--signup', mode === 'signup' && signupPhase === 'account' && 'auth-screen--signup-account', providerSetupPending && 'auth-screen--provider-setup'].filter(Boolean).join(' ')}>
+      {!providerSetupPending && mode === 'signup' && signupPhase === 'account' && <header className="signup-new-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
+      {!providerSetupPending && mode === 'signup' && signupPhase === 'account' && <aside className="signup-new-story"><h1>Real debates.<strong>Real people.</strong></h1><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul></aside>}
       {mode === 'signin' && <aside className="signin-new-story"><h1>Real debates.<strong>Real people.</strong></h1><i/><p>Hot Take is the 1-on-1 live debate platform where opposite perspectives meet.</p><ul><li><IconUser /><div><b>1-on-1 live debates</b><span>Match with real people and debate in real time.</span></div></li><li><IconShield /><div><b>Respect first</b><span>Clear guidelines and tools to keep the conversation fair.</span></div></li><li><IconLightning /><div><b>Diverse opinions</b><span>Explore new perspectives and challenge your own.</span></div></li></ul></aside>}
       {signupLegalGate && <header className="signup-new-header signup-policy-header"><HotTakeWordmark variant="nav" /><div><span>Already have an account?</span><button type="button" onClick={goToSignIn}>Sign in</button><b>Create account</b></div></header>}
       <div className="auth-screen-inner">
@@ -280,7 +288,21 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
             .filter(Boolean)
             .join(' ')}
         >
-          {signupLegalGate ? (
+          {providerSetupPending ? (
+            <div className="provider-display-name-setup">
+              <div className="auth-screen-logo-wrap"><BrandLogo /></div>
+              <p className="account-eyebrow">One last step</p>
+              <h2 className="auth-screen-title">Choose your display name</h2>
+              <p className="auth-screen-lead">This is how other members will see you. Every display name must be unique.</p>
+              <form className="auth-form" onSubmit={completeProviderDisplayName}>
+                <label className="auth-label" htmlFor="provider-display-name">Display name</label>
+                <input id="provider-display-name" className="auth-input" type="text" autoComplete="nickname" autoFocus value={displayName} onChange={(event) => setDisplayName(event.target.value)} minLength={2} maxLength={40} required placeholder="Choose a unique display name" />
+                <p className="auth-field-hint">2–40 characters. Letters, numbers, spaces, periods, apostrophes, underscores, and hyphens are allowed.</p>
+                {error && <div className="error-banner" role="alert">{error}</div>}
+                <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>{busy ? 'Checking name…' : 'Finish creating account'}</button>
+              </form>
+            </div>
+          ) : signupLegalGate ? (
             <>
               <div className="auth-screen-logo-wrap auth-policy-legacy-heading">
                 <BrandLogo />
@@ -624,12 +646,12 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         role="dialog"
         aria-modal="true"
         aria-label={initialMode === 'signup' ? 'Create account' : 'Sign in'}
-        onMouseDown={onClose}
+        onMouseDown={providerSetupPending ? undefined : onClose}
       >
         <div className="auth-modal-dialog" onMouseDown={(e) => e.stopPropagation()}>
-          <button type="button" className="auth-modal-close" onClick={onClose} aria-label="Close">
+          {!providerSetupPending && <button type="button" className="auth-modal-close" onClick={onClose} aria-label="Close">
             ?
-          </button>
+          </button>}
           {screen}
         </div>
       </div>

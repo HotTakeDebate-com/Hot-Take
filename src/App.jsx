@@ -377,7 +377,10 @@ export default function App() {
     }
     const unsub = onIdTokenChanged(auth, (user) => {
       setFirebaseUserId(user?.uid ?? null);
-      if (user) syncUserPresence();
+      if (user) {
+        if (!user.displayName?.trim()) setAuthModal((current) => current || 'display-name');
+        syncUserPresence();
+      }
       setAuthReady(true);
     });
     return () => unsub();
