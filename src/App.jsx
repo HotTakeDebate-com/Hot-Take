@@ -284,6 +284,7 @@ export default function App() {
   }, [firebaseUserId]);
 
   const rtcConfigRef = useRef(FALLBACK_RTC);
+  const rtcConfigPromiseRef = useRef(Promise.resolve(FALLBACK_RTC));
   const socketRef = useRef(null);
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -407,12 +408,20 @@ export default function App() {
   );
 
   useEffect(() => {
-    fetch('/api/rtc-config')
+    const configPromise = fetch('/api/rtc-config', { cache: 'no-store' })
       .then((r) => r.json())
       .then((cfg) => {
-        if (cfg?.iceServers?.length) rtcConfigRef.current = cfg;
+        if (cfg?.iceServers?.length) {
+          rtcConfigRef.current = cfg;
+          return cfg;
+        }
+        return rtcConfigRef.current;
       })
-      .catch(() => {});
+      .catch((configError) => {
+        console.warn('[hot-take] RTC configuration unavailable; using fallback STUN', configError);
+        return rtcConfigRef.current;
+      });
+    rtcConfigPromiseRef.current = configPromise;
   }, []);
 
   useEffect(() => {
@@ -581,7 +590,10 @@ export default function App() {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(payload));
         } catch (candidateError) {
-          console.warn('[hot-take] rejected ICE candidate', candidateError);
+          // During an ICE restart the previous remote description is still present,
+          // but a candidate may already belong to the incoming replacement offer.
+          pendingIceCandidatesRef.current.push(payload);
+          console.warn('[hot-take] deferred ICE candidate until the next remote description', candidateError);
         }
       }
     };
@@ -651,15 +663,38 @@ export default function App() {
           statement: payload.statement ?? null,
         };
 
-        const pc = new RTCPeerConnection(rtcConfigRef.current);
+        const loadedRtcConfig = await rtcConfigPromiseRef.current;
+        const pc = new RTCPeerConnection(loadedRtcConfig);
         pcRef.current = pc;
         setConnState(pc.connectionState);
 
         addLocalTracksToPeerConnection(pc, stream);
         configureCrossDeviceCodecs(pc);
 
+        let iceRestartTimer = null;
+        let iceRestartAttempted = false;
         pc.onconnectionstatechange = () => {
           setConnState(pc.connectionState);
+          if (pc.connectionState === 'connected' && iceRestartTimer) {
+            clearTimeout(iceRestartTimer);
+            iceRestartTimer = null;
+          }
+          if (payload.isOfferer && !iceRestartAttempted && ['disconnected', 'failed'].includes(pc.connectionState)) {
+            if (iceRestartTimer) clearTimeout(iceRestartTimer);
+            iceRestartTimer = setTimeout(async () => {
+              if (pcRef.current !== pc || !['disconnected', 'failed'].includes(pc.connectionState)) return;
+              iceRestartAttempted = true;
+              try {
+                pc.setConfiguration(await rtcConfigPromiseRef.current);
+                pc.restartIce();
+                const restartOffer = await pc.createOffer({ iceRestart: true });
+                await pc.setLocalDescription(restartOffer);
+                socket.emit('signal', { roomId: payload.roomId, type: 'offer', payload: restartOffer });
+              } catch (restartError) {
+                console.warn('[hot-take] automatic ICE restart failed', restartError);
+              }
+            }, 2500);
+          }
         };
 
         pc.ontrack = handleRemoteTrack;
