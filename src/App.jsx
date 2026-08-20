@@ -546,6 +546,7 @@ export default function App() {
       onRemoteTrack: handleRemoteTrack,
       onError: (callError) => {
         console.warn('[hot-take] debate call failed', callError);
+        setConnState('failed');
         setError('The video call could not connect. Leave the debate and try again.');
       },
     });
@@ -556,6 +557,13 @@ export default function App() {
     });
     socket.on('call-signal', (message) => {
       void callController.receive(message).catch((callError) => callController.onError?.(callError));
+    });
+    socket.on('call-error', ({ roomId, message }) => {
+      if (roomId !== roomIdRef.current) return;
+      callController.close(false);
+      pcRef.current = null;
+      setConnState('failed');
+      setError(message || 'The video connection could not be completed. Leave the debate and try again.');
     });
 
     socket.on('matched', async (payload) => {

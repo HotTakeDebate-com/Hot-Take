@@ -5,6 +5,8 @@
  */
 export function createCallSessions(io) {
   const sessions = new Map();
+  const READY_TIMEOUT_MS = 15_000;
+  const CONNECT_TIMEOUT_MS = 35_000;
 
   const participants = (roomId) => [...(io.sockets.adapter.rooms.get(roomId) || [])]
     .map((id) => io.sockets.sockets.get(id))
@@ -18,7 +20,20 @@ export function createCallSessions(io) {
         ready: new Set(),
         started: false,
         offererId: null,
+        connected: new Set(),
+        readyTimer: null,
+        connectTimer: null,
       };
+      session.readyTimer = setTimeout(() => {
+        if (sessions.get(roomId) !== session || session.started) return;
+        io.to(roomId).emit('call-error', {
+          roomId,
+          code: 'readiness_timeout',
+          message: 'The other participant did not become ready. Leave the debate and try matching again.',
+        });
+        sessions.delete(roomId);
+      }, READY_TIMEOUT_MS);
+      session.readyTimer.unref?.();
       sessions.set(roomId, session);
     }
     return session;
@@ -36,6 +51,18 @@ export function createCallSessions(io) {
     // creates the offer. Both clients receive the same immutable session id.
     session.offererId = members[0].id;
     session.started = true;
+    clearTimeout(session.readyTimer);
+    session.readyTimer = null;
+    session.connectTimer = setTimeout(() => {
+      if (sessions.get(roomId) !== session || session.connected.size === 2) return;
+      io.to(roomId).emit('call-error', {
+        roomId,
+        code: 'connection_timeout',
+        message: 'The video connection timed out. Check both devices and networks, then start a new match.',
+      });
+      sessions.delete(roomId);
+    }, CONNECT_TIMEOUT_MS);
+    session.connectTimer.unref?.();
     for (const member of members) {
       member.emit('call-start', {
         roomId,
@@ -60,12 +87,24 @@ export function createCallSessions(io) {
     });
   };
 
+  const connected = (socket, roomId, sessionId) => {
+    const session = sessions.get(roomId);
+    if (!session || session.id !== sessionId || socket.data.roomId !== roomId) return;
+    session.connected.add(socket.id);
+    if (session.connected.size === 2) {
+      clearTimeout(session.connectTimer);
+      session.connectTimer = null;
+    }
+  };
+
   const removeSocket = (socket, roomId) => {
     const session = sessions.get(roomId);
     if (!session) return;
+    clearTimeout(session.readyTimer);
+    clearTimeout(session.connectTimer);
     session.ready.delete(socket.id);
     sessions.delete(roomId);
   };
 
-  return { ready, signal, removeSocket };
+  return { ready, signal, connected, removeSocket };
 }

@@ -5,12 +5,19 @@
 export function createRateLimiter({ windowMs, max }) {
   /** @type {Map<string, { count: number, resetAt: number }>} */
   const buckets = new Map();
+  let nextSweepAt = Date.now() + windowMs;
 
   return function allow(key) {
     if (!key || key === 'unknown') {
       return max > 0;
     }
     const now = Date.now();
+    if (now >= nextSweepAt) {
+      for (const [bucketKey, bucket] of buckets) {
+        if (now >= bucket.resetAt) buckets.delete(bucketKey);
+      }
+      nextSweepAt = now + windowMs;
+    }
     let b = buckets.get(key);
     if (!b || now >= b.resetAt) {
       b = { count: 0, resetAt: now + windowMs };

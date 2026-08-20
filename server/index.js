@@ -222,6 +222,8 @@ const queues = new Map();
 const customQueues = new Map();
 /** @type {Map<string, { roomCode: string, statement: string, joinMode: 'open' | 'code', createdAtMs: number, createdBy: string, activeRoomId: string | null }>} */
 const customGames = new Map();
+/** Prevent overlapping queue/create/join operations for the same signed-in account. */
+const activeMatchmakingOperations = new Set();
 const analytics = createAnalyticsTracker({
   io,
   queues,
@@ -602,7 +604,7 @@ async function matchCustomChallenger(game, challengerSocket) {
   challengerSocket.data.roomId = roomId;
   challengerSocket.join(roomId);
   game.activeRoomId = roomId;
-  await persistMatchSession(firebaseAdminReady, { roomId, agreeUid: hostSocket.data.uid ?? null, disagreeUid: challengerSocket.data.uid ?? null, topicId: 'custom', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement });
+  void persistMatchSession(firebaseAdminReady, { roomId, agreeUid: hostSocket.data.uid ?? null, disagreeUid: challengerSocket.data.uid ?? null, topicId: 'custom', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement });
   hostSocket.emit('matched', { roomId, isOfferer: false, topicId: null, yourSide: 'agree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: challengerSocket.data.uid ?? null, peerDisplayName: challengerSocket.data.displayName ?? null, peerAvatarUrl: challengerSocket.data.avatarUrl ?? '', peerRole: challengerSocket.data.role ?? 'user', peerVerified: challengerSocket.data.verifiedDebater === true, peerPremium: challengerSocket.data.premium === true });
   challengerSocket.emit('matched', { roomId, isOfferer: true, topicId: null, yourSide: 'disagree', matchMode: 'custom', roomCode: game.roomCode, statement: game.statement, peerUid: hostSocket.data.uid ?? null, peerDisplayName: hostSocket.data.displayName ?? game.creatorDisplayName ?? null, peerAvatarUrl: hostSocket.data.avatarUrl ?? game.creatorAvatarUrl ?? '', peerRole: hostSocket.data.role ?? game.creatorRole ?? 'user', peerVerified: hostSocket.data.verifiedDebater === true || game.creatorVerified === true, peerPremium: hostSocket.data.premium === true || game.creatorPremium === true });
   metrics.matches += 1;
@@ -760,6 +762,50 @@ io.on('connection', (socket) => {
     io.emit('custom-games-updated', listCustomGames());
   };
 
+  const normalizeSocketPayload = (payload) => (
+    payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : {}
+  );
+
+  const reportSocketHandlerError = (eventName, error) => {
+    console.error(`[socket:${eventName}]`, error?.stack || error?.message || error);
+    metrics.queueErrors += 1;
+    if (socket.connected && eventName !== 'disconnect') {
+      socket.emit('queue-error', {
+        code: 'server_error',
+        message: 'The server could not complete that request. Please try again.',
+      });
+    }
+  };
+
+  const onSafe = (eventName, handler, { rawPayload = false } = {}) => {
+    socket.on(eventName, (...args) => {
+      const payload = rawPayload ? args[0] : normalizeSocketPayload(args[0]);
+      Promise.resolve().then(() => handler(payload, ...args.slice(1))).catch((error) => {
+        reportSocketHandlerError(eventName, error);
+      });
+    });
+  };
+
+  const onMatchmaking = (eventName, handler) => {
+    onSafe(eventName, async (payload) => {
+      const operationKey = socket.data.uid ? `uid:${socket.data.uid}` : `socket:${socket.id}`;
+      if (activeMatchmakingOperations.has(operationKey)) {
+        metrics.queueErrors += 1;
+        socket.emit('queue-error', {
+          code: 'operation_in_progress',
+          message: 'Your previous matchmaking request is still processing. Please wait a moment.',
+        });
+        return;
+      }
+      activeMatchmakingOperations.add(operationKey);
+      try {
+        await handler(payload);
+      } finally {
+        activeMatchmakingOperations.delete(operationKey);
+      }
+    });
+  };
+
   const clearRoom = () => {
     socket.data.roomId = null;
   };
@@ -806,7 +852,7 @@ io.on('connection', (socket) => {
     return { agreeUid, disagreeUid };
   };
 
-  socket.on('join-queue', async ({ topicId, side, displayName }) => {
+  onMatchmaking('join-queue', async ({ topicId, side, displayName }) => {
     metrics.quickJoinAttempts += 1;
     if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
@@ -880,7 +926,7 @@ io.on('connection', (socket) => {
         socket.data.side === 'agree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
       const disagreeUidQuick =
         socket.data.side === 'disagree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
-      await persistMatchSession(firebaseAdminReady, {
+      void persistMatchSession(firebaseAdminReady, {
         roomId,
         agreeUid: agreeUidQuick,
         disagreeUid: disagreeUidQuick,
@@ -926,7 +972,7 @@ io.on('connection', (socket) => {
     socket.emit('queued', { topicId, side });
   });
 
-  socket.on('create-custom-game', async ({ statement, joinMode, displayName }) => {
+  onMatchmaking('create-custom-game', async ({ statement, joinMode, displayName }) => {
     metrics.customCreateAttempts += 1;
     if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
@@ -1009,7 +1055,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('join-custom-room', async ({ side, roomCode, displayName }) => {
+  onMatchmaking('join-custom-room', async ({ side, roomCode, displayName }) => {
     metrics.customJoinAttempts += 1;
     if (rejectIfSocketUnverified(socket)) return;
     if (hasConcurrentSessionForUid()) {
@@ -1098,7 +1144,7 @@ io.on('connection', (socket) => {
         socket.data.side === 'agree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
       const disagreeUidCustom =
         socket.data.side === 'disagree' ? socket.data.uid ?? null : peerSocket.data.uid ?? null;
-      await persistMatchSession(firebaseAdminReady, {
+      void persistMatchSession(firebaseAdminReady, {
         roomId,
         agreeUid: agreeUidCustom,
         disagreeUid: disagreeUidCustom,
@@ -1161,7 +1207,7 @@ io.on('connection', (socket) => {
     clearMatchmaking();
   });
 
-  socket.on('kick-peer', async ({ roomId }) => {
+  onSafe('kick-peer', async ({ roomId }) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     callSessions.removeSocket(socket, roomId);
@@ -1198,7 +1244,7 @@ io.on('connection', (socket) => {
     emitCustomGamesUpdate();
   });
 
-  socket.on('leave-debate', async () => {
+  onSafe('leave-debate', async () => {
     metrics.leaveDebate += 1;
     const rid = socket.data.roomId;
     if (!rid) {
@@ -1255,17 +1301,21 @@ io.on('connection', (socket) => {
     clearRoom();
   });
 
-  socket.on('call-ready', ({ roomId }) => {
+  onSafe('call-ready', ({ roomId }) => {
     if (rejectIfSocketUnverified(socket)) return;
     callSessions.ready(socket, String(roomId || ''));
   });
 
-  socket.on('call-signal', (message) => {
+  onSafe('call-signal', (message) => {
     if (rejectIfSocketUnverified(socket)) return;
     callSessions.signal(socket, message);
   });
 
-  socket.on('staff-watch-debate', ({ roomId }) => {
+  onSafe('call-connected', ({ roomId, sessionId }) => {
+    callSessions.connected(socket, String(roomId || ''), String(sessionId || ''));
+  });
+
+  onSafe('staff-watch-debate', ({ roomId }) => {
     if (!['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
     const members = [...(io.sockets.adapter.rooms.get(String(roomId)) || [])]
       .map((id) => io.sockets.sockets.get(id))
@@ -1275,14 +1325,14 @@ io.on('connection', (socket) => {
     members.forEach((member) => member.emit('staff-spectator-request', { watcherId: socket.id, roomId }));
   });
 
-  socket.on('staff-spectator-signal', ({ watcherId, roomId, type, payload }) => {
+  onSafe('staff-spectator-signal', ({ watcherId, roomId, type, payload }) => {
     if (socket.data.roomId !== roomId) return;
     const watcher = io.sockets.sockets.get(String(watcherId));
     if (!watcher || watcher.data.watchingRoomId !== roomId || !['moderator', 'admin', 'owner'].includes(watcher.data.role)) return;
     watcher.emit('staff-spectator-signal', { participantId: socket.id, roomId, type, payload });
   });
 
-  socket.on('staff-spectator-return-signal', ({ participantId, roomId, type, payload }) => {
+  onSafe('staff-spectator-return-signal', ({ participantId, roomId, type, payload }) => {
     if (socket.data.watchingRoomId !== roomId || !['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
     const participant = io.sockets.sockets.get(String(participantId));
     if (!participant || participant.data.roomId !== roomId) return;
@@ -1298,7 +1348,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('mark-debate-reported', async ({ roomId, reportId }) => {
+  onSafe('mark-debate-reported', async ({ roomId, reportId }) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId || !reportId) return;
     const { agreeUid, disagreeUid } = getRoomAgreeDisagreeUids(roomId);
@@ -1311,7 +1361,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('debate-chat', async ({ roomId, text }) => {
+  onSafe('debate-chat', async ({ roomId, text }) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
     const raw = String(text ?? '');
@@ -1354,7 +1404,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('disconnect', async () => {
+  onSafe('disconnect', async () => {
     debateChatRate.delete(socket.id);
     const rid = socket.data.roomId;
     if (rid) callSessions.removeSocket(socket, rid);
