@@ -147,7 +147,7 @@ export default function ProfilePanel({
         setFollowerCount(Number(currentFollowerCount || 0));
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
-        setMessageRequestPending(conversation.pendingForRecipient === true);
+        setMessageRequestPending(conversation.pendingForRecipient === true || conversation.declinedForRecipient === true);
         setBlockState(blocking);
         setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
@@ -212,7 +212,7 @@ export default function ProfilePanel({
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setFollowerCount(Number(currentFollowerCount || 0));
         setDirectMessages(conversation.messages || []);
-        setMessageRequestPending(conversation.pendingForRecipient === true);
+        setMessageRequestPending(conversation.pendingForRecipient === true || conversation.declinedForRecipient === true);
         setBlockState(blocking);
         if (blocking.blocked) setMessageOpen(false);
       } catch {
@@ -377,7 +377,7 @@ export default function ProfilePanel({
       setMessageDraft('');
       const conversation = await networkDirectMessages(networkIdentityState.uid);
       setDirectMessages(conversation.messages || []);
-      setMessageRequestPending(conversation.pendingForRecipient === true);
+      setMessageRequestPending(conversation.pendingForRecipient === true || conversation.declinedForRecipient === true);
     } catch (messageError) {
       setError(messageError?.message || 'Could not send that message.');
     } finally {

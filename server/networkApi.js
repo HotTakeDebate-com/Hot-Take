@@ -206,7 +206,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     try {
       const snap = await admin.firestore().collection('direct_conversations')
         .where('participants', 'array-contains', req.networkUser.uid).limit(100).get();
-      const visibleDocs = snap.docs.filter((doc) => !['declined', 'blocked'].includes(doc.data()?.status));
+      const visibleDocs = snap.docs.filter((doc) => doc.data()?.status !== 'blocked');
       const conversations = await Promise.all(visibleDocs.map(async (doc) => {
         const data = doc.data() || {};
         const otherUid = (data.participants || []).find((uid) => uid !== req.networkUser.uid) || '';
@@ -216,13 +216,15 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
           catch { otherProfile = { uid: otherUid, displayName: 'Deleted account', avatarUrl: '', deleted: true }; }
         }
         const pendingForRecipient = data.status === 'pending' && data.requestedRecipientUid === req.networkUser.uid;
+        const declinedForRecipient = data.status === 'declined' && data.requestedRecipientUid === req.networkUser.uid;
         return {
           id: doc.id,
           otherUid,
           otherProfile,
           status: data.status || 'accepted',
           pendingForRecipient,
-          lastMessage: pendingForRecipient ? '' : (data.lastMessage || ''),
+          declinedForRecipient,
+          lastMessage: pendingForRecipient || declinedForRecipient ? '' : (data.lastMessage || ''),
           lastSenderUid: data.lastSenderUid || '',
           updatedAtMs: serializeTime(data.updatedAt),
         };
@@ -248,6 +250,8 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
       const conversationData = conversation.exists ? conversation.data() : null;
       const pendingForRecipient = conversationData?.status === 'pending'
         && conversationData?.requestedRecipientUid === req.networkUser.uid;
+      const declinedForRecipient = conversationData?.status === 'declined'
+        && conversationData?.requestedRecipientUid === req.networkUser.uid;
       const messages = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -257,7 +261,8 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         conversationId,
         conversation: conversationData,
         pendingForRecipient,
-        messages: pendingForRecipient ? [] : messages,
+        declinedForRecipient,
+        messages: pendingForRecipient || declinedForRecipient ? [] : messages,
       });
     } catch {
       res.status(404).json({ error: 'Conversation not found.' });
@@ -347,7 +352,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     const ref = admin.firestore().collection('direct_conversations').doc(conversationId);
     const snap = await ref.get();
     const data = snap.exists ? snap.data() : null;
-    if (!data || data.status !== 'pending' || data.requestedRecipientUid !== req.networkUser.uid) {
+    const canDecide = data?.requestedRecipientUid === req.networkUser.uid
+      && (data.status === 'pending' || (data.status === 'declined' && decision === 'accept'));
+    if (!canDecide) {
       return res.status(404).json({ error: 'That message request is no longer pending.' });
     }
     const status = decision === 'accept' ? 'accepted' : 'declined';

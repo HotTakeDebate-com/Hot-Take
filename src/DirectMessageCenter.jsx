@@ -58,17 +58,7 @@ export default function DirectMessageCenter({ socket }) {
       void loadConversations();
       if (active) void loadThread(active);
     };
-    const requestDecided = (event = {}) => {
-      if (event.status !== 'declined') { refresh(); return; }
-      setConversations((current) => current.filter((item) => item.id !== event.conversationId));
-      setActive((current) => {
-        if (current?.id !== event.conversationId) return current;
-        setThread(null);
-        setText('');
-        setError('');
-        return null;
-      });
-    };
+    const requestDecided = () => refresh();
     const userBlocked = (event = {}) => {
       if (!event.uid) return;
       setConversations((current) => current.filter((item) => item.otherUid !== event.uid));
@@ -116,20 +106,17 @@ export default function DirectMessageCenter({ socket }) {
     const decidingConversation = active;
     setBusy(true);
     setError('');
-    if (decision === 'decline') {
-      setConversations((current) => current.filter((item) => item.id !== decidingConversation.id));
-      setActive(null);
-      setThread(null);
-      setText('');
-    }
     try {
       await networkDecideDirectMessage(decidingConversation.otherUid, decision);
       await loadConversations();
       if (decision === 'accept') await loadThread({ ...decidingConversation, status: 'accepted', pendingForRecipient: false });
-      else { setActive(null); setThread(null); }
+      else {
+        const declinedConversation = { ...decidingConversation, status: 'declined', pendingForRecipient: false, declinedForRecipient: true };
+        setActive(declinedConversation);
+        await loadThread(declinedConversation);
+      }
     } catch (requestError) {
-      if (decision !== 'decline') setError(requestError.message || 'The message request could not be updated.');
-      else await loadConversations();
+      setError(requestError.message || 'The message request could not be updated.');
     } finally {
       setBusy(false);
     }
@@ -154,7 +141,10 @@ export default function DirectMessageCenter({ socket }) {
 
   const profile = active?.otherProfile || {};
   const isPendingRecipient = Boolean(thread?.pendingForRecipient || active?.pendingForRecipient);
+  const isDeclinedRecipient = Boolean(thread?.declinedForRecipient || active?.declinedForRecipient);
+  const isRequestRecipient = isPendingRecipient || isDeclinedRecipient;
   const isPendingSender = !isPendingRecipient && (thread?.conversation?.status === 'pending' || active?.status === 'pending');
+  const isDeclinedSender = !isRequestRecipient && (thread?.conversation?.status === 'declined' || active?.status === 'declined');
   const deleted = profile.deleted === true;
 
   return <div className="dm-center" ref={rootRef}>
@@ -170,7 +160,7 @@ export default function DirectMessageCenter({ socket }) {
           const member = conversation.otherProfile || {};
           return <button type="button" key={conversation.id} className={conversation.pendingForRecipient ? 'is-request' : ''} onClick={() => chooseConversation(conversation)}>
             <span className={`dm-center-avatar${member.avatarUrl ? ' has-image' : ''}`}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
-            <span className="dm-center-preview"><b>{member.displayName || 'Deleted account'} <IdentityBadges compact verified={member.verifiedDebater} premium={member.premium} role={member.role} /></b><em>{conversation.pendingForRecipient ? 'New message request' : (conversation.lastMessage || 'Open conversation')}</em></span>
+            <span className="dm-center-preview"><b>{member.displayName || 'Deleted account'} <IdentityBadges compact verified={member.verifiedDebater} premium={member.premium} role={member.role} /></b><em>{conversation.pendingForRecipient ? 'New message request' : conversation.declinedForRecipient ? 'Declined request · Accept anytime' : (conversation.lastMessage || 'Open conversation')}</em></span>
             <time>{displayTime(conversation.updatedAtMs)}</time>
           </button>;
         })}
@@ -183,20 +173,21 @@ export default function DirectMessageCenter({ socket }) {
         <div><span>Direct messages</span><h2>{profile.displayName || 'Deleted account'} <IdentityBadges compact verified={profile.verifiedDebater} premium={profile.premium} role={profile.role} /></h2><small>{deleted ? 'Account deleted · conversation retained' : 'Private conversation'}</small></div>
         <button type="button" className="public-profile-message-close" aria-label="Close messages" onClick={() => { setActive(null); setThread(null); }}>&times;</button>
       </header>
-      {isPendingRecipient ? <div className="dm-center-request">
-        <small>Message request</small><h3>Accept DMs from {profile.displayName || 'this user'}?</h3><p>The first message is hidden until you approve this conversation.</p>
+      {isRequestRecipient ? <div className="dm-center-request">
+        <small>{isDeclinedRecipient ? 'Declined message request' : 'Message request'}</small><h3>{isDeclinedRecipient ? `Accept DMs from ${profile.displayName || 'this user'} later?` : `Accept DMs from ${profile.displayName || 'this user'}?`}</h3><p>{isDeclinedRecipient ? 'This request remains here in case you decide to accept it later.' : 'The first message is hidden until you approve this conversation.'}</p>
         {error && <p className="dm-center-error">{error}</p>}
-        <div><button type="button" onClick={() => decide('decline')} disabled={busy}>Decline</button><button type="button" className="is-accept" onClick={() => decide('accept')} disabled={busy}>{busy ? 'Updating…' : 'Accept DMs'}</button></div>
+        <div>{!isDeclinedRecipient && <button type="button" onClick={() => decide('decline')} disabled={busy}>Decline</button>}<button type="button" className="is-accept" onClick={() => decide('accept')} disabled={busy}>{busy ? 'Updating…' : 'Accept DMs'}</button></div>
       </div> : <>
         <div className="public-profile-message-list" ref={listRef}>
           {loading ? <p className="public-profile-message-empty">Loading conversation…</p> : (thread?.messages || []).length ? thread.messages.map((message) => <article key={message.id} className={message.senderUid === myUid ? 'is-mine' : ''}><p>{message.text}</p><time>{displayTime(message.createdAtMs)}</time></article>) : <p className="public-profile-message-empty">No messages yet.</p>}
         </div>
         <form onSubmit={send}>
           {isPendingSender && <p className="dm-center-notice">Waiting for {profile.displayName || 'this member'} to accept your message request.</p>}
+          {isDeclinedSender && <p className="dm-center-notice">This member declined your request. They can still accept it later.</p>}
           {deleted && <p className="dm-center-notice">This account was deleted. Existing messages remain available, but new messages cannot be sent.</p>}
           {error && <p className="dm-center-error">{error}</p>}
-          <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={1000} placeholder="Write a private message…" disabled={busy || isPendingSender || deleted} />
-          <div><small>{text.length}/1000</small><button type="submit" disabled={busy || isPendingSender || deleted || !text.trim()}>{busy ? 'Sending…' : 'Send message'}</button></div>
+          <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={1000} placeholder="Write a private message…" disabled={busy || isPendingSender || isDeclinedSender || deleted} />
+          <div><small>{text.length}/1000</small><button type="submit" disabled={busy || isPendingSender || isDeclinedSender || deleted || !text.trim()}>{busy ? 'Sending…' : 'Send message'}</button></div>
         </form>
       </>}
     </section>}

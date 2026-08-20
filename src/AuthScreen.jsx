@@ -106,6 +106,13 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
     };
   }, [avatarPreviewUrl]);
 
+  useEffect(() => {
+    if (mode !== 'signup' || signupPhase !== 'account') return;
+    requestAnimationFrame(() => {
+      document.querySelector('.auth-screen--signup-account')?.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  }, [mode, signupPhase]);
+
   const onChooseAvatar = () => {
     avatarInputRef.current?.click();
   };
