@@ -314,10 +314,12 @@ function LiveOnHotTake({ onQuickMatch, onCustomRoom }) {
   );
 }
 
-function HotTakeOfTheDay({ isSignedIn, onSignIn, onDebate }) {
+function HotTakeOfTheDay({ isSignedIn, onSignIn }) {
   const [take, setTake] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [comment, setComment] = useState('');
+  const [commentBusy, setCommentBusy] = useState(false);
 
   const load = async () => {
     try {
@@ -347,18 +349,40 @@ function HotTakeOfTheDay({ isSignedIn, onSignIn, onDebate }) {
     finally { setBusy(false); }
   };
 
+  const postComment = async (event) => {
+    event.preventDefault();
+    if (!isSignedIn) { onSignIn(); return; }
+    if (!take.viewerVote) { setMessage('Vote before joining the comments.'); return; }
+    const text = comment.trim();
+    if (!text) return;
+    setCommentBusy(true); setMessage('');
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/daily-take/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || 'Your comment could not be posted.');
+      setTake((current) => ({ ...current, comments: [body.comment, ...(current.comments || [])] }));
+      setComment('');
+    } catch (error) { setMessage(error.message); }
+    finally { setCommentBusy(false); }
+  };
+
   if (!take) return message ? null : <section className="landing-daily-take landing-daily-take--loading" aria-label="Loading Hot Take of the Day" />;
   const total = take.agreeVotes + take.disagreeVotes;
   const agreePercent = total ? Math.round(take.agreeVotes / total * 100) : 50;
   const disagreePercent = total ? 100 - agreePercent : 50;
-  const oppositeSide = take.viewerVote === 'agree' ? 'disagree' : 'agree';
+  const comments = take.comments || [];
 
   return (
     <section className="landing-daily-take" aria-labelledby="daily-take-title">
       <div className="landing-daily-heading">
         <p><span>24H</span>Hot Take of the Day</p>
         <h2 id="daily-take-title">Pick a side<span>.</span></h2>
-        <small>Vote once, change your mind anytime, then defend your position live.</small>
+        <small>Vote once, change your mind anytime, and discuss the result below.</small>
       </div>
       <div className="landing-daily-arena">
         <div className="landing-daily-statement"><span>Today’s statement</span><blockquote>{take.statement}</blockquote><small>{total.toLocaleString()} verified vote{total === 1 ? '' : 's'}</small></div>
@@ -374,9 +398,27 @@ function HotTakeOfTheDay({ isSignedIn, onSignIn, onDebate }) {
         </div>
         {message && <p className="landing-daily-message">{message}</p>}
         <footer>
-          <p>{take.viewerVote ? <>You voted <strong>{take.viewerVote}</strong>. Ready to hear the other side?</> : 'Sign in, cast your vote, and see the live result.'}</p>
-          <button type="button" disabled={!take.viewerVote} onClick={() => onDebate(take.topicId, oppositeSide)}><IconLightning />Debate the other side</button>
+          <p>{take.viewerVote ? <>You voted <strong>{take.viewerVote}</strong>. You can change your vote anytime.</> : 'Sign in and cast your vote to see the live result and join the comments.'}</p>
         </footer>
+      </div>
+      <div className="landing-daily-comments">
+        <div className="landing-daily-comments-heading">
+          <div><span>Daily discussion</span><h3>Community comments</h3></div>
+          <strong>{comments.length}</strong>
+        </div>
+        <form onSubmit={postComment}>
+          <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength="1000" rows="3" placeholder={take.viewerVote ? 'Share why you picked your side…' : 'Vote first to join the discussion…'} disabled={commentBusy || (isSignedIn && !take.viewerVote)} />
+          <div><small>{comment.length}/1000</small><button type="submit" disabled={commentBusy || (isSignedIn && !take.viewerVote) || !comment.trim()}>{isSignedIn ? (commentBusy ? 'Posting…' : 'Post comment') : 'Sign in to comment'}</button></div>
+        </form>
+        <div className="landing-daily-comments-list">
+          {comments.length === 0 && <p className="landing-daily-comments-empty">No comments yet. Cast your vote and start the conversation.</p>}
+          {comments.map((entry) => (
+            <article key={entry.id}>
+              {entry.avatarUrl ? <img src={entry.avatarUrl} alt="" /> : <span className="landing-daily-comment-avatar" aria-hidden="true">{entry.displayName?.charAt(0)?.toUpperCase() || '?'}</span>}
+              <div><header><strong>{entry.displayName}</strong><span className={`landing-daily-comment-side landing-daily-comment-side--${entry.side}`}>{entry.side}</span><time>{entry.createdAtMs ? new Date(entry.createdAtMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Just now'}</time></header><p>{entry.text}</p></div>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -410,11 +452,6 @@ export default function HomePage({
   const handleCustom = () => {
     if (!isSignedIn) onSignIn();
     else onCustomRoom();
-  };
-
-  const handleDailyDebate = (topicId, side) => {
-    if (!isSignedIn) onSignIn();
-    else onQuickMatch({ topicId, side });
   };
 
   useEffect(() => {
@@ -550,9 +587,9 @@ export default function HomePage({
 
       {SHOW_HOME_QUOTES && <QuoteCarousel />}
 
-      <LiveOnHotTake onQuickMatch={handleQuick} onCustomRoom={handleCustom} />
+      <HotTakeOfTheDay isSignedIn={isSignedIn} onSignIn={onSignIn} />
 
-      <HotTakeOfTheDay isSignedIn={isSignedIn} onSignIn={onSignIn} onDebate={handleDailyDebate} />
+      <LiveOnHotTake onQuickMatch={handleQuick} onCustomRoom={handleCustom} />
 
       <div id="topics" className="landing-anchor" aria-hidden="true" />
       <div id="faq" className="landing-anchor" aria-hidden="true" />

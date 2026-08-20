@@ -17,6 +17,24 @@ async function optionalUser(req) {
   catch { return null; }
 }
 
+const discussionRef = (version) => admin.firestore().collection('daily_take_discussions').doc(encodeURIComponent(version)).collection('comments');
+
+async function loadComments(version) {
+  const snap = await discussionRef(version).orderBy('createdAt', 'desc').limit(100).get();
+  return snap.docs.map((doc) => {
+    const comment = doc.data() || {};
+    return {
+      id: doc.id,
+      uid: comment.uid || '',
+      displayName: comment.displayName || 'Hot Take member',
+      avatarUrl: comment.avatarUrl || '',
+      side: comment.side === 'disagree' ? 'disagree' : 'agree',
+      text: comment.text || '',
+      createdAtMs: comment.createdAt?.toMillis?.() || null,
+    };
+  });
+}
+
 export function attachDailyTakeRoutes(app, { isAdminReady }) {
   const router = express.Router();
 
@@ -31,6 +49,7 @@ export function attachDailyTakeRoutes(app, { isAdminReady }) {
       }
       const take = snap.data() || DEFAULT_TAKE;
       const user = await optionalUser(req);
+      const comments = await loadComments(take.version);
       let viewerVote = null;
       if (user) {
         const vote = await admin.firestore().collection('daily_take_votes').doc(user.uid).get();
@@ -44,6 +63,7 @@ export function attachDailyTakeRoutes(app, { isAdminReady }) {
         agreeVotes: Math.max(0, Number(take.agreeVotes) || 0),
         disagreeVotes: Math.max(0, Number(take.disagreeVotes) || 0),
         viewerVote,
+        comments,
       });
     } catch (error) {
       console.warn('[daily-take] load failed', error?.message ?? error);
@@ -84,6 +104,42 @@ export function attachDailyTakeRoutes(app, { isAdminReady }) {
     } catch (error) {
       console.warn('[daily-take] vote failed', error?.message ?? error);
       res.status(500).json({ error: error?.message || 'Your vote could not be saved.' });
+    }
+  });
+
+  router.post('/comments', async (req, res) => {
+    if (!isAdminReady()) return res.status(503).json({ error: 'Comments are temporarily unavailable.' });
+    const user = await optionalUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to comment.' });
+    if (user.email_verified !== true) return res.status(403).json({ error: 'Verify your email address before commenting.' });
+    const text = String(req.body?.text || '').trim().slice(0, 1000);
+    if (!text) return res.status(400).json({ error: 'Write a comment first.' });
+    try {
+      const db = admin.firestore();
+      const takeSnap = await db.collection('daily_take').doc('current').get();
+      if (!takeSnap.exists) return res.status(404).json({ error: 'Today’s take is unavailable.' });
+      const take = takeSnap.data() || DEFAULT_TAKE;
+      const voteSnap = await db.collection('daily_take_votes').doc(user.uid).get();
+      const vote = voteSnap.data() || {};
+      if (vote.version !== take.version || !['agree', 'disagree'].includes(vote.side)) {
+        return res.status(400).json({ error: 'Vote before joining the comments.' });
+      }
+      const emailKey = String(user.email || '').trim().toLowerCase();
+      const profileSnap = emailKey ? await db.collection('publicProfiles').doc(emailKey).get() : null;
+      const profile = profileSnap?.data?.() || {};
+      const comment = {
+        uid: user.uid,
+        displayName: String(profile.displayName || user.name || 'Hot Take member').slice(0, 40),
+        avatarUrl: String(profile.avatarUrl || user.picture || '').startsWith('data:') ? '' : String(profile.avatarUrl || user.picture || '').slice(0, 2000),
+        side: vote.side,
+        text,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      const ref = await discussionRef(take.version).add(comment);
+      res.json({ comment: { ...comment, id: ref.id, createdAt: undefined, createdAtMs: Date.now() } });
+    } catch (error) {
+      console.warn('[daily-take] comment failed', error?.message ?? error);
+      res.status(500).json({ error: 'Your comment could not be posted.' });
     }
   });
 
