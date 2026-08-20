@@ -859,8 +859,8 @@ export default function App() {
     setStep('side');
   };
 
-  const ensureDebateMedia = useCallback(async (action) => {
-    pendingMediaActionRef.current = action;
+  const ensureDebateMedia = useCallback(async (action, promptTitle = null) => {
+    pendingMediaActionRef.current = { action, promptTitle };
     setMediaPromptBusy(true);
     try {
       let stream = localStreamRef.current;
@@ -876,10 +876,10 @@ export default function App() {
       setCamOn(true);
       setMediaPrompt(null);
       pendingMediaActionRef.current = null;
-      action();
+      await action(stream);
     } catch (mediaError) {
       setMediaPrompt({
-        title: mediaError?.name === 'NotAllowedError' ? 'Allow camera and microphone' : 'Connect your camera and microphone',
+        title: promptTitle || (mediaError?.name === 'NotAllowedError' ? 'Allow camera and microphone' : 'Connect your camera and microphone'),
         message: getMediaErrorMessage(mediaError),
       });
     } finally {
@@ -888,8 +888,8 @@ export default function App() {
   }, [audioDeviceId, videoDeviceId]);
 
   const retryDebateMedia = () => {
-    const action = pendingMediaActionRef.current;
-    if (action) void ensureDebateMedia(action);
+    const pending = pendingMediaActionRef.current;
+    if (pending?.action) void ensureDebateMedia(pending.action, pending.promptTitle);
   };
 
   const joinQueueNow = (s) => {
@@ -921,14 +921,18 @@ export default function App() {
     setStep(matchMode === 'custom' ? 'custom' : 'topic');
   };
 
-  const startQuickMatch = (options = null) => {
-    if (!requireVerifiedEmail()) return;
+  const startQuickMatchNow = (options = null) => {
     const preset = options && typeof options === 'object' && typeof options.topicId === 'string' ? options : null;
     setError(null);
     setMatchMode('quick');
     setTopicId(preset && TOPICS.some((topic) => topic.id === preset.topicId) ? preset.topicId : null);
     setSide(preset && ['agree', 'disagree'].includes(preset.side) ? preset.side : null);
     setStep('topic');
+  };
+
+  const startQuickMatch = (options = null) => {
+    if (!requireVerifiedEmail()) return;
+    void ensureDebateMedia(() => startQuickMatchNow(options));
   };
 
   const startCustomMatch = () => {
@@ -1138,6 +1142,42 @@ export default function App() {
       t.enabled = camOn;
     });
   }, [camOn]);
+
+  const restoreActiveCallMedia = useCallback(async (stream) => {
+    const pc = pcRef.current;
+    if (pc) {
+      for (const kind of ['audio', 'video']) {
+        const replacement = stream.getTracks().find((track) => track.kind === kind);
+        const sender = pc.getSenders().find((candidate) => candidate.track?.kind === kind)
+          || pc.getTransceivers().find((candidate) => candidate.receiver?.track?.kind === kind)?.sender;
+        if (sender && replacement) await sender.replaceTrack(replacement);
+      }
+    }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      void localVideoRef.current.play?.().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step !== 'debate' || !debateInfo?.roomId || !localStream) return undefined;
+    let prompted = false;
+    const onDeviceEnded = () => {
+      if (prompted || roomIdRef.current !== debateInfo.roomId) return;
+      prompted = true;
+      pendingMediaActionRef.current = {
+        action: restoreActiveCallMedia,
+        promptTitle: 'Camera or microphone disconnected',
+      };
+      setMediaPrompt({
+        title: 'Camera or microphone disconnected',
+        message: 'Your camera or microphone stopped during the debate. Reconnect or enable the device, then retry to continue the call.',
+      });
+    };
+    const tracks = localStream.getTracks();
+    tracks.forEach((track) => track.addEventListener('ended', onDeviceEnded));
+    return () => tracks.forEach((track) => track.removeEventListener('ended', onDeviceEnded));
+  }, [debateInfo?.roomId, localStream, restoreActiveCallMedia, step]);
 
   useEffect(() => {
     if (step === 'debate') attachRemoteVideo();
