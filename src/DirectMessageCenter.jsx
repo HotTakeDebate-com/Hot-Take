@@ -160,7 +160,7 @@ export default function DirectMessageCenter({ socket }) {
           const member = conversation.otherProfile || {};
           return <button type="button" key={conversation.id} className={conversation.pendingForRecipient ? 'is-request' : ''} onClick={() => chooseConversation(conversation)}>
             <span className={`dm-center-avatar${member.avatarUrl ? ' has-image' : ''}`}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
-            <span className="dm-center-preview"><b>{member.displayName || 'Deleted account'} <IdentityBadges compact verified={member.verifiedDebater} premium={member.premium} role={member.role} /></b><em>{conversation.pendingForRecipient ? 'New message request' : conversation.declinedForRecipient ? 'Declined request · Accept anytime' : (conversation.lastMessage || 'Open conversation')}</em></span>
+            <span className="dm-center-preview"><b>{member.displayName || 'Deleted account'} <IdentityBadges compact verified={member.verifiedDebater} premium={member.premium} role={member.role} /></b><em>{conversation.pendingForRecipient ? 'New message request' : conversation.declinedForRecipient ? 'Declined request · Accept anytime' : 'Open conversation to view messages'}</em></span>
             <time>{displayTime(conversation.updatedAtMs)}</time>
           </button>;
         })}

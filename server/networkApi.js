@@ -224,7 +224,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
           status: data.status || 'accepted',
           pendingForRecipient,
           declinedForRecipient,
-          lastMessage: pendingForRecipient || declinedForRecipient ? '' : (data.lastMessage || ''),
+          // Message contents are intentionally omitted from inbox previews.
+          // Members must open a conversation before its messages are returned.
+          lastMessage: '',
           lastSenderUid: data.lastSenderUid || '',
           updatedAtMs: serializeTime(data.updatedAt),
         };
