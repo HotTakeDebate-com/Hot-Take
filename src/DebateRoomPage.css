@@ -34,3 +34,38 @@
 @media(max-width:680px){.live-searching-overlay{padding:24px}.live-search-orb{width:96px;height:96px}.live-searching-overlay h2{margin-top:20px;font-size:24px}.live-searching-overlay p{font-size:13px}.live-topic-statuses{width:100%;grid-template-columns:minmax(0,1fr);gap:9px}.live-topic-statuses.has-queue-count{grid-template-columns:max-content minmax(0,1fr)}.live-opponent-name--searching{min-width:0;justify-content:flex-end}.live-opponent-name--searching>span:last-child{max-width:none;overflow:hidden;text-overflow:ellipsis}.live-queue-count{height:34px;padding:0 9px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.live-search-mini i,.live-search-label-dots i,.live-search-orb>span,.live-search-orb i{animation:none}}
 
+/* Mobile debate cockpit: opponent stays full-size while the local camera remains visible. */
+@media(max-width:680px){
+  .live-room{padding:0 10px 22px}
+  .live-room-header{height:68px}
+  .live-room-header>img{width:142px;max-width:43vw}
+  .live-room-header nav{max-width:57%;padding-left:6px}
+  .live-room-header nav>button{display:none}
+  .live-room-header .live-connection{height:36px;min-width:102px;max-width:120px;padding-inline:9px;font-size:11px}
+  .live-room-header .dm-center{position:fixed;right:14px;bottom:18px;z-index:3900}
+  .live-room-header .dm-center-trigger{width:54px;height:54px;border-color:rgba(255,45,54,.72);background:#e91d24;box-shadow:0 10px 32px rgba(0,0,0,.58),0 0 0 5px rgba(233,29,36,.14)}
+  .live-room-header .dm-center-trigger svg{width:27px;height:27px}
+  .live-room-header .dm-center-panel{top:76px;bottom:auto}
+  .live-room-header .dm-center-drawer{top:70px!important;bottom:10px!important;height:auto!important}
+  .live-topic{min-height:0;margin:10px 0;padding:12px;border-radius:14px;gap:8px}
+  .live-topic-copy{font-size:13px!important}
+  .live-topic-copy>.live-topic-separator{margin:0 3px}
+  .live-topic-statuses{gap:7px}
+  .live-topic-statuses .live-opponent-name{height:34px;font-size:11px}
+  .live-opponent-avatar{width:32px;height:32px}
+  .live-topic-statuses .live-opponent-name strong{max-width:125px}
+  .live-layout{gap:12px}
+  .live-videos{position:relative;display:block;height:clamp(390px,58svh,610px);isolation:isolate}
+  .live-video--remote{width:100%;height:100%;border-radius:16px}
+  .live-video--local{position:absolute;right:12px;bottom:12px;z-index:4;width:clamp(116px,31vw,158px);height:clamp(154px,23svh,210px);border:2px solid #ff252d;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.65)}
+  .live-video--local .live-video-label{top:8px;left:8px;min-width:0;width:auto;height:30px;padding:0 10px;font-size:11px}
+  .live-video--local .live-video-label .live-video-connection,.live-video--local .audio-level-meter{display:none}
+  .live-video--local .local-mic-muted-reminder{left:8px;right:8px;bottom:8px;justify-content:center;transform:none;padding:7px;font-size:0}
+  .live-video--local .local-mic-muted-reminder span{display:none}
+  .live-video--remote .live-video-label{min-width:118px;height:38px;padding-inline:12px;font-size:12px}
+  .live-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding:9px;border-radius:14px}
+  .live-controls button{width:100%;height:48px;justify-content:center;padding:0 10px;font-size:12px}
+  .live-controls .live-leave{margin:0}
+  .live-layout>.debate-chat{height:390px;padding:16px 12px}
+}
+

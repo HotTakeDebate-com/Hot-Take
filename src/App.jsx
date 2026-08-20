@@ -1110,7 +1110,7 @@ export default function App() {
     window.__hotTakeNetworkSocket = socketRef.current;
     window.__hotTakeOpenVerification = isSignedIn ? (() => { setHeaderOverlay(null); setStep('verification'); }) : null;
     window.__hotTakeJoinNetworkRoom = isSignedIn ? ((roomCode) => { setStep('custom'); setCustomTab('join'); joinCustomGame(roomCode); }) : null;
-    window.__hotTakeOpenMemberProfile = isSignedIn ? ((uid) => { setHeaderOverlay(null); setSocialProfileEmail(`uid:${uid}`); setSocialReturnStep(step === 'profile' ? 'welcome' : step); setStep('profile'); }) : null;
+    window.__hotTakeOpenMemberProfile = isSignedIn ? ((uid) => { setHeaderOverlay(null); setSocialProfileEmail(uid === firebaseUserId ? null : `uid:${uid}`); setSocialReturnStep(step === 'profile' ? 'welcome' : step); setStep('profile'); }) : null;
     window.__hotTakeOpenFollowing = isSignedIn ? openFollowing : null;
   }
 
@@ -1286,7 +1286,7 @@ export default function App() {
             setStep('profile');
           }}
           onOpenProfile={(uid) => {
-            setSocialProfileEmail(`uid:${uid}`);
+            setSocialProfileEmail(uid === firebaseUserId ? null : `uid:${uid}`);
             setSocialReturnStep('welcome');
             setStep('profile');
           }}
