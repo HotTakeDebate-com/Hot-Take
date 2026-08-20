@@ -62,30 +62,6 @@ function addLocalTracksToPeerConnection(pc, stream) {
   }
 }
 
-/** Prefer codecs implemented consistently by desktop Chrome and mobile Chromium/WebKit. */
-function configureCrossDeviceCodecs(pc) {
-  if (typeof RTCRtpReceiver === 'undefined' || typeof RTCRtpReceiver.getCapabilities !== 'function') return;
-  const preference = {
-    audio: ['audio/opus', 'audio/pcmu', 'audio/pcma'],
-    video: ['video/h264', 'video/vp8', 'video/vp9', 'video/av1'],
-  };
-  pc.getTransceivers().forEach((transceiver) => {
-    if (typeof transceiver.setCodecPreferences !== 'function') return;
-    const kind = transceiver.receiver?.track?.kind || transceiver.sender?.track?.kind;
-    if (!preference[kind]) return;
-    const codecs = RTCRtpReceiver.getCapabilities(kind)?.codecs || [];
-    const ranked = codecs.map((codec, index) => {
-      const rank = preference[kind].indexOf(String(codec.mimeType || '').toLowerCase());
-      return { codec, index, rank: rank === -1 ? preference[kind].length : rank };
-    }).sort((a, b) => a.rank - b.rank || a.index - b.index).map(({ codec }) => codec);
-    try {
-      transceiver.setCodecPreferences(ranked);
-    } catch (codecError) {
-      console.warn('[hot-take] browser rejected codec preferences', codecError);
-    }
-  });
-}
-
 function peerConnectionConfig(rtcConfig) {
   const { relayConfigured, ...browserConfig } = rtcConfig || FALLBACK_RTC;
   return {
@@ -694,7 +670,6 @@ export default function App() {
         setConnState(pc.connectionState);
 
         addLocalTracksToPeerConnection(pc, stream);
-        configureCrossDeviceCodecs(pc);
 
         let iceRestartTimer = null;
         let iceRestartAttempted = false;
