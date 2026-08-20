@@ -133,6 +133,10 @@ const HOME_QUOTES = [
   },
 ];
 
+// Intentionally retained for a future homepage or editorial feature.
+// Change this to true to restore the existing quote carousel in its original position.
+const SHOW_HOME_QUOTES = false;
+
 const QUOTE_DURATION_MS = 15000;
 const QUOTE_FADE_MS = 400;
 
@@ -544,7 +548,7 @@ export default function HomePage({
         </div>
       </section>
 
-      <QuoteCarousel />
+      {SHOW_HOME_QUOTES && <QuoteCarousel />}
 
       <LiveOnHotTake onQuickMatch={handleQuick} onCustomRoom={handleCustom} />
 
