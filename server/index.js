@@ -1256,6 +1256,21 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('signal', { type, payload, from: socket.id });
   });
 
+  socket.on('webrtc-ready', ({ roomId, isOfferer }) => {
+    const rid = String(roomId || '');
+    if (!rid || rid !== socket.data.roomId) return;
+    socket.data.webrtcReadyRoomId = rid;
+    socket.data.webrtcIsOfferer = isOfferer === true;
+    const members = [...(io.sockets.adapter.rooms.get(rid) || [])]
+      .map((id) => io.sockets.sockets.get(id))
+      .filter((member) => member?.connected && member.data.roomId === rid);
+    if (members.length !== 2 || !members.every((member) => member.data.webrtcReadyRoomId === rid)) return;
+    const offerer = members.find((member) => member.data.webrtcIsOfferer === true);
+    if (!offerer || offerer.data.webrtcStartedRoomId === rid) return;
+    offerer.data.webrtcStartedRoomId = rid;
+    offerer.emit('webrtc-start', { roomId: rid });
+  });
+
   socket.on('staff-watch-debate', ({ roomId }) => {
     if (!['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
     const members = [...(io.sockets.adapter.rooms.get(String(roomId)) || [])]

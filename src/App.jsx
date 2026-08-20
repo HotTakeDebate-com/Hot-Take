@@ -617,6 +617,19 @@ export default function App() {
       }
     };
 
+    socket.on('webrtc-start', async ({ roomId }) => {
+      const pc = pcRef.current;
+      if (!pc || roomId !== roomIdRef.current || pc.signalingState !== 'stable') return;
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('signal', { roomId, type: 'offer', payload: offer });
+      } catch (offerError) {
+        console.warn('[hot-take] could not start WebRTC offer', offerError);
+        setError('Connection handshake failed. Leave the debate and try again.');
+      }
+    });
+
     socket.on('matched', async (payload) => {
       setDebateChatMessages([]);
       setDebateChatDraft('');
@@ -722,16 +735,7 @@ export default function App() {
         };
 
         await flushPendingSignals();
-
-        if (payload.isOfferer) {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socket.emit('signal', {
-            roomId: payload.roomId,
-            type: 'offer',
-            payload: offer,
-          });
-        }
+        socket.emit('webrtc-ready', { roomId: payload.roomId, isOfferer: payload.isOfferer });
       } catch (e) {
         setError(getMediaErrorMessage(e));
         // Do not eject a successfully matched participant into the retired
