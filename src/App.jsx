@@ -886,9 +886,24 @@ export default function App() {
       pendingMediaActionRef.current = null;
       await action(stream);
     } catch (mediaError) {
+      let permissionBlocked = mediaError?.name === 'NotAllowedError' || mediaError?.name === 'PermissionDeniedError';
+      if (navigator.permissions?.query) {
+        try {
+          const [cameraPermission, microphonePermission] = await Promise.all([
+            navigator.permissions.query({ name: 'camera' }),
+            navigator.permissions.query({ name: 'microphone' }),
+          ]);
+          permissionBlocked = cameraPermission.state === 'denied' || microphonePermission.state === 'denied';
+        } catch {
+          // Some browsers do not expose camera/microphone through Permissions API.
+        }
+      }
+      const browserName = /edg/i.test(navigator.userAgent) ? 'Edge' : /chrome|crios/i.test(navigator.userAgent) ? 'Chrome' : /safari/i.test(navigator.userAgent) ? 'Safari' : 'your browser';
       setMediaPrompt({
         title: promptTitle || (mediaError?.name === 'NotAllowedError' ? 'Allow camera and microphone' : 'Connect your camera and microphone'),
         message: getMediaErrorMessage(mediaError),
+        permissionBlocked,
+        browserName,
       });
     } finally {
       setMediaPromptBusy(false);
@@ -1988,13 +2003,20 @@ export default function App() {
           <p>DEVICE CHECK REQUIRED</p>
           <h2 id="media-readiness-title">{mediaPrompt.title}<span>.</span></h2>
           <p className="media-readiness-copy">{mediaPrompt.message}</p>
-          <ol>
-            <li>Click the camera icon beside the address bar.</li>
-            <li>Allow both camera and microphone access.</li>
-            <li>Connect or enable both devices, then retry.</li>
-          </ol>
+          {mediaPrompt.permissionBlocked ? <>
+            <div className="media-readiness-blocked"><strong>{mediaPrompt.browserName} is currently blocking access.</strong><span>Hot Take cannot override a blocked browser permission.</span></div>
+            <ol>
+              <li>Click the <strong>site controls</strong> icon to the left of the website address.</li>
+              <li>Set both <strong>Camera</strong> and <strong>Microphone</strong> to <strong>Allow</strong>. If needed, select <strong>Reset permissions</strong> first.</li>
+              <li>Return here and press <strong>I changed it — try again</strong>.</li>
+            </ol>
+          </> : <ol>
+            <li>Make sure your camera and microphone are connected.</li>
+            <li>Press <strong>Ask browser for access</strong>.</li>
+            <li>Choose <strong>Allow while visiting the site</strong> in the browser popup.</li>
+          </ol>}
           <div className="media-readiness-actions">
-            <button type="button" className="primary" onClick={retryDebateMedia} disabled={mediaPromptBusy}>{mediaPromptBusy ? 'Checking devices…' : 'Enable and retry'}</button>
+            <button type="button" className="primary" onClick={retryDebateMedia} disabled={mediaPromptBusy}>{mediaPromptBusy ? 'Checking devices…' : mediaPrompt.permissionBlocked ? 'I changed it — try again' : 'Ask browser for access'}</button>
             <button type="button" onClick={() => { pendingMediaActionRef.current = null; setMediaPrompt(null); }} disabled={mediaPromptBusy}>Cancel</button>
           </div>
           <small>You won’t enter matchmaking until both devices are ready.</small>
