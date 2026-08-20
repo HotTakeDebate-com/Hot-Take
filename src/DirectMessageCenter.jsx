@@ -58,13 +58,24 @@ export default function DirectMessageCenter({ socket }) {
       void loadConversations();
       if (active) void loadThread(active);
     };
+    const requestDecided = (event = {}) => {
+      if (event.status !== 'declined') { refresh(); return; }
+      setConversations((current) => current.filter((item) => item.id !== event.conversationId));
+      setActive((current) => {
+        if (current?.id !== event.conversationId) return current;
+        setThread(null);
+        setText('');
+        setError('');
+        return null;
+      });
+    };
     socket.on('direct-message', refresh);
     socket.on('dm-request', refresh);
-    socket.on('dm-request-decided', refresh);
+    socket.on('dm-request-decided', requestDecided);
     return () => {
       socket.off('direct-message', refresh);
       socket.off('dm-request', refresh);
-      socket.off('dm-request-decided', refresh);
+      socket.off('dm-request-decided', requestDecided);
     };
   }, [active, loadConversations, loadThread, socket]);
   useEffect(() => {
@@ -89,15 +100,23 @@ export default function DirectMessageCenter({ socket }) {
 
   const decide = async (decision) => {
     if (!active?.otherUid) return;
+    const decidingConversation = active;
     setBusy(true);
     setError('');
+    if (decision === 'decline') {
+      setConversations((current) => current.filter((item) => item.id !== decidingConversation.id));
+      setActive(null);
+      setThread(null);
+      setText('');
+    }
     try {
-      await networkDecideDirectMessage(active.otherUid, decision);
+      await networkDecideDirectMessage(decidingConversation.otherUid, decision);
       await loadConversations();
-      if (decision === 'accept') await loadThread({ ...active, status: 'accepted', pendingForRecipient: false });
+      if (decision === 'accept') await loadThread({ ...decidingConversation, status: 'accepted', pendingForRecipient: false });
       else { setActive(null); setThread(null); }
     } catch (requestError) {
-      setError(requestError.message || 'The message request could not be updated.');
+      if (decision !== 'decline') setError(requestError.message || 'The message request could not be updated.');
+      else await loadConversations();
     } finally {
       setBusy(false);
     }

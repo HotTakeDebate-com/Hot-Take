@@ -205,7 +205,8 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     try {
       const snap = await admin.firestore().collection('direct_conversations')
         .where('participants', 'array-contains', req.networkUser.uid).limit(100).get();
-      const conversations = await Promise.all(snap.docs.map(async (doc) => {
+      const visibleDocs = snap.docs.filter((doc) => doc.data()?.status !== 'declined');
+      const conversations = await Promise.all(visibleDocs.map(async (doc) => {
         const data = doc.data() || {};
         const otherUid = (data.participants || []).find((uid) => uid !== req.networkUser.uid) || '';
         let otherProfile = (data.participantProfiles || []).find((profile) => profile.uid === otherUid) || null;
@@ -352,7 +353,9 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     batch.set(ref, { status, decidedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
     notificationSnap.docs.forEach((doc) => batch.set(doc.ref, { read: true, readAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }));
     await batch.commit();
-    io?.to(`user:${otherUid}`).emit('dm-request-decided', { byUid: req.networkUser.uid, conversationId, status });
+    const decisionEvent = { byUid: req.networkUser.uid, conversationId, status };
+    io?.to(`user:${otherUid}`).emit('dm-request-decided', decisionEvent);
+    io?.to(`user:${req.networkUser.uid}`).emit('dm-request-decided', decisionEvent);
     res.json({ ok: true, status });
   });
 
