@@ -779,7 +779,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
           {reports.length ? pageSlice(reports).map((r) => <details className="staff-report-row" key={r.id}>
             <summary>
               <strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong>
-              <span className="staff-report-category">{r.category || 'Report'}</span>
+              <span className="staff-report-category">{r.reportContext === 'profile' ? 'PROFILE · ' : ''}{r.category || 'Report'}</span>
               <span className="staff-report-users"><b>{r.reporterEmail || 'Unknown reporter'}</b><i>→</i><b>{r.reportedEmail || 'Unknown user'}</b></span>
               <span className="staff-report-preview">{r.details || 'No details supplied.'}</span>
               <time>{dateValue(r.createdAt)}</time>
@@ -787,9 +787,10 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             </summary>
             <div className="staff-report-expanded">
               <div className="staff-report-description"><span>Report details</span><p>{r.details || 'No details supplied.'}</p></div>
+              {r.reportContext === 'profile' && r.profileSnapshot && <div className="staff-report-profile-snapshot"><span>Profile when reported</span><strong>{r.profileSnapshot.displayName || 'No display name'}</strong><p>{r.profileSnapshot.bio || 'No bio was present.'}</p><small>{r.profileSnapshot.avatarUrl ? `Profile picture: ${r.profileSnapshot.avatarUrl}` : 'No profile picture was present.'}</small></div>}
               <dl>
                 <div><dt>Report ID</dt><dd>{r.id}</dd></div>
-                <div><dt>Room</dt><dd>{r.roomId || '—'}</dd></div>
+                <div><dt>Context</dt><dd>{r.reportContext === 'profile' ? 'Member profile' : r.roomId ? `Debate room ${r.roomId}` : '—'}</dd></div>
                 <div><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd></div>
                 <div><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></div>
               </dl>

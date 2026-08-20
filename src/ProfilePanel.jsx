@@ -14,6 +14,7 @@ import { prepareProfileImage } from './profileImage.js';
 import GenericAvatar from './GenericAvatar.jsx';
 import { MAX_PROFILE_INTERESTS_PER_CATEGORY, PROFILE_INTEREST_GROUPS, sanitizeProfileInterests } from './profileInterests.js';
 import IdentityBadges from './IdentityBadges.jsx';
+import ProfileReportDialog from './ProfileReportDialog.jsx';
 import { networkDecideDirectMessage, networkDirectMessages, networkFollow, networkFollowers, networkFollowing, networkFollowStatus, networkIdentity, networkMe, networkSendDirectMessage, networkUnfollow, networkUpdatePresencePrivacy } from './networkApi.js';
 import './DebateNetwork.css';
 import './AccountPage.css';
@@ -94,6 +95,7 @@ export default function ProfilePanel({
   const [messageDraft, setMessageDraft] = useState('');
   const [messageBusy, setMessageBusy] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
+  const [profileReportOpen, setProfileReportOpen] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [appearOffline, setAppearOffline] = useState(false);
   const [followingPanelOpen, setFollowingPanelOpen] = useState(false);
@@ -468,6 +470,7 @@ export default function ProfilePanel({
               <div className="public-profile-actions">
                 <button type="button" className="account-secondary-button" onClick={toggleFollow} disabled={followBusy}>{followBusy ? 'Updating…' : following ? 'Unfollow' : 'Follow'}</button>
                 <button type="button" className="public-profile-message-button" onClick={() => setMessageOpen((open) => !open)} aria-expanded={messageOpen}>{messageOpen ? 'Close messages' : `Message ${displayName || 'member'}`}</button>
+                <button type="button" className="public-profile-report-button" onClick={() => setProfileReportOpen(true)} disabled={!liveTargetUid}>Report profile</button>
               </div>
             </div>
             <div className="public-profile-dashboard" aria-label="Profile statistics">
@@ -519,6 +522,7 @@ export default function ProfilePanel({
           {error && <div className="account-alert account-alert--error">{error}</div>}
         </section>
       </main>
+      <ProfileReportDialog open={profileReportOpen} onClose={() => setProfileReportOpen(false)} profile={{ uid: liveTargetUid, displayName, bio, avatarUrl }} />
       <SiteFooter onHome={onHome || onBack} onAbout={onAbout} onFaq={onFaq} onSupport={onSupport} onPickLegal={onPickLegal} />
     </div>;
   }

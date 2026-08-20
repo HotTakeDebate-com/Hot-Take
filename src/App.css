@@ -2683,6 +2683,7 @@
 .staff-report-expanded { padding:16px; border-top:1px solid #2b2d34; background:#0d0e12; }
 .staff-report-description > span { color:#80838d; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
 .staff-report-description p { margin:7px 0 15px; color:#e1e2e6; white-space:pre-wrap; }
+.staff-report-profile-snapshot{margin:0 0 15px;padding:13px 14px;border:1px solid rgba(255,43,52,.28);border-radius:8px;background:rgba(255,35,44,.055)}.staff-report-profile-snapshot>span{display:block;margin-bottom:6px;color:#ff666c;font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.staff-report-profile-snapshot>strong{color:#fff}.staff-report-profile-snapshot>p{margin:6px 0;color:#c9cad0;white-space:pre-wrap;overflow-wrap:anywhere}.staff-report-profile-snapshot>small{display:block;color:#7f828c;overflow-wrap:anywhere}
 .staff-report-expanded dl { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0; }
 .staff-report-expanded dl > div { min-width:0; padding:10px 12px; border:1px solid #292b32; border-radius:7px; background:#111217; }
 .staff-report-expanded dt { margin-bottom:5px; color:#777b86; font-size:10px; text-transform:uppercase; letter-spacing:.06em; }
