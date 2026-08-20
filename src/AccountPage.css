@@ -417,7 +417,7 @@
   .account-shell { width: min(100% - 32px, 780px); padding-top: 34px; }
   .account-heading { display: block; }
   .account-heading > p:last-child { margin-top: 16px; padding: 0; border: 0; background: none; }
-  .account-layout { gap: 18px; }
+  .account-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .account-nav { gap: 6px; padding: 8px; }
   .account-nav a,
   .account-nav button { flex: 0 0 auto; width: auto; min-height: 40px; }
