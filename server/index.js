@@ -19,6 +19,7 @@ import { createAnalyticsTracker } from './analytics.js';
 import { attachDailyTakeRoutes } from './dailyTakeApi.js';
 import { releaseDisplayNameClaim } from './displayNameClaims.js';
 import { blockRelationship, usersHaveBlock } from './blocks.js';
+import { createCallSessions } from './callSessions.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -83,6 +84,7 @@ const serverStartedAt = Date.now();
 const io = new Server(httpServer, {
   cors: { origin: true, credentials: true },
 });
+const callSessions = createCallSessions(io);
 
 // --- Firebase Admin (Socket.IO auth binding) ---
 let firebaseAdminReady = false;
@@ -1162,6 +1164,7 @@ io.on('connection', (socket) => {
   socket.on('kick-peer', async ({ roomId }) => {
     if (rejectIfSocketUnverified(socket)) return;
     if (!roomId || roomId !== socket.data.roomId) return;
+    callSessions.removeSocket(socket, roomId);
     if (socket.data.matchType !== 'custom' || !socket.data.customRoomCode) return;
 
     const game = customGames.get(socket.data.customRoomCode);
@@ -1212,6 +1215,8 @@ io.on('connection', (socket) => {
       return;
     }
 
+    callSessions.removeSocket(socket, rid);
+
     analytics.recordMatchEnd(rid);
 
     if (socket.data.matchType === 'custom' && socket.data.customRoomCode) {
@@ -1250,25 +1255,14 @@ io.on('connection', (socket) => {
     clearRoom();
   });
 
-  socket.on('signal', ({ roomId, type, payload }) => {
+  socket.on('call-ready', ({ roomId }) => {
     if (rejectIfSocketUnverified(socket)) return;
-    if (!roomId || roomId !== socket.data.roomId) return;
-    socket.to(roomId).emit('signal', { type, payload, from: socket.id });
+    callSessions.ready(socket, String(roomId || ''));
   });
 
-  socket.on('webrtc-ready', ({ roomId, isOfferer }) => {
-    const rid = String(roomId || '');
-    if (!rid || rid !== socket.data.roomId) return;
-    socket.data.webrtcReadyRoomId = rid;
-    socket.data.webrtcIsOfferer = isOfferer === true;
-    const members = [...(io.sockets.adapter.rooms.get(rid) || [])]
-      .map((id) => io.sockets.sockets.get(id))
-      .filter((member) => member?.connected && member.data.roomId === rid);
-    if (members.length !== 2 || !members.every((member) => member.data.webrtcReadyRoomId === rid)) return;
-    const offerer = members.find((member) => member.data.webrtcIsOfferer === true);
-    if (!offerer || offerer.data.webrtcStartedRoomId === rid) return;
-    offerer.data.webrtcStartedRoomId = rid;
-    offerer.emit('webrtc-start', { roomId: rid });
+  socket.on('call-signal', (message) => {
+    if (rejectIfSocketUnverified(socket)) return;
+    callSessions.signal(socket, message);
   });
 
   socket.on('staff-watch-debate', ({ roomId }) => {
@@ -1363,6 +1357,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', async () => {
     debateChatRate.delete(socket.id);
     const rid = socket.data.roomId;
+    if (rid) callSessions.removeSocket(socket, rid);
     if (rid) analytics.recordMatchEnd(rid);
     const gameCode = socket.data.customRoomCode;
     let handledCustomDisconnect = false;

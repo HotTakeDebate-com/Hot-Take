@@ -41,6 +41,7 @@ import './HomePage.css';
 import './QuickMatchPage.css';
 import './SiteChrome.css';
 import './DebateRoomPage.css';
+import DebateCallController from './DebateCallController.js';
 
 const FALLBACK_RTC = {
   iceServers: [
@@ -60,18 +61,6 @@ function addLocalTracksToPeerConnection(pc, stream) {
   if (!hasAudio) {
     pc.addTransceiver('audio', { direction: 'recvonly' });
   }
-}
-
-function peerConnectionConfig(rtcConfig) {
-  const { relayConfigured, ...browserConfig } = rtcConfig || FALLBACK_RTC;
-  return {
-    ...browserConfig,
-    bundlePolicy: 'max-bundle',
-    // When production TURN is available, prefer a deterministic relay route.
-    // This avoids Windows/router combinations that advertise direct candidates
-    // and then leave Chrome stuck in a disconnected state.
-    iceTransportPolicy: relayConfigured ? 'relay' : 'all',
-  };
 }
 
 function connectionLabel(state) {
@@ -275,6 +264,7 @@ export default function App() {
   const rtcConfigPromiseRef = useRef(Promise.resolve(FALLBACK_RTC));
   const socketRef = useRef(null);
   const pcRef = useRef(null);
+  const callControllerRef = useRef(null);
   const localStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -338,6 +328,8 @@ export default function App() {
       pcRef.current.close();
       pcRef.current = null;
     }
+    callControllerRef.current?.close();
+    callControllerRef.current = null;
     remoteStreamRef.current = null;
     pendingSignalsRef.current = [];
     pendingIceCandidatesRef.current = [];
@@ -544,66 +536,23 @@ export default function App() {
       }
     });
 
-    const flushPendingIceCandidates = async (pc) => {
-      if (!pc.remoteDescription) return;
-      const queued = pendingIceCandidatesRef.current.splice(0);
-      for (const candidate of queued) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (candidateError) {
-          console.warn('[hot-take] rejected queued ICE candidate', candidateError);
-        }
-      }
-    };
+    const callController = new DebateCallController({
+      socket,
+      rtcConfig: rtcConfigRef.current,
+      onState: setConnState,
+      onRemoteTrack: handleRemoteTrack,
+      onError: (callError) => {
+        console.warn('[hot-take] debate call failed', callError);
+        setError('The video call could not connect. Leave the debate and try again.');
+      },
+    });
+    callControllerRef.current = callController;
 
-    const processSignal = async ({ type, payload }) => {
-      const pc = pcRef.current;
-      const roomId = roomIdRef.current;
-      if (!pc || !roomId) return;
-
-      if (type === 'offer') {
-        await pc.setRemoteDescription(new RTCSessionDescription(payload));
-        await flushPendingIceCandidates(pc);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit('signal', { roomId, type: 'answer', payload: answer });
-      } else if (type === 'answer') {
-        await pc.setRemoteDescription(new RTCSessionDescription(payload));
-        await flushPendingIceCandidates(pc);
-      } else if (type === 'ice' && payload) {
-        if (!pc.remoteDescription) {
-          pendingIceCandidatesRef.current.push(payload);
-          return;
-        }
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(payload));
-        } catch (candidateError) {
-          // During an ICE restart the previous remote description is still present,
-          // but a candidate may already belong to the incoming replacement offer.
-          pendingIceCandidatesRef.current.push(payload);
-          console.warn('[hot-take] deferred ICE candidate until the next remote description', candidateError);
-        }
-      }
-    };
-
-    const flushPendingSignals = async () => {
-      const queued = pendingSignalsRef.current.splice(0);
-      for (const sig of queued) {
-        await processSignal(sig);
-      }
-    };
-
-    socket.on('webrtc-start', async ({ roomId }) => {
-      const pc = pcRef.current;
-      if (!pc || roomId !== roomIdRef.current || pc.signalingState !== 'stable') return;
-      try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit('signal', { roomId, type: 'offer', payload: offer });
-      } catch (offerError) {
-        console.warn('[hot-take] could not start WebRTC offer', offerError);
-        setError('Connection handshake failed. Leave the debate and try again.');
-      }
+    socket.on('call-start', (message) => {
+      void callController.start(message).catch((callError) => callController.onError?.(callError));
+    });
+    socket.on('call-signal', (message) => {
+      void callController.receive(message).catch((callError) => callController.onError?.(callError));
     });
 
     socket.on('matched', async (payload) => {
@@ -664,53 +613,9 @@ export default function App() {
           statement: payload.statement ?? null,
         };
 
-        const loadedRtcConfig = await rtcConfigPromiseRef.current;
-        const pc = new RTCPeerConnection(peerConnectionConfig(loadedRtcConfig));
-        pcRef.current = pc;
-        setConnState(pc.connectionState);
-
-        addLocalTracksToPeerConnection(pc, stream);
-
-        let iceRestartTimer = null;
-        let iceRestartAttempted = false;
-        pc.onconnectionstatechange = () => {
-          setConnState(pc.connectionState);
-          if (pc.connectionState === 'connected' && iceRestartTimer) {
-            clearTimeout(iceRestartTimer);
-            iceRestartTimer = null;
-          }
-          if (payload.isOfferer && !iceRestartAttempted && ['disconnected', 'failed'].includes(pc.connectionState)) {
-            if (iceRestartTimer) clearTimeout(iceRestartTimer);
-            iceRestartTimer = setTimeout(async () => {
-              if (pcRef.current !== pc || !['disconnected', 'failed'].includes(pc.connectionState)) return;
-              iceRestartAttempted = true;
-              try {
-                pc.setConfiguration(peerConnectionConfig(await rtcConfigPromiseRef.current));
-                pc.restartIce();
-                const restartOffer = await pc.createOffer({ iceRestart: true });
-                await pc.setLocalDescription(restartOffer);
-                socket.emit('signal', { roomId: payload.roomId, type: 'offer', payload: restartOffer });
-              } catch (restartError) {
-                console.warn('[hot-take] automatic ICE restart failed', restartError);
-              }
-            }, 2500);
-          }
-        };
-
-        pc.ontrack = handleRemoteTrack;
-
-        pc.onicecandidate = (ev) => {
-          if (ev.candidate && roomIdRef.current) {
-            socket.emit('signal', {
-              roomId: roomIdRef.current,
-              type: 'ice',
-              payload: ev.candidate.toJSON(),
-            });
-          }
-        };
-
-        await flushPendingSignals();
-        socket.emit('webrtc-ready', { roomId: payload.roomId, isOfferer: payload.isOfferer });
+        callController.rtcConfig = await rtcConfigPromiseRef.current;
+        await callController.prepare(payload.roomId, stream);
+        pcRef.current = callController.pc;
       } catch (e) {
         setError(getMediaErrorMessage(e));
         // Do not eject a successfully matched participant into the retired
@@ -806,6 +711,7 @@ export default function App() {
         pcRef.current.close();
         pcRef.current = null;
       }
+      callController.close();
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = null;
       }
@@ -866,18 +772,6 @@ export default function App() {
       setCustomQueuePosition(null);
     });
 
-    socket.on('signal', async ({ type, payload }) => {
-      if (!pcRef.current || !roomIdRef.current) {
-        pendingSignalsRef.current.push({ type, payload });
-        return;
-      }
-      try {
-        await processSignal({ type, payload });
-      } catch {
-        setError('Connection error. Try again.');
-      }
-    });
-
     socket.on('staff-spectator-request', async ({ watcherId, roomId }) => {
       if (roomId !== roomIdRef.current || !localStreamRef.current) return;
       spectatorPeerConnectionsRef.current.get(watcherId)?.close();
@@ -905,6 +799,7 @@ export default function App() {
     });
 
     socket.on('peer-left', () => {
+      callController.close();
       if (matchModeRef.current === 'custom' && sideRef.current === 'agree') {
         setDebateChatMessages([]);
         setDebateChatDraft('');
@@ -946,6 +841,7 @@ export default function App() {
       const sock = socketRef.current;
       if (sock) {
         sock.emit('leave-queue');
+        callController.close();
         cleanupMedia();
         sock.disconnect();
         socketRef.current = null;
