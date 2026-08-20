@@ -544,6 +544,8 @@
 .auth-screen--signin{min-height:900px;display:grid;grid-template-columns:440px minmax(620px,768px);gap:75px;align-items:center;justify-content:center;padding:36px;background:radial-gradient(circle at 15% 20%,rgba(64,4,7,.19),transparent 28%),radial-gradient(circle at 82% 75%,rgba(52,4,6,.12),transparent 30%),#020304;font-family:'Inter','DM Sans',system-ui,sans-serif}.auth-screen--signin>.auth-screen-inner{max-width:none;width:100%}.signin-new-story h1{margin:0;font-size:48px;line-height:1.35;letter-spacing:-.04em}.signin-new-story h1 strong{display:block;color:#e63b40}.signin-new-story>i{display:block;width:42px;height:2px;background:#e63b40;margin:15px 0 21px}.signin-new-story>p{max-width:390px;margin:0 0 43px;color:#bfc0c5;font-size:18px;line-height:1.75}.signin-new-story ul{list-style:none;margin:0;padding:0;display:grid;gap:31px}.signin-new-story li{display:grid;grid-template-columns:72px 1fr;align-items:start;color:#e63b40}.signin-new-story li>svg{width:54px;height:54px;padding:13px;border:1px solid #b91d22;border-radius:50%;box-sizing:border-box}.signin-new-story li b{display:block;color:#f5f5f6;font-size:17px;margin-bottom:7px}.signin-new-story li span{display:block;max-width:300px;color:#b8b8bd;font-size:16px;line-height:1.55}.auth-screen--signin .auth-screen-card{padding:48px 57px;border-radius:17px;background:linear-gradient(140deg,rgba(15,16,19,.9),rgba(6,7,9,.85))}.auth-screen--signin .auth-screen-logo-wrap,.auth-screen--signin .auth-tabs,.auth-screen--signin .auth-screen-alt-link{display:none}.auth-screen--signin .auth-screen-title{font-family:'Inter','DM Sans',system-ui,sans-serif;font-size:32px;font-weight:780}.auth-screen--signin .auth-screen-lead{font-size:17px;margin-bottom:38px}.auth-screen--signin .auth-label{font-size:16px;font-weight:650;color:#fff;margin-bottom:10px}.auth-screen--signin .auth-input{height:61px;border-radius:10px;padding:0 20px;background:#050608;border-color:#44454b;font-size:16px}.auth-screen--signin .auth-password-row{margin-top:30px}.auth-screen--signin .auth-password-toggle{color:#e7474b;background:none;font-size:14px}.signin-options{display:flex;align-items:center;justify-content:space-between;margin:21px 0 5px;color:#c9c9cd}.signin-options label{display:flex;align-items:center;gap:10px}.signin-options input{width:22px;height:22px;accent-color:#e91a1f}.signin-options button{border:0;background:none;color:#e7474b}.auth-screen--signin .btn-primary.auth-submit{height:69px;border-radius:8px;background:linear-gradient(100deg,#df302f,#bd1d20);font-size:18px}.auth-screen--signin .auth-screen-footer-hint{margin-top:28px;padding-top:24px;font-size:14px}.auth-screen--signin .auth-screen-footer-hint button{color:#e7474b}.auth-screen--modal.auth-screen--signin{min-height:850px}.auth-screen--modal.auth-screen--signin .auth-screen-card{padding:48px 57px}.auth-modal-dialog:has(.auth-screen--signin){width:min(1400px,96vw);max-width:1400px}.auth-modal-dialog:has(.auth-screen--signin) .auth-modal-close{top:12px;right:12px}@media(max-width:1050px){.auth-screen--signin{grid-template-columns:1fr;min-height:100vh}.signin-new-story{display:none}.auth-screen--signin>.auth-screen-inner{max-width:720px;margin:auto}}@media(max-width:680px){.auth-screen--signin{padding:18px}.auth-screen--signin .auth-screen-card,.auth-screen--modal.auth-screen--signin .auth-screen-card{padding:38px 22px}.auth-screen--signin .auth-screen-title{font-size:28px}}
 
 .signup-policy-sidebar li:before{display:none}
+.signup-policy-select{position:absolute;inset:0;width:100%;padding:inherit;border:0;border-radius:inherit;background:transparent;color:inherit;font:inherit;text-align:left;cursor:default}
+.signup-policy-mobile-help,.signup-policy-mobile-close{display:none}
 .signup-policy-doc-icon{position:absolute;left:20px;top:22px;width:25px;height:29px;fill:none;stroke:#a5a6ab;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .signup-policy-sidebar li.active .signup-policy-doc-icon,.signup-policy-sidebar li.completed .signup-policy-doc-icon{stroke:#ff2025}
 .signup-policy-lock-icon{width:23px;height:23px;flex:0 0 auto;fill:none;stroke:#ff2025;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -650,5 +652,268 @@
 
   .signup-policy-main .signup-legal-review__continue {
     height: 50px;
+  }
+}
+
+/* Mobile policy review: keep the required reading front and center. */
+@media (max-width: 600px) {
+  .auth-screen--signup:not(.auth-screen--signup-account) {
+    grid-template-rows: 64px 1fr;
+    min-height: 100svh;
+  }
+
+  .signup-policy-header {
+    height: 64px;
+    padding-inline: 14px;
+  }
+
+  .signup-policy-header .landing-logo-img--nav {
+    width: 148px;
+  }
+
+  .auth-screen--signup:not(.auth-screen--signup-account) > .auth-screen-inner {
+    padding: 10px;
+  }
+
+  .signup-legal-review {
+    gap: 10px;
+  }
+
+  .signup-policy-sidebar {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .signup-policy-sidebar > p {
+    margin: 0 0 4px;
+    font-size: 11px;
+    letter-spacing: .12em;
+  }
+
+  .signup-policy-sidebar h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  .signup-policy-sidebar h2 br,
+  .signup-policy-sidebar > span,
+  .signup-policy-sidebar footer,
+  .signup-policy-sidebar li small,
+  .signup-policy-sidebar li i,
+  .signup-policy-sidebar .signup-policy-doc-icon {
+    display: none;
+  }
+
+  .signup-policy-sidebar ol {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .signup-policy-sidebar li {
+    min-height: 54px;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .signup-policy-sidebar .signup-policy-select {
+    position: relative;
+    inset: auto;
+    min-height: 54px;
+    padding: 9px 42px 8px 14px;
+    display: block;
+    cursor: pointer;
+  }
+
+  .signup-policy-sidebar .signup-policy-select::after {
+    content: '\203A';
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    translate: 0 -50%;
+    color: #ff3035;
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .signup-policy-sidebar li b {
+    font-size: 14px;
+    white-space: normal;
+  }
+
+  .signup-policy-sidebar li small {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .signup-policy-sidebar li.completed small {
+    color: #4ce39a;
+  }
+
+  .signup-policy-sidebar li.completed {
+    border-color: rgba(255, 32, 37, .55);
+    color: #ff8b8e;
+  }
+
+  .signup-policy-mobile-help {
+    display: block;
+    margin: 12px 2px 0;
+    color: #aaaab0;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .signup-policy-main {
+    display: none;
+    position: fixed;
+    inset: 10px;
+    z-index: 3400;
+    min-height: 0;
+    max-height: calc(100svh - 20px);
+    padding: 16px 12px 12px;
+    border-radius: 12px;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .85);
+  }
+
+  .signup-policy-main--mobile-open {
+    display: block;
+  }
+
+  .signup-policy-mobile-close {
+    position: absolute;
+    z-index: 2;
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid #484950;
+    border-radius: 50%;
+    background: #111216;
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .signup-policy-main .signup-legal-review__progress {
+    gap: clamp(20px, 8vw, 38px);
+    margin: 2px 48px 12px 0;
+  }
+
+  .signup-policy-main .signup-legal-review__progress::before {
+    width: min(62vw, 240px);
+    top: 15px;
+  }
+
+  .signup-policy-main .signup-legal-review__progress > span {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .signup-policy-main .signup-legal-review__header {
+    margin-bottom: 10px;
+  }
+
+  .signup-policy-main .signup-legal-review__step {
+    font-size: 11px;
+  }
+
+  .signup-policy-main .signup-legal-review__title {
+    margin-bottom: 4px;
+    font-size: clamp(22px, 7vw, 28px);
+  }
+
+  .signup-policy-main .signup-legal-review__hint {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .signup-policy-main .signup-legal-review__scroll {
+    height: min(43svh, 430px);
+    min-height: 240px;
+    margin-top: 0;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .signup-policy-main .signup-legal-review__scroll-hint {
+    justify-content: flex-start;
+    margin: 10px 2px;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .signup-policy-agree {
+    min-height: 52px;
+    margin: 0 0 10px;
+    padding: 10px 11px;
+    align-items: flex-start;
+    border: 1px solid #38393f;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .025);
+    font-size: 13px;
+    line-height: 1.45;
+    box-sizing: border-box;
+  }
+
+  .signup-policy-agree input {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    margin: 0;
+  }
+
+  .signup-policy-main .signup-legal-review__continue {
+    min-height: 50px;
+    height: auto;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+
+  .auth-screen--signup-account .auth-screen-certify {
+    margin-top: 20px;
+    padding-top: 18px;
+  }
+
+  .auth-screen--signup-account .auth-legal-block {
+    display: grid;
+    gap: 10px;
+  }
+
+  .auth-screen--signup-account .auth-legal-row {
+    min-height: 48px;
+    margin: 0;
+    padding: 11px;
+    align-items: flex-start;
+    border: 1px solid #35363c;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .025);
+    line-height: 1.55;
+    box-sizing: border-box;
+  }
+
+  .auth-screen--signup-account .auth-legal-row input[type='checkbox'] {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    margin: 0;
+  }
+
+  .auth-screen--signup-account .auth-legal-link {
+    display: inline;
+    min-height: 32px;
+    padding-block: 5px;
+    overflow-wrap: anywhere;
   }
 }
