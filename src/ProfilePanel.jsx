@@ -89,6 +89,8 @@ export default function ProfilePanel({
   const [followerCount, setFollowerCount] = useState(0);
   const [followerMembers, setFollowerMembers] = useState([]);
   const [followedMembers, setFollowedMembers] = useState([]);
+  const [followerSearch, setFollowerSearch] = useState('');
+  const [followingSearch, setFollowingSearch] = useState('');
   const [networkIdentityState, setNetworkIdentityState] = useState({ uid: '', role: 'user', premium: false, verifiedDebater: false });
   const [activity, setActivity] = useState({ key: 'offline', label: 'Offline' });
   const [directMessages, setDirectMessages] = useState([]);
@@ -473,6 +475,14 @@ export default function ProfilePanel({
 
   const ratingDisplay = rating.average != null ? rating.average.toFixed(2) : '—';
   const ratingCountLabel = rating.count === 1 ? '1 debate rating' : `${rating.count} debate ratings`;
+  const filteredFollowerMembers = useMemo(() => {
+    const query = followerSearch.trim().toLowerCase();
+    return query ? followerMembers.filter((member) => String(member.displayName || '').toLowerCase().includes(query)) : followerMembers;
+  }, [followerMembers, followerSearch]);
+  const filteredFollowedMembers = useMemo(() => {
+    const query = followingSearch.trim().toLowerCase();
+    return query ? followedMembers.filter((member) => String(member.displayName || '').toLowerCase().includes(query)) : followedMembers;
+  }, [followedMembers, followingSearch]);
   const isStaffProfile = ['moderator', 'admin', 'owner'].includes(networkIdentityState.role);
   const openTags = () => {
     setTagDraft(interests);
@@ -563,13 +573,14 @@ export default function ProfilePanel({
                 <b>{(followersPanelOpen ? followerMembers : followedMembers).length}</b>
                 <button type="button" onClick={() => { setFollowersPanelOpen(false); setFollowingPanelOpen(false); }} aria-label="Close network list">×</button>
               </header>
-              {(followersPanelOpen ? followerMembers : followedMembers).length ? <div className="account-following-list">
-                {(followersPanelOpen ? followerMembers : followedMembers).map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
+              <label className="account-network-search"><span aria-hidden="true">⌕</span><input type="search" value={followersPanelOpen ? followerSearch : followingSearch} onChange={(event) => followersPanelOpen ? setFollowerSearch(event.target.value) : setFollowingSearch(event.target.value)} placeholder={followersPanelOpen ? 'Search followers' : 'Search following'} aria-label={followersPanelOpen ? 'Search followers' : 'Search following'} /></label>
+              {(followersPanelOpen ? filteredFollowerMembers : filteredFollowedMembers).length ? <div className="account-following-list">
+                {(followersPanelOpen ? filteredFollowerMembers : filteredFollowedMembers).map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
                   <span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
                   <span className="account-following-identity"><strong>{member.displayName || 'Hot Take member'} <IdentityBadges compact premium={member.premium} verified={member.verifiedDebater} role={member.role} /></strong><small><i className={`is-${member.activity?.key || 'offline'}`} aria-hidden="true" />{member.activity?.label || 'Offline'}</small></span>
                   <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
                 </button>)}
-              </div> : <div className="account-following-empty"><strong>{followersPanelOpen ? 'No followers yet.' : 'Not following anyone yet.'}</strong><p>This list will update as connections are made.</p></div>}
+              </div> : <div className="account-following-empty"><strong>{(followersPanelOpen ? followerSearch : followingSearch).trim() ? 'No matching accounts.' : followersPanelOpen ? 'No followers yet.' : 'Not following anyone yet.'}</strong><p>{(followersPanelOpen ? followerSearch : followingSearch).trim() ? 'Try a different display name.' : 'This list will update as connections are made.'}</p></div>}
             </section>}
             {hostedRoom && <section className="public-profile-live-room" aria-label="Live public debate room">
               <div className="public-profile-live-room-copy">
@@ -679,13 +690,14 @@ export default function ProfilePanel({
                 <b className="account-following-count">{followerMembers.length}</b>
                 <button type="button" className="account-following-close" onClick={() => { setFollowersPanelOpen(false); setMobileAccountSection('overview'); }} aria-label="Close Followers panel">×</button>
               </div>
-              {followerMembers.length ? <div className="account-following-list">
-                {followerMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
+              <label className="account-network-search"><span aria-hidden="true">⌕</span><input type="search" value={followerSearch} onChange={(event) => setFollowerSearch(event.target.value)} placeholder="Search followers" aria-label="Search followers" /></label>
+              {filteredFollowerMembers.length ? <div className="account-following-list">
+                {filteredFollowerMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
                   <span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
                   <span className="account-following-identity"><strong>{member.displayName || 'Hot Take member'} <IdentityBadges compact premium={member.premium} verified={member.verifiedDebater} role={member.role} /></strong><small><i className={`is-${member.activity?.key || 'offline'}`} aria-hidden="true" />{member.activity?.label || 'Offline'}</small></span>
                   <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
                 </button>)}
-              </div> : <div className="account-following-empty"><strong>You don’t have any followers yet.</strong><p>Your followers will appear here when people discover and follow your profile.</p></div>}
+              </div> : <div className="account-following-empty"><strong>{followerSearch.trim() ? 'No matching followers.' : 'You don’t have any followers yet.'}</strong><p>{followerSearch.trim() ? 'Try a different display name.' : 'Your followers will appear here when people discover and follow your profile.'}</p></div>}
             </section>}
 
             {followingPanelOpen && <section id="account-following" className={`account-card account-following-card account-mobile-section${mobileAccountSection === 'following' ? ' is-mobile-active' : ''}`}>
@@ -695,13 +707,14 @@ export default function ProfilePanel({
                 <b className="account-following-count">{followedMembers.length}</b>
                 <button type="button" className="account-following-close" onClick={() => { setFollowingPanelOpen(false); setMobileAccountSection('overview'); }} aria-label="Close Following panel">×</button>
               </div>
-              {followedMembers.length ? <div className="account-following-list">
-                {followedMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
+              <label className="account-network-search"><span aria-hidden="true">⌕</span><input type="search" value={followingSearch} onChange={(event) => setFollowingSearch(event.target.value)} placeholder="Search following" aria-label="Search following" /></label>
+              {filteredFollowedMembers.length ? <div className="account-following-list">
+                {filteredFollowedMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
                   <span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span>
                   <span className="account-following-identity"><strong>{member.displayName || 'Hot Take member'} <IdentityBadges compact premium={member.premium} verified={member.verifiedDebater} role={member.role} /></strong><small><i className={`is-${member.activity?.key || 'offline'}`} aria-hidden="true" />{member.activity?.label || 'Offline'}</small></span>
                   <span className="account-following-view">View profile <b aria-hidden="true">→</b></span>
                 </button>)}
-              </div> : <div className="account-following-empty"><strong>You aren’t following anyone yet.</strong><p>Search for debaters or open a community profile to follow them.</p></div>}
+              </div> : <div className="account-following-empty"><strong>{followingSearch.trim() ? 'No matching accounts.' : 'You aren’t following anyone yet.'}</strong><p>{followingSearch.trim() ? 'Try a different display name.' : 'Search for debaters or open a community profile to follow them.'}</p></div>}
             </section>}
 
             <section id="account-security" className={`account-card account-mobile-section${mobileAccountSection === 'security' ? ' is-mobile-active' : ''}`}>

@@ -139,6 +139,12 @@
 .account-privacy-toggle{display:inline-flex;align-items:center;gap:.55rem;min-height:40px;padding:0 .85rem;border:1px solid #45464e;border-radius:999px;background:#101116;color:#c9c9ce;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;white-space:nowrap;transition:border-color .18s,background .18s,color .18s}.account-privacy-toggle>span{position:relative;width:30px;height:16px;border-radius:999px;background:#4b4e57;transition:background .18s}.account-privacy-toggle>span::after{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;content:"";transition:transform .18s}.account-privacy-toggle.is-active{border-color:rgba(255,42,50,.45);background:rgba(255,31,39,.08);color:#ff7b80}.account-privacy-toggle.is-active>span{background:#e51d27}.account-privacy-toggle.is-active>span::after{transform:translateX(14px)}.account-privacy-toggle:disabled{cursor:not-allowed;opacity:.55}
 .account-following-card { grid-column: 1 / -1; }
 .account-following-card .account-card-heading > div { min-width: 0; flex: 1; }
+.account-network-search{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 14px;padding:0 13px;border:1px solid #353740;border-radius:11px;background:#090a0e;color:#858893;transition:border-color .18s,box-shadow .18s}
+.account-network-search:focus-within{border-color:#ef2027;box-shadow:0 0 0 3px rgba(239,32,39,.1)}
+.account-network-search>span{font-size:1.35rem;line-height:1;transform:rotate(-20deg)}
+.account-network-search input{width:100%;height:46px;padding:0;border:0;outline:0;background:transparent;color:#f4f4f6;font:inherit;font-size:.9rem}
+.account-network-search input::placeholder{color:#737680}
+.account-network-search input::-webkit-search-cancel-button{cursor:pointer;filter:invert(1);opacity:.65}
 .account-following-count { display: grid; place-items: center; min-width: 34px; height: 28px; padding: 0 9px; border: 1px solid rgba(255,42,50,.28); border-radius: 999px; color: #ff767b; background: rgba(255,31,39,.07); font-size: .76rem; }
 .account-following-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .account-following-member { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; min-width: 0; padding: 14px 16px; border: 1px solid #2d2f36; border-radius: 13px; color: #fff; background: rgba(255,255,255,.018); text-align: left; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
