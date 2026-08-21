@@ -149,7 +149,7 @@ export default function DirectMessageCenter({ socket }) {
 
   return <div className="dm-center" ref={rootRef}>
     <button type="button" className="dm-center-trigger" aria-label="Direct message inbox" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a3 3 0 0 1-3 3H9l-5 3v-5.5A3 3 0 0 1 3 13V7a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3v8Z"/><circle cx="8" cy="10.5" r="1"/><circle cx="12" cy="10.5" r="1"/><circle cx="16" cy="10.5" r="1"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 4.5h15l2 10.5v4.5h-19V15l2-10.5Z"/><path d="M3 15h5l1.5 2h5l1.5-2h5"/></svg>
       {pendingCount > 0 && <span>{pendingCount > 9 ? '9+' : pendingCount}</span>}
     </button>
 
