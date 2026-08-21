@@ -133,7 +133,7 @@ export default function ProfilePanel({
     setBlockState({ blocked: false, youBlocked: false, blockedYou: false });
     try {
       if (!own && targetUid) {
-        const [{ identity, activity: currentActivity, followerCount: currentFollowerCount }, follow, conversation, followersResult, followingResult, blocking] = await Promise.all([
+        const [{ identity, activity: currentActivity }, follow, conversation, followersResult, followingResult, blocking] = await Promise.all([
           networkIdentity(targetUid),
           networkFollowStatus(targetUid),
           networkDirectMessages(targetUid),
@@ -147,7 +147,7 @@ export default function ProfilePanel({
         setInterests(sanitizeProfileInterests(identity?.interests));
         setNetworkIdentityState(identity || { uid: targetUid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
-        setFollowerCount(Number(currentFollowerCount || 0));
+        setFollowerCount((followersResult.members || []).length);
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true || conversation.declinedForRecipient === true);
@@ -166,10 +166,10 @@ export default function ProfilePanel({
       const ratingUid = own ? auth.currentUser?.uid : prof?.uid;
       setRating(await fetchLiveRatingSummary(ratingUid));
       if (!own && prof?.uid) {
-        const [{ identity, followerCount: currentFollowerCount }, follow, followersResult, followingResult, blocking] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid), networkFollowers(prof.uid), networkFollowing(prof.uid), networkBlockStatus(prof.uid)]);
+        const [{ identity }, follow, followersResult, followingResult, blocking] = await Promise.all([networkIdentity(prof.uid), networkFollowStatus(prof.uid), networkFollowers(prof.uid), networkFollowing(prof.uid), networkBlockStatus(prof.uid)]);
         setNetworkIdentityState(identity || { uid: prof.uid, role: 'user', premium: false, verifiedDebater: false });
         setFollowing(follow.following === true);
-        setFollowerCount(Number(currentFollowerCount || 0));
+        setFollowerCount((followersResult.members || []).length);
         setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
         setBlockState(blocking);
@@ -181,7 +181,7 @@ export default function ProfilePanel({
           networkBlockedAccounts(),
         ]);
         setNetworkIdentityState(meResult.identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
-        setFollowerCount(Number(meResult.followerCount || 0));
+        setFollowerCount((followersResult.members || []).length);
         setAppearOffline(meResult.privacy?.appearOffline === true);
         setFollowerMembers(followersResult.members || []);
         setFollowedMembers(followingResult.members || []);
@@ -207,13 +207,16 @@ export default function ProfilePanel({
     if (own || !liveTargetUid) return undefined;
     const refreshLiveProfile = async () => {
       try {
-        const [{ activity: currentActivity, followerCount: currentFollowerCount }, conversation, blocking] = await Promise.all([
+        const [{ activity: currentActivity }, conversation, blocking, followersResult] = await Promise.all([
           networkIdentity(liveTargetUid),
           networkDirectMessages(liveTargetUid),
           networkBlockStatus(liveTargetUid),
+          networkFollowers(liveTargetUid),
         ]);
         setActivity(currentActivity || { key: 'offline', label: 'Offline' });
-        setFollowerCount(Number(currentFollowerCount || 0));
+        const members = followersResult.members || [];
+        setFollowerMembers(members);
+        setFollowerCount(members.length);
         setDirectMessages(conversation.messages || []);
         setMessageRequestPending(conversation.pendingForRecipient === true || conversation.declinedForRecipient === true);
         setBlockState(blocking);
@@ -232,10 +235,11 @@ export default function ProfilePanel({
     if (!socket) return undefined;
     const updateOwnFollowers = async (payload = {}) => {
       if (payload.uid !== auth.currentUser?.uid) return;
-      setFollowerCount(Number(payload.followerCount || 0));
       try {
         const result = await networkFollowers();
-        setFollowerMembers(result.members || []);
+        const members = result.members || [];
+        setFollowerMembers(members);
+        setFollowerCount(members.length);
       } catch {
         // Keep the current list visible if a real-time refresh briefly fails.
       }
@@ -248,8 +252,16 @@ export default function ProfilePanel({
     if (own || !liveTargetUid) return undefined;
     const socket = typeof window !== 'undefined' ? window.__hotTakeNetworkSocket : null;
     if (!socket) return undefined;
-    const updateFollowerCount = (payload = {}) => {
-      if (payload.uid === liveTargetUid) setFollowerCount(Number(payload.followerCount || 0));
+    const updateFollowerCount = async (payload = {}) => {
+      if (payload.uid !== liveTargetUid) return;
+      try {
+        const result = await networkFollowers(liveTargetUid);
+        const members = result.members || [];
+        setFollowerMembers(members);
+        setFollowerCount(members.length);
+      } catch {
+        // Keep the last verified total if a real-time refresh briefly fails.
+      }
     };
     socket.on('follower-count-updated', updateFollowerCount);
     return () => socket.off('follower-count-updated', updateFollowerCount);
@@ -340,16 +352,16 @@ export default function ProfilePanel({
     setError(null);
     try {
       if (following) {
-        const result = await networkUnfollow(networkIdentityState.uid);
+        await networkUnfollow(networkIdentityState.uid);
         setFollowing(false);
-        setFollowerCount(Number(result.followerCount || 0));
       } else {
-        const result = await networkFollow(networkIdentityState.uid);
+        await networkFollow(networkIdentityState.uid);
         setFollowing(true);
-        setFollowerCount(Number(result.followerCount || 0));
       }
       const followersResult = await networkFollowers(networkIdentityState.uid);
-      setFollowerMembers(followersResult.members || []);
+      const members = followersResult.members || [];
+      setFollowerMembers(members);
+      setFollowerCount(members.length);
     } catch (followError) {
       setError(followError?.message ?? 'Could not update follow.');
     } finally {
