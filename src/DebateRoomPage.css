@@ -40,6 +40,7 @@
 
 .live-room-header .dm-center-panel-actions{display:flex;align-items:center;gap:.45rem}
 .live-room-header .dm-center-panel-close{display:none!important}
+.live-layout .debate-chat-send{min-height:62px;align-self:stretch;box-sizing:border-box;border:1px solid #ff2938;border-radius:12px;background:#ee1a1f}
 
 /* Mobile debate cockpit: opponent stays full-size while the local camera remains visible. */
 @media(max-width:680px){
