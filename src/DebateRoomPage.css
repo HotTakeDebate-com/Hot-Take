@@ -47,7 +47,7 @@
   .live-room-header nav>button{display:none}
   .live-room-header .live-connection{height:36px;min-width:102px;max-width:120px;padding-inline:9px;font-size:11px}
   .live-room-header .dm-center{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:3900}
-  .live-room-header .dm-center-trigger{width:48px;height:48px;border-color:rgba(255,45,55,.72);background:linear-gradient(145deg,rgba(27,28,34,.98),rgba(8,9,12,.98));color:#ff3d46;box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.035)}
+  .live-room-header .dm-center-trigger{display:grid;place-items:center;justify-content:center;width:48px;height:48px;padding:0;border-color:rgba(255,45,55,.72);background:linear-gradient(145deg,rgba(27,28,34,.98),rgba(8,9,12,.98));color:#ff3d46;box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.035)}
   .live-room-header .dm-center-trigger svg{width:23px;height:23px}
   .live-room-header .dm-center-panel{top:76px;bottom:auto}
   .live-room-header .dm-center-drawer{top:70px!important;bottom:10px!important;height:auto!important}
