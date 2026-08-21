@@ -17,7 +17,7 @@ import SignupLegalReview from './SignupLegalReview.jsx';
 import { HotTakeWordmark, IconLightning, IconShield, IconUser } from './LandingAssets.jsx';
 import './AuthScreen.css';
 import './AuthProviderFix.css';
-import { networkUpdateDisplayName } from './networkApi.js';
+import { networkUpdateDisplayName, networkUpdateProfile } from './networkApi.js';
 
 function mapAuthError(code) {
   switch (code) {
@@ -179,6 +179,10 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         const name = displayName.trim();
         try {
           await networkUpdateDisplayName(name);
+          // An email address can be reused after its previous account is deleted.
+          // Always clear account-specific profile fields so the new Firebase UID
+          // cannot inherit the former account's avatar, bio, or tags.
+          await networkUpdateProfile({ bio: '', avatarUrl: '', interests: [] });
           await updateProfile(cred.user, { displayName: name });
         } catch (nameError) {
           await deleteUser(cred.user).catch(() => {});
@@ -244,6 +248,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
       }
       if (mode === 'signup' && isNewAccount) {
         await updateProfile(credential.user, { displayName: '' });
+        await networkUpdateProfile({ bio: '', avatarUrl: '', interests: [] });
         setDisplayName('');
         setProviderSetupPending(true);
         setError(null);

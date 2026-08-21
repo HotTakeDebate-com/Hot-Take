@@ -44,7 +44,12 @@ async function publicIdentity(uid) {
   let profile = {};
   if (email) {
     const snap = await admin.firestore().collection('publicProfiles').doc(email).get();
-    if (snap.exists) profile = snap.data() || {};
+    if (snap.exists) {
+      const storedProfile = snap.data() || {};
+      // Email addresses may be reused after account deletion. Never expose a
+      // profile document that still belongs to a different Firebase account.
+      if (!storedProfile.uid || storedProfile.uid === uid) profile = storedProfile;
+    }
   }
   return {
     uid,
