@@ -110,6 +110,7 @@ export default function ProfilePanel({
   const [resetBusy, setResetBusy] = useState(false);
   const [deleteText, setDeleteText] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [mobileAccountSection, setMobileAccountSection] = useState('overview');
   const liveTargetUid = targetUid || (!own ? networkIdentityState.uid : '');
 
   const providerLabel = useMemo(() => {
@@ -602,19 +603,19 @@ export default function ProfilePanel({
       <div className="account-layout">
         <aside className="account-nav" aria-label="Account sections">
           <p className="account-nav-label">Account</p>
-          <a href="#account-overview"><AccountIcon type="user" />Overview</a>
-          <button type="button" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}><AccountIcon type="user" />Followers</button>
-          <button type="button" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}><AccountIcon type="user" />Following</button>
-          <a href="#account-profile"><AccountIcon type="user" />Public profile</a>
-          <a href="#account-security"><AccountIcon type="lock" />Security</a>
-          <a href="#account-danger" className="account-nav-danger"><AccountIcon type="trash" />Delete account</a>
+          <a href="#account-overview" className={mobileAccountSection === 'overview' ? 'is-active' : ''} onClick={() => setMobileAccountSection('overview')}><AccountIcon type="user" />Overview</a>
+          <a href="#account-profile" className={mobileAccountSection === 'profile' ? 'is-active' : ''} onClick={() => setMobileAccountSection('profile')}><AccountIcon type="user" />Edit profile</a>
+          <button type="button" className={mobileAccountSection === 'followers' ? 'is-active' : ''} onClick={() => { setMobileAccountSection('followers'); setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}><AccountIcon type="user" />Followers</button>
+          <button type="button" className={mobileAccountSection === 'following' ? 'is-active' : ''} onClick={() => { setMobileAccountSection('following'); setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}><AccountIcon type="user" />Following</button>
+          <a href="#account-security" className={mobileAccountSection === 'security' ? 'is-active' : ''} onClick={() => setMobileAccountSection('security')}><AccountIcon type="lock" />Security</a>
+          <a href="#account-danger" className={`account-nav-danger${mobileAccountSection === 'danger' ? ' is-active' : ''}`} onClick={() => setMobileAccountSection('danger')}><AccountIcon type="trash" />Delete</a>
         </aside>
 
-        <div className="account-content">
+        <div className="account-content" data-mobile-section={mobileAccountSection}>
           {error && <div className="account-alert account-alert--error" role="alert">{error}</div>}
           {savedMsg && <div className="account-alert account-alert--success" role="status">{savedMsg}</div>}
 
-          <section id="account-overview" className="account-card account-overview">
+          <section id="account-overview" className={`account-card account-overview account-mobile-section${mobileAccountSection === 'overview' ? ' is-mobile-active' : ''}`}>
             <label className="account-avatar-quick-edit" aria-label="Change profile picture">
               <span className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="Your profile" /> : <GenericAvatar />}</span>
               <span className="account-avatar-edit-badge" aria-hidden="true">Edit</span>
@@ -628,10 +629,10 @@ export default function ProfilePanel({
                 <span className="account-overview-rating" aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
                   <span aria-hidden="true">★</span><strong>{ratingDisplay}</strong>{rating.count > 0 && <small>({rating.count})</small>}
                 </span>
-                <button type="button" className="account-overview-followers" onClick={() => { setFollowersPanelOpen(true); setFollowingPanelOpen(false); }} aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. Open your followers.`}>
+                <button type="button" className="account-overview-followers" onClick={() => { setMobileAccountSection('followers'); setFollowersPanelOpen(true); setFollowingPanelOpen(false); }} aria-label={`${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}. Open your followers.`}>
                   <strong>{followerCount.toLocaleString()}</strong> {followerCount === 1 ? 'follower' : 'followers'} <span aria-hidden="true">→</span>
                 </button>
-                <button type="button" className="account-overview-followers" onClick={() => { setFollowingPanelOpen(true); setFollowersPanelOpen(false); }} aria-label={`${followedMembers.length} following. Open accounts you follow.`}>
+                <button type="button" className="account-overview-followers" onClick={() => { setMobileAccountSection('following'); setFollowingPanelOpen(true); setFollowersPanelOpen(false); }} aria-label={`${followedMembers.length} following. Open accounts you follow.`}>
                   <strong>{followedMembers.length.toLocaleString()}</strong> following <span aria-hidden="true">→</span>
                 </button>
               </div>
@@ -646,7 +647,7 @@ export default function ProfilePanel({
           </section>
 
           {loading ? <section className="account-card"><p>Loading your account…</p></section> : <>
-            <section id="account-profile" className="account-card">
+            <section id="account-profile" className={`account-card account-mobile-section${mobileAccountSection === 'profile' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
                 <span><AccountIcon type="user" /></span>
                 <div><h2>Public profile</h2><p>This information is visible to other Hot Take members.</p></div>
@@ -660,12 +661,12 @@ export default function ProfilePanel({
               </form>
             </section>
 
-            {followersPanelOpen && <section id="account-followers" className="account-card account-following-card">
+            {followersPanelOpen && <section id="account-followers" className={`account-card account-following-card account-mobile-section${mobileAccountSection === 'followers' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
                 <span><AccountIcon type="user" /></span>
                 <div><h2>Followers</h2><p>People who follow you on Hot Take.</p></div>
                 <b className="account-following-count">{followerMembers.length}</b>
-                <button type="button" className="account-following-close" onClick={() => setFollowersPanelOpen(false)} aria-label="Close Followers panel">×</button>
+                <button type="button" className="account-following-close" onClick={() => { setFollowersPanelOpen(false); setMobileAccountSection('overview'); }} aria-label="Close Followers panel">×</button>
               </div>
               {followerMembers.length ? <div className="account-following-list">
                 {followerMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
@@ -676,12 +677,12 @@ export default function ProfilePanel({
               </div> : <div className="account-following-empty"><strong>You don’t have any followers yet.</strong><p>Your followers will appear here when people discover and follow your profile.</p></div>}
             </section>}
 
-            {followingPanelOpen && <section id="account-following" className="account-card account-following-card">
+            {followingPanelOpen && <section id="account-following" className={`account-card account-following-card account-mobile-section${mobileAccountSection === 'following' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
                 <span><AccountIcon type="user" /></span>
                 <div><h2>Following</h2><p>Accounts you follow across Hot Take.</p></div>
                 <b className="account-following-count">{followedMembers.length}</b>
-                <button type="button" className="account-following-close" onClick={() => setFollowingPanelOpen(false)} aria-label="Close Following panel">×</button>
+                <button type="button" className="account-following-close" onClick={() => { setFollowingPanelOpen(false); setMobileAccountSection('overview'); }} aria-label="Close Following panel">×</button>
               </div>
               {followedMembers.length ? <div className="account-following-list">
                 {followedMembers.map((member) => <button type="button" key={member.uid} className="account-following-member" onClick={() => onOpenProfile?.(member.uid)}>
@@ -692,7 +693,7 @@ export default function ProfilePanel({
               </div> : <div className="account-following-empty"><strong>You aren’t following anyone yet.</strong><p>Search for debaters or open a community profile to follow them.</p></div>}
             </section>}
 
-            <section id="account-security" className="account-card">
+            <section id="account-security" className={`account-card account-mobile-section${mobileAccountSection === 'security' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
                 <span><AccountIcon type="shield" /></span>
                 <div><h2>Security</h2><p>Control account verification and sign-in recovery.</p></div>
@@ -704,7 +705,7 @@ export default function ProfilePanel({
               <div className="account-blocked-section"><div><strong>Blocked accounts</strong><p>Blocked accounts cannot match, join your rooms, follow, or message you.</p></div>{blockedMembers.length ? <div className="account-blocked-list">{blockedMembers.map((member) => <div key={member.uid}><span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span><strong>{member.displayName || 'Hot Take member'}</strong><button type="button" onClick={() => unblockFromList(member.uid)} disabled={blockBusy}>Unblock</button></div>)}</div> : <small>You have not blocked anyone.</small>}</div>
             </section>
 
-            <section id="account-danger" className="account-card account-danger">
+            <section id="account-danger" className={`account-card account-danger account-mobile-section${mobileAccountSection === 'danger' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
                 <span><AccountIcon type="trash" /></span>
                 <div><h2>Delete account</h2><p>Permanently remove your Hot Take account and associated data.</p></div>
