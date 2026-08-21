@@ -604,12 +604,17 @@
   .account-content > .account-card { box-shadow: 0 14px 38px rgba(0,0,0,.22); }
 
   .account-overview { display: flex; align-items: center; flex-direction: column; gap: 0; padding: 20px 16px 17px; text-align: center; }
-  .account-overview > .account-avatar-quick-edit { align-self: center; margin: 0 0 14px; }
+  .account-overview > .account-avatar-quick-edit {
+    align-self: center;
+    flex: 0 0 auto;
+    width: 76px;
+    margin: 8px auto 13px !important;
+  }
   .account-overview .account-avatar { width: 76px; height: 76px; }
   .account-overview > div:nth-child(2) { width: 100%; }
-  .account-overview .account-section-label { margin: 0 0 5px; }
+  .account-overview .account-section-label { margin: 0 0 4px; }
   .account-overview h2 { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; margin: 0; font-size: 1.45rem; }
-  .account-overview-stats { grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 13px; }
+  .account-overview-stats { grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 11px; }
   .account-overview-rating,
   .account-overview-followers { min-height: 48px; flex-direction: column; gap: 2px; border-radius: 12px; }
   .account-overview-rating > strong,
