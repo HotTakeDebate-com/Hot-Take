@@ -476,17 +476,23 @@
 
   .account-content { min-width: 0; gap: 14px; }
   .account-card { min-width: 0; padding: 16px; border-radius: 13px; }
-  .account-overview { min-height: 0; grid-template-columns: 78px minmax(0, 1fr); align-items:center; gap: 15px; padding: 18px 16px; text-align: left; }
-  .account-overview>.account-avatar-quick-edit{align-self:start;margin:2px 0 0}
-  .account-overview .account-avatar{width:72px;height:72px;margin:0}
+  .account-overview { min-height: 0; grid-template-columns: 66px minmax(0, 1fr); align-items:center; gap: 13px; padding: 16px; text-align: left; }
+  .account-overview>.account-avatar-quick-edit{align-self:center;margin:0}
+  .account-overview .account-avatar{width:62px;height:62px;margin:0}
+  .account-avatar-edit-badge{right:-4px;bottom:-4px;min-width:32px;height:20px;padding:0 6px;font-size:.55rem}
   .account-overview > div:nth-child(2) { min-width: 0; }
   .account-overview h2,
   .account-overview p { overflow-wrap: anywhere; }
-  .account-overview h2 { font-size: 1.35rem; }
-  .account-overview-stats { display:grid;grid-template-columns:1fr 1fr;justify-content:stretch;gap:7px; }
+  .account-overview .account-section-label{margin-bottom:3px;font-size:.58rem}
+  .account-overview h2 { margin-bottom:2px;font-size: 1.25rem; }
+  .account-overview p:not(.account-section-label){font-size:.78rem;line-height:1.35}
+  .account-overview-stats { grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-content:stretch;gap:7px;margin-top:2px; }
   .account-overview-rating,
-  .account-overview-followers { min-height: 36px;justify-content:center;margin:0;padding:7px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.025); }
-  .account-overview-rating{grid-column:1/-1}
+  .account-overview-followers { min-height: 42px;justify-content:center;margin:0;padding:6px 4px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.025);font-size:.68rem; }
+  .account-overview-rating{grid-column:auto}
+  .account-overview-rating>small{display:none}
+  .account-overview-followers::before{display:none}
+  .account-overview-followers>span{display:none}
   .account-overview-interests > div { justify-content: flex-start; }
   .account-overview-tools { grid-column:1/-1;width: 100%; align-items: center; justify-content: stretch; flex-direction: row; flex-wrap: nowrap; }
   .account-overview-tools>*{flex:1;min-width:0}

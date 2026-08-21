@@ -652,20 +652,6 @@ export default function ProfilePanel({
                 <div><h2>Public profile</h2><p>This information is visible to other Hot Take members.</p></div>
               </div>
               <form className="account-form" onSubmit={onSave}>
-                <div className="account-avatar-editor">
-                  <div className={'account-avatar account-avatar-preview' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="Profile preview" /> : <GenericAvatar />}</div>
-                  <div>
-                    <strong>Profile picture</strong>
-                    <p>JPG, PNG, or WebP. Your image is cropped to a square before it is saved.</p>
-                    <div className="account-avatar-actions">
-                      <label className="account-secondary-button account-file-button">
-                        {avatarBusy ? 'Preparing…' : 'Choose image'}
-                        <input type="file" accept="image/jpeg,image/png,image/webp" disabled={avatarBusy || saving} onChange={onAvatarSelected} />
-                      </label>
-                      {avatarUrl && <button type="button" className="account-secondary-button" disabled={avatarBusy || saving} onClick={() => setAvatarUrl('')}>Remove</button>}
-                    </div>
-                  </div>
-                </div>
                 <label htmlFor="account-display-name">Display name</label>
                 <input id="account-display-name" type="text" minLength={2} maxLength={40} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                 <label htmlFor="account-bio">Bio</label>
