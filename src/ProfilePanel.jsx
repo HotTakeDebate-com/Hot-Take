@@ -632,6 +632,7 @@ export default function ProfilePanel({
           <a href="#account-overview" className={mobileAccountSection === 'overview' ? 'is-active' : ''} onClick={() => setMobileAccountSection('overview')}><AccountIcon type="user" />Overview</a>
           <button type="button" className={mobileAccountSection === 'followers' ? 'is-active' : ''} onClick={() => { setMobileAccountSection('followers'); setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}><AccountIcon type="user" />Followers</button>
           <button type="button" className={mobileAccountSection === 'following' ? 'is-active' : ''} onClick={() => { setMobileAccountSection('following'); setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}><AccountIcon type="user" />Following</button>
+          <a href="#account-verification" className={mobileAccountSection === 'verification' ? 'is-active' : ''} onClick={() => setMobileAccountSection('verification')}><AccountIcon type="shield" />Verification</a>
           <a href="#account-security" className={mobileAccountSection === 'security' ? 'is-active' : ''} onClick={() => setMobileAccountSection('security')}><AccountIcon type="lock" />Security</a>
           <a href="#account-danger" className={`account-nav-danger${mobileAccountSection === 'danger' ? ' is-active' : ''}`} onClick={() => setMobileAccountSection('danger')}><AccountIcon type="trash" />Delete</a>
         </aside>
@@ -667,7 +668,6 @@ export default function ProfilePanel({
                 {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
               </span>
               <button type="button" className="account-tags-button" onClick={openTags}>Tags <b aria-hidden="true">+</b></button>
-              {!networkIdentityState.verifiedDebater && <button type="button" className="account-verification-button" onClick={onApplyVerification}>Apply for verified</button>}
             </div>
             <div className="account-overview-profile">
               <div className="account-overview-profile-heading">
@@ -718,6 +718,21 @@ export default function ProfilePanel({
                 </button>)}
               </div> : <div className="account-following-empty"><strong>{followingSearch.trim() ? 'No matching accounts.' : 'You aren’t following anyone yet.'}</strong><p>{followingSearch.trim() ? 'Try a different display name.' : 'Search for debaters or open a community profile to follow them.'}</p></div>}
             </section>}
+
+            <section id="account-verification" className={`account-card account-verification-card account-mobile-section${mobileAccountSection === 'verification' ? ' is-mobile-active' : ''}`}>
+              <div className="account-card-heading">
+                <span><AccountIcon type="shield" /></span>
+                <div><h2>Debater verification</h2><p>Apply for the verified badge displayed across your profile, debates, and community activity.</p></div>
+              </div>
+              <div className="account-verification-body">
+                <IdentityBadges verified />
+                <div>
+                  <strong>{networkIdentityState.verifiedDebater ? 'You are a verified debater' : 'Build trust around your public identity'}</strong>
+                  <p>{networkIdentityState.verifiedDebater ? 'Your verified badge is active and visible throughout Hot Take.' : 'Submit your public work, debate experience, and supporting links for review by the administration team.'}</p>
+                </div>
+                {!networkIdentityState.verifiedDebater && <button type="button" className="account-verification-button" onClick={onApplyVerification}>Apply for verified status</button>}
+              </div>
+            </section>
 
             <section id="account-security" className={`account-card account-mobile-section${mobileAccountSection === 'security' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
