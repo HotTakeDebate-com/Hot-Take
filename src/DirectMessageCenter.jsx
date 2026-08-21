@@ -92,6 +92,22 @@ export default function DirectMessageCenter({ socket }) {
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [thread?.messages]);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return undefined;
+    const syncViewport = () => {
+      if (!rootRef.current) return;
+      rootRef.current.style.setProperty('--dm-visual-height', `${viewport.height}px`);
+      rootRef.current.style.setProperty('--dm-visual-center', `${viewport.offsetTop + (viewport.height / 2)}px`);
+    };
+    syncViewport();
+    viewport.addEventListener('resize', syncViewport);
+    viewport.addEventListener('scroll', syncViewport);
+    return () => {
+      viewport.removeEventListener('resize', syncViewport);
+      viewport.removeEventListener('scroll', syncViewport);
+    };
+  }, []);
 
   const chooseConversation = (conversation) => {
     setActive(conversation);

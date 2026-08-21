@@ -52,7 +52,7 @@
   .live-room-header .dm-center{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:3900}
   .live-room-header .dm-center-trigger{display:grid;place-items:center;justify-content:center;width:48px;height:48px;padding:0;border-color:rgba(255,45,55,.72);background:linear-gradient(145deg,rgba(27,28,34,.98),rgba(8,9,12,.98));color:#ff3d46;box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.035)}
   .live-room-header .dm-center-trigger svg{width:23px;height:23px}
-  .live-room-header .dm-center-panel{position:fixed;z-index:5000;top:50%;right:auto;bottom:auto;left:50%;width:calc(100vw - 28px);height:min(68svh,620px);max-height:calc(100svh - 32px);display:grid;grid-template-rows:auto minmax(0,1fr);transform:translate(-50%,-50%);border-color:rgba(255,45,55,.42);border-radius:22px;background:linear-gradient(155deg,#15161c 0%,#090a0e 48%);box-shadow:0 24px 90px rgba(0,0,0,.88),0 0 0 9999px rgba(0,0,0,.68)}
+  .live-room-header .dm-center-panel{position:fixed;z-index:5000;top:var(--dm-visual-center,50%);right:auto;bottom:auto;left:50%;width:calc(100vw - 28px);height:min(68svh,620px);max-height:calc(var(--dm-visual-height,100svh) - 24px);display:grid;grid-template-rows:auto minmax(0,1fr);transform:translate(-50%,-50%);border-color:rgba(255,45,55,.42);border-radius:22px;background:linear-gradient(155deg,#15161c 0%,#090a0e 48%);box-shadow:0 24px 90px rgba(0,0,0,.88),0 0 0 9999px rgba(0,0,0,.68)}
   .live-room-header .dm-center-panel>header{min-height:70px;padding:13px 15px;border-bottom-color:rgba(255,255,255,.11)}
   .live-room-header .dm-center-panel>header small{font-size:9px;letter-spacing:.16em}
   .live-room-header .dm-center-panel>header h3{margin-top:3px;font-size:20px}
@@ -71,7 +71,7 @@
   .live-room-header .dm-center-list .dm-center-preview em{margin-top:5px;font-size:11px}
   .live-room-header .dm-center-list time{grid-column:auto;margin:0;text-align:right;font-size:9px}
   .live-room-header .dm-center-empty{min-height:180px;display:grid;place-items:center;padding:28px;font-size:13px;line-height:1.5}
-  .live-room-header .dm-center-drawer{z-index:5100;top:50%!important;right:auto!important;bottom:auto!important;left:50%!important;width:calc(100vw - 28px)!important;height:min(82svh,760px)!important;max-height:calc(100svh - 28px);transform:translate(-50%,-50%);border-radius:22px;box-shadow:0 24px 90px rgba(0,0,0,.88),0 0 0 9999px rgba(0,0,0,.68)}
+  .live-room-header .dm-center-drawer{z-index:5100;top:var(--dm-visual-center,50%)!important;right:auto!important;bottom:auto!important;left:50%!important;width:calc(100vw - 28px)!important;height:min(82svh,760px)!important;max-height:calc(var(--dm-visual-height,100svh) - 20px);transform:translate(-50%,-50%);border-radius:22px;box-shadow:0 24px 90px rgba(0,0,0,.88),0 0 0 9999px rgba(0,0,0,.68)}
   .live-room-header .dm-center-drawer>header{grid-template-columns:42px minmax(0,1fr) auto!important;min-height:70px;padding:12px!important;gap:9px!important}
   .live-room-header nav .dm-center-drawer>header span{display:inline-flex}
   .live-room-header nav .dm-center-drawer>header .dm-center-avatar{display:grid;width:42px;height:42px}
@@ -81,8 +81,11 @@
   .live-room-header .dm-center-delete{min-height:34px;padding:0 9px;font-size:10px}
   .live-room-header .dm-center-drawer .public-profile-message-close{width:36px;height:36px;flex-basis:36px;font-size:22px}
   .live-room-header .dm-center-drawer .public-profile-message-list{padding:12px}
-  .live-room-header .dm-center-drawer form{padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
-  .live-room-header .dm-center-drawer form textarea{min-height:70px;max-height:120px;font-size:16px}
+  .live-room-header .dm-center-drawer form{position:relative;z-index:2;padding:9px 12px calc(9px + env(safe-area-inset-bottom));background:#0d0e12}
+  .live-room-header .dm-center-drawer form textarea{min-height:54px;max-height:72px;padding:10px 12px;resize:none;font-size:16px;line-height:1.35}
+  .live-room-header .dm-center-drawer form>div{min-height:42px;margin-top:6px}
+  .live-room-header .dm-center-drawer form>div>small{font-size:11px}
+  .live-room-header nav .dm-center-drawer form button{display:flex;min-width:96px;min-height:42px;align-items:center;justify-content:center;padding:0 16px;border-radius:10px;background:#ed1728;color:#fff;font-size:14px;font-weight:900}
   .live-topic{min-height:0;margin:10px 0;padding:12px;border-radius:14px;gap:8px}
   .live-topic-copy{font-size:13px!important}
   .live-topic-copy>.live-topic-separator{margin:0 3px}
