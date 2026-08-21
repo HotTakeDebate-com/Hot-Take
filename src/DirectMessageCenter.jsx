@@ -154,7 +154,7 @@ export default function DirectMessageCenter({ socket }) {
     </button>
 
     {open && <section className="dm-center-panel" aria-label="Direct message inbox">
-      <header><div><small>Private conversations</small><h3>Messages</h3></div><button type="button" onClick={loadConversations}>Refresh</button></header>
+      <header><div><small>Private conversations</small><h3>Messages</h3></div><div className="dm-center-panel-actions"><button type="button" onClick={loadConversations}>Refresh</button><button type="button" className="dm-center-panel-close" aria-label="Close direct messages" onClick={() => setOpen(false)}>&times;</button></div></header>
       {conversations.length ? <div className="dm-center-list">
         {conversations.map((conversation) => {
           const member = conversation.otherProfile || {};
