@@ -30,6 +30,7 @@
 .account-avatar { display: grid; place-items: center; width: 72px; height: 72px; border: 1px solid #ff262d; border-radius: 50%; color: #fff; background: radial-gradient(circle at 35% 30%, #ff3940, #a50006 70%); box-shadow: 0 0 0 7px rgba(255,32,39,.06), 0 14px 30px rgba(188,0,8,.18); font-size: 1.75rem; font-weight: 850; }
 .account-avatar.has-image { overflow: hidden; padding: 0; background: #090a0e; }
 .account-avatar.has-image img { width: 100%; height: 100%; object-fit: cover; }
+.account-avatar-quick-edit{position:relative;display:block;width:max-content;cursor:pointer}.account-avatar-quick-edit>input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}.account-avatar-edit-badge{position:absolute;right:-8px;bottom:-5px;display:grid;place-items:center;min-width:38px;height:24px;padding:0 7px;border:2px solid #111218;border-radius:999px;background:#f21d2c;color:#fff;font-size:.62rem;font-weight:900;line-height:1;box-shadow:0 6px 16px rgba(0,0,0,.45)}.account-avatar-quick-edit:hover .account-avatar,.account-avatar-quick-edit:focus-within .account-avatar{border-color:#ff5962;box-shadow:0 0 0 7px rgba(255,32,39,.1),0 14px 30px rgba(188,0,8,.22)}
 .generic-avatar { width:100%; height:100%; border-radius:50%; overflow:hidden; }
 .generic-avatar-background { fill:#35373d; }
 .generic-avatar-person { fill:#a8aab1; }
@@ -452,9 +453,9 @@
 @media (max-width: 640px) {
   .account-page { overflow-x: clip; }
   .account-shell { width: calc(100% - 16px); padding: 22px 0 52px; }
-  .account-heading { margin-bottom: 16px; padding: 0 4px 18px; }
-  .account-heading h1 { font-size: clamp(2.15rem, 12vw, 2.7rem); line-height: 1; }
-  .account-heading > p:last-child { margin-top: 12px; font-size: .9rem; line-height: 1.5; }
+  .account-heading { margin-bottom: 13px; padding: 0 4px 15px; }
+  .account-heading h1 { font-size: clamp(2rem, 10vw, 2.45rem); line-height: 1; }
+  .account-heading > p:last-child { margin-top: 10px; font-size: .86rem; line-height: 1.45; }
 
   .account-layout { min-width: 0; gap: 14px; }
   .account-nav {
@@ -475,16 +476,20 @@
 
   .account-content { min-width: 0; gap: 14px; }
   .account-card { min-width: 0; padding: 16px; border-radius: 13px; }
-  .account-overview { min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 15px; padding: 20px 16px; text-align: center; }
+  .account-overview { min-height: 0; grid-template-columns: 78px minmax(0, 1fr); align-items:center; gap: 15px; padding: 18px 16px; text-align: left; }
+  .account-overview>.account-avatar-quick-edit{align-self:start;margin:2px 0 0}
+  .account-overview .account-avatar{width:72px;height:72px;margin:0}
   .account-overview > div:nth-child(2) { min-width: 0; }
   .account-overview h2,
   .account-overview p { overflow-wrap: anywhere; }
   .account-overview h2 { font-size: 1.35rem; }
-  .account-overview-stats { justify-content: center; gap: 7px; }
+  .account-overview-stats { display:grid;grid-template-columns:1fr 1fr;justify-content:stretch;gap:7px; }
   .account-overview-rating,
-  .account-overview-followers { min-height: 36px; }
-  .account-overview-interests > div { justify-content: center; }
-  .account-overview-tools { width: 100%; align-items: center; justify-content: center; flex-direction: row; flex-wrap: wrap; }
+  .account-overview-followers { min-height: 36px;justify-content:center;margin:0;padding:7px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.025); }
+  .account-overview-rating{grid-column:1/-1}
+  .account-overview-interests > div { justify-content: flex-start; }
+  .account-overview-tools { grid-column:1/-1;width: 100%; align-items: center; justify-content: stretch; flex-direction: row; flex-wrap: nowrap; }
+  .account-overview-tools>*{flex:1;min-width:0}
   .account-status { grid-column: auto; justify-self: auto; }
 
   .account-card-heading { align-items: flex-start; flex-wrap: wrap; gap: 11px; margin-bottom: 16px; padding-bottom: 14px; }

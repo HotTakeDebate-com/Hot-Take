@@ -285,8 +285,10 @@ export default function ProfilePanel({
     setError(null);
     setSavedMsg(null);
     try {
-      setAvatarUrl(await prepareProfileImage(file));
-      setSavedMsg('Photo ready. Select Save changes to publish it.');
+      const nextAvatarUrl = await prepareProfileImage(file);
+      setAvatarUrl(nextAvatarUrl);
+      await savePublicProfile({ displayName, bio, avatarUrl: nextAvatarUrl, interests });
+      setSavedMsg('Profile picture updated.');
     } catch (avatarError) {
       setError(avatarError?.message ?? 'Could not prepare that image.');
     } finally {
@@ -613,7 +615,11 @@ export default function ProfilePanel({
           {savedMsg && <div className="account-alert account-alert--success" role="status">{savedMsg}</div>}
 
           <section id="account-overview" className="account-card account-overview">
-            <div className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}</div>
+            <label className="account-avatar-quick-edit" aria-label="Change profile picture">
+              <span className={'account-avatar' + (avatarUrl ? ' has-image' : '')}>{avatarUrl ? <img src={avatarUrl} alt="Your profile" /> : <GenericAvatar />}</span>
+              <span className="account-avatar-edit-badge" aria-hidden="true">Edit</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={avatarBusy || saving} onChange={onAvatarSelected} />
+            </label>
             <div>
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h2>
