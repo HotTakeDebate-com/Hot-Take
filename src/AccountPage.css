@@ -91,6 +91,8 @@
 .account-tags-button { display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:118px;min-height:42px;padding:0 12px 0 16px;border:1px solid #45464e;border-radius:10px;color:#f2f2f4;background:#101116;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:.18s ease }
 .account-tags-button:hover { border-color:#ef262d;background:rgba(255,32,39,.08) }
 .account-tags-button b { display:grid;place-items:center;width:23px;height:23px;border-radius:50%;color:#fff;background:#ed1e26;font-size:1rem;line-height:1 }
+.account-verification-button{min-height:42px;padding:0 16px;border:1px solid rgba(37,221,151,.42);border-radius:10px;color:#72e7a8;background:rgba(31,190,126,.08);font:inherit;font-size:.76rem;font-weight:850;cursor:pointer;white-space:nowrap;transition:.18s ease}
+.account-verification-button:hover{border-color:#54e5ad;color:#a2f5d4;background:rgba(31,190,126,.14)}
 .account-tags-backdrop { position:fixed;z-index:5000;inset:0;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.8);backdrop-filter:blur(7px) }
 .account-tags-modal { display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;width:min(920px,calc(100vw - 32px));max-height:min(820px,calc(100vh - 48px));overflow:hidden;border:1px solid #383a43;border-radius:20px;background:linear-gradient(145deg,#15161c,#08090c);box-shadow:0 34px 110px rgba(0,0,0,.78) }
 .account-tags-modal>header { display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:26px 28px 22px;border-bottom:1px solid #2c2e35;background:radial-gradient(circle at 88% 0,rgba(255,31,39,.13),transparent 44%) }
@@ -515,8 +517,9 @@
   .account-overview-followers::before{display:none}
   .account-overview-followers>span{display:none}
   .account-overview-interests > div { justify-content: flex-start; }
-  .account-overview-tools { grid-column:1/-1;width: 100%; align-items: center; justify-content: stretch; flex-direction: row; flex-wrap: nowrap; }
+  .account-overview-tools { grid-column:1/-1;width: 100%; align-items: center; justify-content: stretch; flex-direction: row; flex-wrap: wrap; }
   .account-overview-tools>*{flex:1;min-width:0}
+  .account-overview-tools>.account-verification-button{flex-basis:100%;width:100%}
   .account-status { grid-column: auto; justify-self: auto; }
 
   .account-card-heading { align-items: flex-start; flex-wrap: wrap; gap: 11px; margin-bottom: 16px; padding-bottom: 14px; }

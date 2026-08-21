@@ -1490,6 +1490,7 @@ export default function App() {
           onQuickMatch={startQuickMatch}
           onFaq={() => setHeaderOverlay('faq')}
           onSupport={() => setHeaderOverlay('support')}
+          onApplyVerification={() => setStep('verification')}
           onSignOut={handleSignOut}
           onPickLegal={(id) => setHeaderOverlay(id)}
           onDeleted={goHome}

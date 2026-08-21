@@ -59,6 +59,7 @@ export default function ProfilePanel({
   onQuickMatch,
   onFaq,
   onSupport,
+  onApplyVerification,
   onSignOut,
   onPickLegal,
   onDeleted,
@@ -666,6 +667,7 @@ export default function ProfilePanel({
                 {auth.currentUser?.emailVerified ? 'Verified' : 'Verification required'}
               </span>
               <button type="button" className="account-tags-button" onClick={openTags}>Tags <b aria-hidden="true">+</b></button>
+              {!networkIdentityState.verifiedDebater && <button type="button" className="account-verification-button" onClick={onApplyVerification}>Apply for verified</button>}
             </div>
             <div className="account-overview-profile">
               <div className="account-overview-profile-heading">
