@@ -624,7 +624,6 @@ export default function ProfilePanel({
             <div>
               <p className="account-section-label">Signed in as</p>
               <h2>{displayName || 'Hot Take member'} <IdentityBadges premium={networkIdentityState.premium} verified={networkIdentityState.verifiedDebater} role={networkIdentityState.role} /></h2>
-              <p>{resolvedEmail}</p>
               <div className="account-overview-stats">
                 <span className="account-overview-rating" aria-label={rating.count ? `Debate rating ${ratingDisplay} out of 5 from ${ratingCountLabel}` : 'No debate ratings yet'}>
                   <span aria-hidden="true">★</span><strong>{ratingDisplay}</strong>{rating.count > 0 && <small>({rating.count})</small>}
@@ -701,7 +700,7 @@ export default function ProfilePanel({
               <div className="account-setting-row"><div><strong>Email verification</strong><p>Verified accounts can access debates and protected community features.</p></div><ProfileEmailVerification /></div>
               <div className="account-setting-row"><div><strong>Sign-in method</strong><p>{providerLabel}</p></div><span className="account-setting-value">{providerLabel}</span></div>
               <div className="account-setting-row"><div><strong>Activity privacy</strong><p>Appear offline to other members without signing out or disabling debates and messages.</p></div><button type="button" className={`account-privacy-toggle${appearOffline ? ' is-active' : ''}`} role="switch" aria-checked={appearOffline} onClick={toggleAppearOffline} disabled={privacyBusy}><span aria-hidden="true" />{privacyBusy ? 'Saving…' : appearOffline ? 'Appearing offline' : 'Activity visible'}</button></div>
-              <div className="account-setting-row"><div><strong>Password recovery</strong><p>Send secure reset instructions to {resolvedEmail}.</p></div><button type="button" className="account-secondary-button" onClick={sendPasswordReset} disabled={resetBusy}>{resetBusy ? 'Sending…' : 'Send reset email'}</button></div>
+              <div className="account-setting-row"><div><strong>Password recovery</strong><p>Send secure reset instructions to your account email.</p></div><button type="button" className="account-secondary-button" onClick={sendPasswordReset} disabled={resetBusy}>{resetBusy ? 'Sending…' : 'Send reset email'}</button></div>
               <div className="account-blocked-section"><div><strong>Blocked accounts</strong><p>Blocked accounts cannot match, join your rooms, follow, or message you.</p></div>{blockedMembers.length ? <div className="account-blocked-list">{blockedMembers.map((member) => <div key={member.uid}><span className={'account-following-avatar' + (member.avatarUrl ? ' has-image' : '')}>{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <GenericAvatar />}</span><strong>{member.displayName || 'Hot Take member'}</strong><button type="button" onClick={() => unblockFromList(member.uid)} disabled={blockBusy}>Unblock</button></div>)}</div> : <small>You have not blocked anyone.</small>}</div>
             </section>
 

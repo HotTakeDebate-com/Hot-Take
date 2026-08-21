@@ -603,8 +603,12 @@
   .account-content > .account-mobile-section.is-mobile-active { display: block; }
   .account-content > .account-card { box-shadow: 0 14px 38px rgba(0,0,0,.22); }
 
-  .account-overview { grid-template-columns: 70px minmax(0,1fr); gap: 14px; padding: 18px; }
-  .account-overview .account-avatar { width: 66px; height: 66px; }
+  .account-overview { display: flex; align-items: center; flex-direction: column; gap: 0; padding: 20px 16px 17px; text-align: center; }
+  .account-overview > .account-avatar-quick-edit { align-self: center; margin: 0 0 14px; }
+  .account-overview .account-avatar { width: 76px; height: 76px; }
+  .account-overview > div:nth-child(2) { width: 100%; }
+  .account-overview .account-section-label { margin: 0 0 5px; }
+  .account-overview h2 { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; margin: 0; font-size: 1.45rem; }
   .account-overview-stats { grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 13px; }
   .account-overview-rating,
   .account-overview-followers { min-height: 48px; flex-direction: column; gap: 2px; border-radius: 12px; }
@@ -612,7 +616,8 @@
   .account-overview-followers strong { font-size: .95rem; }
   .account-overview-tools { margin-top: 12px; }
   .account-overview-tools > * { min-height: 44px; justify-content: center; text-align: center; }
-  .account-overview-interests { grid-column: 1 / -1; }
+  .account-overview-interests { width: 100%; }
+  .account-overview-interests > div { justify-content: center; }
 
   #account-profile .account-card-heading,
   #account-security .account-card-heading,
@@ -643,8 +648,8 @@
   .account-nav a,
   .account-nav button,
   .account-nav .account-nav-danger { min-height: 58px; font-size: .61rem; }
-  .account-overview { grid-template-columns: 60px minmax(0,1fr); padding: 15px; }
-  .account-overview .account-avatar { width: 56px; height: 56px; }
+  .account-overview { padding: 17px 13px 15px; }
+  .account-overview .account-avatar { width: 68px; height: 68px; }
 }
 
 .public-profile-mobile-network-picker{display:none}
