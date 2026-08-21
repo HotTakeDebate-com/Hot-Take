@@ -3,6 +3,7 @@ import admin from 'firebase-admin';
 import { TOPICS } from '../shared/topics.js';
 import { validateDailyTakeInput } from './dailyTakeApi.js';
 import { releaseDisplayNameClaim } from './displayNameClaims.js';
+import { cleanupDeletedUserRelationships } from './accountRelationshipCleanup.js';
 
 const PRIMARY_OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
 const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL, 'andrewbarless@gmail.com']);
@@ -752,6 +753,10 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       await admin.auth().revokeRefreshTokens(uid);
     } else if (action === 'delete') {
       if (ROLE_LEVEL[req.staff.role] < ROLE_LEVEL.admin) return res.status(403).json({ error: 'Admin access required.' });
+      const { followerCounts } = await cleanupDeletedUserRelationships(uid);
+      followerCounts.forEach((followerCount, affectedUid) => {
+        io?.emit?.('follower-count-updated', { uid: affectedUid, followerCount, updatedAtMs: Date.now() });
+      });
       await releaseDisplayNameClaim(uid);
       await admin.auth().deleteUser(uid);
     } else {

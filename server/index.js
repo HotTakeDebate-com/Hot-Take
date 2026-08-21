@@ -20,6 +20,7 @@ import { attachDailyTakeRoutes } from './dailyTakeApi.js';
 import { releaseDisplayNameClaim } from './displayNameClaims.js';
 import { blockRelationship, usersHaveBlock } from './blocks.js';
 import { createCallSessions } from './callSessions.js';
+import { cleanupDeletedUserRelationships } from './accountRelationshipCleanup.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -493,6 +494,10 @@ app.delete('/api/account', async (req, res) => {
     await deleteMatchingDocuments('posts', 'authorUid', uid);
     await deleteMatchingDocuments('reports', 'reporterUid', uid);
     await deleteMatchingDocuments('debates', 'uid', uid);
+    const { followerCounts } = await cleanupDeletedUserRelationships(uid, firestore);
+    followerCounts.forEach((followerCount, affectedUid) => {
+      io.emit('follower-count-updated', { uid: affectedUid, followerCount, updatedAtMs: Date.now() });
+    });
     await releaseDisplayNameClaim(uid, firestore);
 
     // Authentication is removed last so a partial Firestore failure can be retried safely.
