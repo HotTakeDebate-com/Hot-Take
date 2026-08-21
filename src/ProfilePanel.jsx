@@ -111,6 +111,7 @@ export default function ProfilePanel({
   const [deleteText, setDeleteText] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [mobileAccountSection, setMobileAccountSection] = useState('overview');
+  const [profileEditing, setProfileEditing] = useState(false);
   const liveTargetUid = targetUid || (!own ? networkIdentityState.uid : '');
 
   const providerLabel = useMemo(() => {
@@ -270,6 +271,7 @@ export default function ProfilePanel({
     try {
       await savePublicProfile({ displayName, bio, avatarUrl, interests });
       setSavedMsg('Account details saved.');
+      setProfileEditing(false);
       setRating(await fetchLiveRatingSummary(auth.currentUser?.uid));
     } catch (saveError) {
       setError(saveError?.message ?? 'Could not save your changes.');
@@ -604,7 +606,6 @@ export default function ProfilePanel({
         <aside className="account-nav" aria-label="Account sections">
           <p className="account-nav-label">Account</p>
           <a href="#account-overview" className={mobileAccountSection === 'overview' ? 'is-active' : ''} onClick={() => setMobileAccountSection('overview')}><AccountIcon type="user" />Overview</a>
-          <a href="#account-profile" className={mobileAccountSection === 'profile' ? 'is-active' : ''} onClick={() => setMobileAccountSection('profile')}><AccountIcon type="user" />Edit profile</a>
           <button type="button" className={mobileAccountSection === 'followers' ? 'is-active' : ''} onClick={() => { setMobileAccountSection('followers'); setFollowersPanelOpen(true); setFollowingPanelOpen(false); }}><AccountIcon type="user" />Followers</button>
           <button type="button" className={mobileAccountSection === 'following' ? 'is-active' : ''} onClick={() => { setMobileAccountSection('following'); setFollowingPanelOpen(true); setFollowersPanelOpen(false); }}><AccountIcon type="user" />Following</button>
           <a href="#account-security" className={mobileAccountSection === 'security' ? 'is-active' : ''} onClick={() => setMobileAccountSection('security')}><AccountIcon type="lock" />Security</a>
@@ -643,23 +644,22 @@ export default function ProfilePanel({
               </span>
               <button type="button" className="account-tags-button" onClick={openTags}>Tags <b aria-hidden="true">+</b></button>
             </div>
-          </section>
-
-          {loading ? <section className="account-card"><p>Loading your account…</p></section> : <>
-            <section id="account-profile" className={`account-card account-mobile-section${mobileAccountSection === 'profile' ? ' is-mobile-active' : ''}`}>
-              <div className="account-card-heading">
-                <span><AccountIcon type="user" /></span>
-                <div><h2>Public profile</h2><p>This information is visible to other Hot Take members.</p></div>
+            <div className="account-overview-profile">
+              <div className="account-overview-profile-heading">
+                <div><span>Public profile</span><strong>About you</strong></div>
+                {!profileEditing && <button type="button" onClick={() => setProfileEditing(true)}>Edit profile</button>}
               </div>
-              <form className="account-form" onSubmit={onSave}>
+              {profileEditing ? <form className="account-form account-overview-profile-form" onSubmit={onSave}>
                 <label htmlFor="account-display-name">Display name</label>
                 <input id="account-display-name" type="text" minLength={2} maxLength={40} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                 <label htmlFor="account-bio">Bio</label>
                 <textarea id="account-bio" rows={4} maxLength={500} placeholder="Tell people what you care to debate or discuss." value={bio} onChange={(event) => setBio(event.target.value)} />
-                <div className="account-form-footer"><span>{bio.length}/500</span><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
-              </form>
-            </section>
+                <div className="account-form-footer"><span>{bio.length}/500</span><div><button type="button" className="account-secondary-button" disabled={saving} onClick={() => { setProfileEditing(false); void load(); }}>Cancel</button><button type="submit" className="account-primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div></div>
+              </form> : <p>{bio.trim() || 'You have not added a bio yet.'}</p>}
+            </div>
+          </section>
 
+          {loading ? <section className="account-card"><p>Loading your account…</p></section> : <>
             {followersPanelOpen && <section id="account-followers" className={`account-card account-following-card account-mobile-section${mobileAccountSection === 'followers' ? ' is-mobile-active' : ''}`}>
               <div className="account-card-heading">
                 <span><AccountIcon type="user" /></span>

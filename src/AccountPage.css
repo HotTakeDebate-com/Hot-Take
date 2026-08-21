@@ -79,6 +79,15 @@
 .account-form-footer > span { color: #777781; font-size: .78rem; }
 .account-overview { position:relative;z-index:20;overflow:visible }
 .account-overview-tools { position:relative;display:flex;align-items:flex-end;flex-direction:column;gap:10px }
+.account-overview-profile{grid-column:1/-1;margin-top:2px;padding:18px 20px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.02)}
+.account-overview-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.account-overview-profile-heading span{display:block;margin-bottom:4px;color:#777a84;font-size:.62rem;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+.account-overview-profile-heading strong{color:#f1f1f3;font-size:.95rem}
+.account-overview-profile-heading button{min-height:38px;padding:0 13px;border:1px solid #45464e;border-radius:9px;background:#111218;color:#fff;font:inherit;font-size:.76rem;font-weight:850;cursor:pointer}
+.account-overview-profile-heading button:hover{border-color:#ef262d;background:rgba(255,32,39,.08)}
+.account-overview-profile>p{margin:12px 0 0!important;color:#a9abb4!important;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.account-overview-profile-form{max-width:760px;margin-top:16px;text-align:left}
+.account-overview-profile-form .account-form-footer>div{display:flex;gap:8px}
 .account-tags-button { display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:118px;min-height:42px;padding:0 12px 0 16px;border:1px solid #45464e;border-radius:10px;color:#f2f2f4;background:#101116;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:.18s ease }
 .account-tags-button:hover { border-color:#ef262d;background:rgba(255,32,39,.08) }
 .account-tags-button b { display:grid;place-items:center;width:23px;height:23px;border-radius:50%;color:#fff;background:#ed1e26;font-size:1rem;line-height:1 }
@@ -563,7 +572,7 @@
   .account-nav {
     position: static;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 7px;
     padding: 8px;
     overflow: visible;
@@ -588,6 +597,11 @@
     line-height: 1.15;
     text-align: center;
   }
+  .account-nav > :nth-child(2),
+  .account-nav > :nth-child(3),
+  .account-nav > :nth-child(4) { grid-column: span 2; }
+  .account-nav > :nth-child(5),
+  .account-nav > :nth-child(6) { grid-column: span 3; }
   .account-nav a:hover,
   .account-nav button:hover { transform: none; }
   .account-nav a.is-active,
@@ -627,6 +641,13 @@
   .account-overview-tools > * { min-height: 44px; justify-content: center; text-align: center; }
   .account-overview-interests { width: 100%; }
   .account-overview-interests > div { justify-content: center; }
+  .account-overview-profile{width:100%;margin-top:14px;padding:15px;text-align:left}
+  .account-overview-profile-heading{gap:10px}
+  .account-overview-profile-heading button{min-height:40px}
+  .account-overview-profile-form{margin-top:14px}
+  .account-overview-profile-form .account-form-footer{align-items:stretch;flex-direction:column;gap:9px}
+  .account-overview-profile-form .account-form-footer>div{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .account-overview-profile-form .account-form-footer button{width:100%;min-width:0}
 
   #account-profile .account-card-heading,
   #account-security .account-card-heading,
