@@ -46,9 +46,9 @@
   .live-room-header nav{max-width:57%;padding-left:6px}
   .live-room-header nav>button{display:none}
   .live-room-header .live-connection{height:36px;min-width:102px;max-width:120px;padding-inline:9px;font-size:11px}
-  .live-room-header .dm-center{position:fixed;right:14px;bottom:18px;z-index:3900}
-  .live-room-header .dm-center-trigger{width:54px;height:54px;border-color:rgba(255,45,54,.72);background:#e91d24;box-shadow:0 10px 32px rgba(0,0,0,.58),0 0 0 5px rgba(233,29,36,.14)}
-  .live-room-header .dm-center-trigger svg{width:27px;height:27px}
+  .live-room-header .dm-center{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:3900}
+  .live-room-header .dm-center-trigger{width:46px;height:46px;border-color:rgba(255,66,74,.8);background:rgba(225,20,30,.94);box-shadow:0 8px 22px rgba(0,0,0,.52),0 0 0 3px rgba(233,29,36,.11)}
+  .live-room-header .dm-center-trigger svg{width:23px;height:23px}
   .live-room-header .dm-center-panel{top:76px;bottom:auto}
   .live-room-header .dm-center-drawer{top:70px!important;bottom:10px!important;height:auto!important}
   .live-topic{min-height:0;margin:10px 0;padding:12px;border-radius:14px;gap:8px}
