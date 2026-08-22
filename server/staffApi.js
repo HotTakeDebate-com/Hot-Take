@@ -5,8 +5,8 @@ import { validateDailyTakeInput } from './dailyTakeApi.js';
 import { releaseDisplayNameClaim } from './displayNameClaims.js';
 import { cleanupDeletedUserRelationships } from './accountRelationshipCleanup.js';
 
-const PRIMARY_OWNER_EMAIL = (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase();
-const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL, 'andrewbarless@gmail.com']);
+const PRIMARY_OWNER_EMAIL = 'justinself88@gmail.com';
+const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL]);
 const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
 const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
 const PERMISSION_DEFAULTS = {
@@ -37,6 +37,9 @@ const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
 function roleOf(claims) {
   if (OWNER_EMAILS.has(claims?.email?.toLowerCase())) return 'owner';
   const role = String(claims?.role || 'user');
+  // There can only be one owner. Preserve old owner claims as admin access
+  // until Firebase is updated, but never expose them as another owner.
+  if (role === 'owner') return 'admin';
   return STAFF_ROLES.has(role) ? role : 'user';
 }
 
@@ -50,6 +53,9 @@ async function requireStaff(req, res, next) {
     if (OWNER_EMAILS.has(claims.email?.toLowerCase()) && claims.role !== 'owner') {
       const user = await admin.auth().getUser(claims.uid);
       await admin.auth().setCustomUserClaims(claims.uid, { ...(user.customClaims || {}), role: 'owner' });
+    } else if (!OWNER_EMAILS.has(claims.email?.toLowerCase()) && claims.role === 'owner') {
+      const user = await admin.auth().getUser(claims.uid);
+      await admin.auth().setCustomUserClaims(claims.uid, { ...(user.customClaims || {}), role: 'admin' });
     }
     req.staff = { uid: claims.uid, email: claims.email || '', role };
     next();
@@ -312,7 +318,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     const accessByUid = new Map();
     try {
       const staffAccessRefs = result.users
-        .filter((user) => STAFF_ROLES.has(OWNER_EMAILS.has(user.email?.toLowerCase()) ? 'owner' : (user.customClaims?.role || 'user')))
+        .filter((user) => STAFF_ROLES.has(roleOf({ email: user.email, role: user.customClaims?.role })))
         .map((user) => admin.firestore().collection('staff_access').doc(user.uid));
       if (staffAccessRefs.length) {
         const staffAccessSnaps = await admin.firestore().getAll(...staffAccessRefs);
@@ -347,7 +353,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       lastSignInAt: u.metadata.lastSignInTime,
       lastAdminAccessAt: accessByUid.get(u.uid)?.lastAccessedAt || null,
       online: onlineUids.has(u.uid),
-      role: OWNER_EMAILS.has(u.email?.toLowerCase()) ? 'owner' : (u.customClaims?.role || 'user'),
+      role: roleOf({ email: u.email, role: u.customClaims?.role }),
       premium: u.customClaims?.premium === true,
       verifiedDebater: u.customClaims?.verifiedDebater === true,
       avatarUrl: u.email ? String(profileByEmail.get(u.email.toLowerCase())?.avatarUrl || '') : '',
@@ -477,7 +483,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
     const isOwner = OWNER_EMAILS.has(target.email?.toLowerCase());
-    const targetRole = isOwner ? 'owner' : (target.customClaims?.role || 'user');
+    const targetRole = roleOf({ email: target.email, role: target.customClaims?.role });
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot edit an equal or higher role.' });
     }
@@ -589,7 +595,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
   router.post('/users/:uid/password', requirePermission('manageCredentials'), async (req, res) => {
     const uid = String(req.params.uid);
     const target = await admin.auth().getUser(uid);
-    const targetRole = OWNER_EMAILS.has(target.email?.toLowerCase()) ? 'owner' : (target.customClaims?.role || 'user');
+    const targetRole = roleOf({ email: target.email, role: target.customClaims?.role });
     if (targetRole === 'owner') {
       return res.status(403).json({ error: 'The protected Owner password cannot be changed from the Admin panel.' });
     }
@@ -711,7 +717,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
       return res.status(403).json({ error: 'Your role does not have permission to perform this action.' });
     }
     const target = await admin.auth().getUser(uid);
-    const targetRole = OWNER_EMAILS.has(target.email?.toLowerCase()) ? 'owner' : (target.customClaims?.role || 'user');
+    const targetRole = roleOf({ email: target.email, role: target.customClaims?.role });
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot punish an equal or higher role.' });
     }
@@ -774,7 +780,7 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     if (!['user', 'moderator', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
     const target = await admin.auth().getUser(uid);
     if (OWNER_EMAILS.has(target.email?.toLowerCase())) return res.status(400).json({ error: 'Owner role is protected.' });
-    const currentRole = target.customClaims?.role || 'user';
+    const currentRole = roleOf({ email: target.email, role: target.customClaims?.role });
     if (req.staff.role !== 'owner' && ROLE_LEVEL[currentRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot change the access of an equal or higher role.' });
     }

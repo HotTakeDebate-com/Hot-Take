@@ -4,15 +4,13 @@ import { removeStaleDisplayNameClaim } from './displayNameClaims.js';
 import { MAX_PROFILE_INTERESTS, sanitizeProfileInterests } from '../src/profileInterests.js';
 import { blockRef, blockRelationship } from './blocks.js';
 
-const OWNER_EMAILS = new Set([
-  (process.env.HOT_TAKE_OWNER_EMAIL || 'justinself88@gmail.com').trim().toLowerCase(),
-  'andrewbarless@gmail.com',
-]);
+const OWNER_EMAILS = new Set(['justinself88@gmail.com']);
 const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
 
 function roleFromClaims(claims = {}) {
   if (OWNER_EMAILS.has(String(claims.email || '').toLowerCase())) return 'owner';
   const role = String(claims.role || 'user');
+  if (role === 'owner') return 'admin';
   return STAFF_ROLES.has(role) ? role : 'user';
 }
 
@@ -40,7 +38,7 @@ function serializeTime(value) {
 async function publicIdentity(uid) {
   const user = await admin.auth().getUser(uid);
   const email = String(user.email || '').toLowerCase();
-  const role = OWNER_EMAILS.has(email) ? 'owner' : String(user.customClaims?.role || 'user');
+  const role = roleFromClaims({ email, role: user.customClaims?.role });
   let profile = {};
   const owner = await admin.firestore().collection('display_name_owners').doc(uid).get();
   const reservedDisplayName = String(owner.data()?.displayName || '').normalize('NFKC').trim().replace(/\s+/g, ' ');

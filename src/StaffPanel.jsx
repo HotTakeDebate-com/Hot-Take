@@ -385,7 +385,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         setReports(reportData.reports || []);
         setCapabilities(reportData.capabilities || {});
       }
-      if (tab === 'users') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
+      if (tab === 'users' || tab === 'staff') { const userData = await staffUsers(); setUsers(userData.users || []); setCapabilities(userData.capabilities || {}); }
       if (tab === 'debates') setDebateLog((await staffDebates()).debates || []);
       if (tab === 'quickMatch') setQuickMatchStats((await staffQuickMatchStats()).topics || []);
       if (tab === 'roles') setPermissions((await staffPermissions()).permissions || {});
@@ -492,6 +492,9 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     if (!q) return users;
     return users.filter((u) => [u.email, u.displayName, u.uid, u.role].some((v) => String(v || '').toLowerCase().includes(q)));
   }, [users, query]);
+  const staffMembers = useMemo(() => users
+    .filter((user) => ['moderator', 'admin', 'owner'].includes(user.role))
+    .sort((a, b) => (ROLE_RANK[b.role] - ROLE_RANK[a.role]) || String(a.displayName || a.email).localeCompare(String(b.displayName || b.email))), [users]);
 
   const act = async (user, action) => {
     let durationMinutes = null;
@@ -671,6 +674,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         <button className={tab === 'debates' ? 'active' : ''} onClick={() => setTab('debates')}><b><AdminIcon type="debates" /></b>Active Debates</button>
         <button className={tab === 'quickMatch' ? 'active' : ''} onClick={() => setTab('quickMatch')}><b><AdminIcon type="statistics" /></b>Quick Match Stats</button>
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b><AdminIcon type="users" /></b>Users</button>
+        <button className={tab === 'staff' ? 'active' : ''} onClick={() => setTab('staff')}><b><AdminIcon type="roles" /></b>Staff</button>
         {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
         {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b><AdminIcon type="news" /></b>What&apos;s Hot</button>}
@@ -681,7 +685,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         <button onClick={onBack}><b><AdminIcon type="back" /></b>Return to website</button>
       </aside>
       <main className="admin-console-main">
-        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'quickMatch' ? 'Quick Match Statistics' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'dailyTake' ? 'Hot Take of the Day' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
+        <div className="admin-console-title"><div><p>HOT TAKE ADMINISTRATION</p><h1>{tab === 'dashboard' ? 'Control panel' : tab === 'quickMatch' ? 'Quick Match Statistics' : tab === 'staff' ? 'Staff directory' : tab === 'roles' ? 'Roles & permissions' : tab === 'punishments' ? 'Punishment Log' : tab === 'news' ? 'What’s Hot' : tab === 'dailyTake' ? 'Hot Take of the Day' : tab === 'verification' ? 'Debater verification' : tab[0].toUpperCase() + tab.slice(1)}</h1></div><button onClick={load}><AdminIcon type="refresh" /> Refresh</button></div>
         {error && <div className="admin-notice error"><b><AdminIcon type="close" /></b>{error}</div>}
         {busy && <div className="admin-loading-state" role="status" aria-live="polite"><span className="admin-loading-spinner" aria-hidden="true" /><span>Loading administrative data…</span></div>}
 
@@ -830,6 +834,24 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             </tr>)}</tbody>
           </table></div>
           <Pagination page={page} total={filteredUsers.length} onChange={setPage} />
+        </section>}
+        {tab === 'staff' && !busy && <section className="admin-staff-directory">
+          <div className="admin-staff-summary">
+            <article><strong>{staffMembers.length}</strong><span>Total staff</span></article>
+            <article><strong>{staffMembers.filter((member) => member.role === 'owner').length}</strong><span>Owner</span></article>
+            <article><strong>{staffMembers.filter((member) => member.role === 'admin').length}</strong><span>Admins</span></article>
+            <article><strong>{staffMembers.filter((member) => member.role === 'moderator').length}</strong><span>Moderators</span></article>
+          </div>
+          <div className="staff-table-wrap"><table><thead><tr><th>Staff member</th><th>Role</th><th>Status</th><th>Last admin access</th><th>Account created</th></tr></thead>
+            <tbody>{staffMembers.map((member) => <tr key={member.uid}>
+              <td><div className="admin-staff-person">{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <span>{String(member.displayName || member.email || '?').charAt(0).toUpperCase()}</span>}<div><b>{member.displayName || 'No display name'}</b><small>{member.email}</small></div></div></td>
+              <td><span className={'admin-role-pill ' + member.role}>{member.role === 'owner' ? 'Owner' : member.role === 'admin' ? 'Admin' : 'Moderator'}</span></td>
+              <td><span className={'admin-staff-presence ' + (member.online ? 'online' : 'offline')}><i />{member.online ? 'Online' : 'Offline'}</span></td>
+              <td>{dateValue(member.lastAdminAccessAt)}</td>
+              <td>{dateValue(member.createdAt)}</td>
+            </tr>)}</tbody>
+          </table></div>
+          {!staffMembers.length && <div className="admin-notice">No staff accounts found.</div>}
         </section>}
         {tab === 'roles' && !busy && <section className="role-permissions">
           <div className="role-permissions-intro">
