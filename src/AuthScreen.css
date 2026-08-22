@@ -247,6 +247,11 @@
   background: rgba(255, 255, 255, 0.16);
 }
 
+.auth-password-actions { display:flex; align-items:center; gap:.45rem; }
+.auth-forgot-password { padding:.2rem .35rem; border:0; background:none; color:#e7474b; font:inherit; font-size:.76rem; font-weight:650; cursor:pointer; }
+.auth-forgot-password:hover { text-decoration:underline; }
+.auth-forgot-password:disabled { opacity:.55; cursor:not-allowed; }
+
 .auth-screen .auth-label,
 .auth-screen-label {
   color: rgba(255, 255, 255, 0.75);

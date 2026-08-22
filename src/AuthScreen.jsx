@@ -453,8 +453,6 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               <p className="auth-field-hint">This is your sign-in email. You must verify it before using protected features.</p>
             )}
 
-            {mode === 'signin' && <div className="signin-options"><label><input type="checkbox" checked={rememberMe} onChange={(e)=>setRememberMe(e.target.checked)}/> Remember me</label><button type="button" onClick={onForgotPassword} disabled={busy}>Forgot password?</button></div>}
-
             {mode === 'signup' && (
               <>
                 <label className="auth-label" htmlFor="auth-display-name">
@@ -479,14 +477,17 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               <label className="auth-label auth-password-row__label" htmlFor="auth-password">
                 Password
               </label>
-              <button
-                type="button"
-                className="auth-password-toggle"
-                onClick={() => setShowPassword((s) => !s)}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+              <div className="auth-password-actions">
+                {mode === 'signin' && <button type="button" className="auth-forgot-password" onClick={onForgotPassword} disabled={busy}>Forgot password?</button>}
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
             <input
               id="auth-password"
@@ -499,6 +500,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
               minLength={6}
               placeholder="Enter a password"
             />
+            {mode === 'signin' && <div className="signin-options"><label><input type="checkbox" checked={rememberMe} onChange={(e)=>setRememberMe(e.target.checked)}/> Remember me</label></div>}
             {mode === 'signup' && (
               <p className="auth-field-hint">At least 6 characters (pick something you don&apos;t reuse elsewhere).</p>
             )}
