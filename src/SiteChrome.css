@@ -125,7 +125,8 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
      intentionally restores the single mobile navigation control. */
   .landing .landing-nav-actions>.header-nav--landing,
   .landing-nav-actions>.header-nav--landing{display:block!important;margin-left:0!important}
-  .header-nav--landing .landing-nav-menu-trigger{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex-basis:44px!important;border-color:#555861!important;background:#0d0f13!important}
+  .landing .header-nav--landing .landing-nav-menu-trigger,
+  .header-nav--landing .landing-nav-menu-trigger{display:inline-flex!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex-basis:44px!important;border-color:#555861!important;background:#0d0f13!important}
   .header-nav--landing .landing-menu-icon{width:19px;height:15px}
   .header-nav-mobile-primary{display:block}
   .header-nav--landing .header-nav-panel{position:fixed!important;z-index:3000!important;top:76px!important;right:12px!important;left:12px!important;width:auto!important;max-height:calc(100dvh - 92px)!important;overflow-y:auto!important;padding:12px!important;border:1px solid #34363d!important;border-radius:16px!important;background:rgba(9,10,13,.99)!important;box-shadow:0 24px 70px rgba(0,0,0,.72)!important}
