@@ -13,25 +13,25 @@ const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, deleteReports: false, viewUsers: false, warnUsers: false,
     banUsers: false, revokeSessions: false, unbanUsers: false, viewAudit: false, viewPunishments: false,
-    manageRoles: false, managePremium: false, manageNews: false, viewVerification: false, manageVerification: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, manageAdmins: false, managePremium: false, manageNews: false, viewVerification: false, manageVerification: false, editUsers: false, editAvatars: false, manageCredentials: false, deleteUsers: false,
   },
   moderator: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: false, viewAudit: false, viewPunishments: true,
-    manageRoles: false, managePremium: false, viewVerification: true, manageVerification: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
+    manageRoles: false, manageAdmins: false, managePremium: false, viewVerification: true, manageVerification: false, editUsers: false, editAvatars: true, manageCredentials: false, deleteUsers: false,
   },
   admin: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, manageAdmins: false, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
   owner: {
     viewReports: true, respondReports: true, deleteReports: true, viewUsers: true, warnUsers: true,
     banUsers: true, revokeSessions: true, unbanUsers: true, viewAudit: true, viewPunishments: true,
-    manageRoles: true, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
+    manageRoles: true, manageAdmins: true, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
-PERMISSION_DEFAULTS.super_admin = { ...PERMISSION_DEFAULTS.admin };
+PERMISSION_DEFAULTS.super_admin = { ...PERMISSION_DEFAULTS.admin, manageAdmins: true };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
 
 
@@ -88,6 +88,11 @@ async function hasPermission(role, permission) {
   if (role === 'owner') return true;
   const config = await permissionConfig();
   return config[role]?.[permission] === true;
+}
+
+async function canManageTargetRole(actorRole, targetRole) {
+  if (targetRole !== 'admin') return true;
+  return hasPermission(actorRole, 'manageAdmins');
 }
 
 function requirePermission(permission) {
@@ -247,12 +252,12 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     res.json({ permissions: await permissionConfig() });
   });
 
-  router.post('/permissions', requireRole('admin'), async (req, res) => {
+  router.post('/permissions', requireRole('owner'), async (req, res) => {
     const targetRole = String(req.body?.role || '');
     const permission = String(req.body?.permission || '');
     const enabled = req.body?.enabled === true;
-    if (!['moderator', 'admin'].includes(targetRole)) {
-      return res.status(400).json({ error: 'Only Moderator and Admin permissions can be changed.' });
+    if (!['moderator', 'admin', 'super_admin'].includes(targetRole)) {
+      return res.status(400).json({ error: 'Only Moderator, Admin, and Super Admin permissions can be changed.' });
     }
     if (!PERMISSION_KEYS.has(permission)) return res.status(400).json({ error: 'Unknown permission.' });
     const ref = admin.firestore().collection('staff_config').doc('role_permissions');
@@ -488,6 +493,9 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot edit an equal or higher role.' });
     }
+    if (!(await canManageTargetRole(req.staff.role, targetRole))) {
+      return res.status(403).json({ error: 'Your role cannot manage Admin accounts.' });
+    }
     if (isOwner && req.staff.role !== 'owner') {
       return res.status(403).json({ error: 'Owner account is protected.' });
     }
@@ -602,6 +610,9 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     }
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot change the password of an equal or higher role.' });
+    }
+    if (!(await canManageTargetRole(req.staff.role, targetRole))) {
+      return res.status(403).json({ error: 'Your role cannot manage Admin accounts.' });
     }
     const password = String(req.body?.password || '');
     if (password.length < 8 || password.length > 128) {
@@ -722,6 +733,9 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     if (ROLE_LEVEL[targetRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot punish an equal or higher role.' });
     }
+    if (!(await canManageTargetRole(req.staff.role, targetRole))) {
+      return res.status(403).json({ error: 'Your role cannot manage Admin accounts.' });
+    }
     if (action === 'warn') {
       await admin.firestore().collection('user_warnings').add({
         uid, email: target.email || null, reason,
@@ -785,6 +799,12 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     const currentRole = roleOf({ email: target.email, role: target.customClaims?.role });
     if (req.staff.role !== 'owner' && ROLE_LEVEL[currentRole] >= ROLE_LEVEL[req.staff.role]) {
       return res.status(403).json({ error: 'You cannot change the access of an equal or higher role.' });
+    }
+    if (!(await canManageTargetRole(req.staff.role, currentRole))) {
+      return res.status(403).json({ error: 'Your role cannot manage Admin accounts.' });
+    }
+    if (!(await canManageTargetRole(req.staff.role, role))) {
+      return res.status(403).json({ error: 'Your role cannot assign Admin access.' });
     }
     const currentPremium = target.customClaims?.premium === true;
     if (role !== currentRole && !(await hasPermission(req.staff.role, 'manageRoles'))) {

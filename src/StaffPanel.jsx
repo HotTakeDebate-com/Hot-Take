@@ -194,6 +194,7 @@ const ROLE_PERMISSIONS = [
     { key: 'editAvatars', name: 'Edit profile pictures for lower roles', values: [false, true, true, true, true] },
     { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true, true] },
     { key: 'manageRoles', name: 'Assign User, Moderator, Admin, and Super Admin roles', values: [false, false, true, true, true] },
+    { key: 'manageAdmins', name: 'Manage Admin accounts', values: [false, false, false, true, true] },
     { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true, true] },
     { key: 'manageNews', name: 'Create and publish What’s Hot stories', values: [false, false, true, true, true] },
     { key: 'deleteUsers', name: 'Delete eligible user accounts', values: [false, false, true, true, true] },
@@ -660,7 +661,10 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     { label: 'Reports submitted', source: reports, field: 'createdAt' },
     { label: 'User registrations', source: users, field: 'createdAt' },
   ];
-  const editingProtected = Boolean(editingUser && ROLE_RANK[editingUser.role] >= ROLE_RANK[role]);
+  const canManageAccount = (account) => Boolean(account)
+    && ROLE_RANK[account.role] < ROLE_RANK[role]
+    && (account.role !== 'admin' || capabilities.manageAdmins === true);
+  const editingProtected = Boolean(editingUser && !canManageAccount(editingUser));
 
   return <div className="admin-console">
     <header className="admin-console-topbar">
@@ -828,10 +832,10 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               <td>{u.role === 'user' && u.premium ? <span className="staff-premium">Premium</span> : <span className="staff-not-applicable">Standard</span>}</td>
               <td>{u.disabled ? <span className="staff-banned">{u.banPermanent ? 'PERMANENTLY BANNED' : `BANNED · ${Math.max(1, Math.ceil((u.banUntilMs - Date.now()) / 60000))}m left`}</span> : 'Active'}</td>
               <td className="staff-actions">
-                {capabilities.warnUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'warn'); }}>Warn</button>}
-                {!u.disabled && capabilities.banUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'ban'); }}>Ban</button>}
-                {u.disabled && capabilities.unbanUsers && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'unban'); }}>Unban</button>}
-                {capabilities.revokeSessions && ROLE_RANK[u.role] < ROLE_RANK[role] && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'revoke_sessions'); }}>Sign out</button>}
+                {capabilities.warnUsers && canManageAccount(u) && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'warn'); }}>Warn</button>}
+                {!u.disabled && capabilities.banUsers && canManageAccount(u) && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'ban'); }}>Ban</button>}
+                {u.disabled && capabilities.unbanUsers && canManageAccount(u) && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'unban'); }}>Unban</button>}
+                {capabilities.revokeSessions && canManageAccount(u) && <button type="button" onClick={(event) => { event.stopPropagation(); act(u, 'revoke_sessions'); }}>Sign out</button>}
               </td>
             </tr>)}</tbody>
           </table></div>
@@ -874,14 +878,14 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                 <tr className="permission-group"><th colSpan={SITE_ROLES.length + 1}>{section.group}</th></tr>
                 {section.permissions.map((permission) => <tr key={permission.name}><td>{permission.name}{!permission.key && <small>Standard platform access</small>}</td>{SITE_ROLES.map((siteRole, index) => {
                   const value = permission.key ? (permissions[siteRole.id]?.[permission.key] ?? permission.values[index]) : permission.values[index];
-                  const editable = Boolean(permission.key) && (siteRole.id === 'moderator' || siteRole.id === 'admin');
+                  const editable = role === 'owner' && Boolean(permission.key) && ['moderator', 'admin', 'super_admin'].includes(siteRole.id);
                   const id = siteRole.id + ':' + permission.key;
                   return <td key={siteRole.id}><button type="button" disabled={!editable || savingPermission === id} onClick={() => editable && togglePermission(siteRole.id, permission.key, !value)} className={'permission-value ' + (value ? 'allowed' : 'denied') + (editable ? ' editable' : '')}>{savingPermission === id ? '…' : value ? '✓' : '—'} {permissionLabel(value)}</button></td>;
                 })}</tr>)}
               </Fragment>)}</tbody>
             </table>
           </div>
-          <p className="permission-footnote">Owner and Super Admin access, along with standard debate rights, are protected. Moderator and Admin permissions can be configured here and are enforced by the staff API.</p>
+          <p className="permission-footnote">Only the Owner can edit role permissions. Owner access and standard debate rights remain permanently protected.</p>
         </section>}
         {editingUser && userDraft && <div className="user-editor-backdrop" onMouseDown={() => setEditingUser(null)}>
           <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Manage ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
@@ -930,7 +934,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                     <label className={passwordMode === 'set' ? 'selected' : ''}><input type="radio" name="passwordMode" checked={passwordMode === 'set'} onChange={() => setPasswordMode('set')} /><span><strong>Set a new password</strong><small>Set a temporary password and sign the user out everywhere.</small></span></label>
                     {passwordMode === 'set' && <><div className="user-password-fields"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password (8+ characters)" /><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirm new password" /></div><label className="show-new-password"><input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} /> Show the new password while typing</label></>}
                   </div> : <div className="user-editor-readonly"><strong>Password protected</strong><span>Your role can view account information but cannot reset or replace user passwords.</span></div>}
-                  <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" disabled={!capabilities.revokeSessions || ROLE_RANK[editingUser.role] >= ROLE_RANK[role]} onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
+                  <div className="user-editor-action-card"><div><strong>Active sessions</strong><span>Force every device to authenticate again.</span></div><button type="button" disabled={!capabilities.revokeSessions || !canManageAccount(editingUser)} onClick={() => act(editingUser, 'revoke_sessions')}>Sign out all sessions</button></div>
                 </section>
                 <section className="user-editor-section"><h3>Account metadata</h3>
                   <div className="user-editor-meta"><div><span>Account created</span><b>{dateValue(editingUser.createdAt)}</b></div><div><span>Last sign-in</span><b>{dateValue(editingUser.lastSignInAt)}</b></div><div><span>Account status</span><b className={editingUser.disabled ? 'status-danger' : 'status-good'}>{editingUser.disabled ? (editingUser.banPermanent ? 'Permanently banned' : `Banned · ${Math.max(1, Math.ceil((editingUser.banUntilMs - Date.now()) / 60000))} minutes left`) : 'Active'}</b></div><div><span>Sign-in methods</span><b>{editingUser.providers?.join(', ') || 'Email/password'}</b></div></div>
@@ -939,11 +943,11 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               {editorTab === 'moderation' && <>
                 <section className="user-editor-section danger-zone"><h3>Moderation actions</h3><p>Every action requires a reason and is recorded in the staff audit log.</p>
                   <div className="user-editor-actions">
-                    {capabilities.warnUsers && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>}
-                    {((editingUser.disabled && capabilities.unbanUsers) || (!editingUser.disabled && capabilities.banUsers)) && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>}
-                    {capabilities.revokeSessions && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Revoke sessions</button>}
-                    {capabilities.deleteUsers && ROLE_RANK[editingUser.role] < ROLE_RANK[role] && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
-                    {ROLE_RANK[editingUser.role] >= ROLE_RANK[role] && <span className="user-editor-protected">Equal and higher roles are protected from moderation actions.</span>}
+                    {capabilities.warnUsers && canManageAccount(editingUser) && <button type="button" onClick={() => act(editingUser, 'warn')}>Issue warning</button>}
+                    {((editingUser.disabled && capabilities.unbanUsers) || (!editingUser.disabled && capabilities.banUsers)) && canManageAccount(editingUser) && <button type="button" onClick={() => act(editingUser, editingUser.disabled ? 'unban' : 'ban')}>{editingUser.disabled ? 'Unban account' : 'Ban account'}</button>}
+                    {capabilities.revokeSessions && canManageAccount(editingUser) && <button type="button" onClick={() => act(editingUser, 'revoke_sessions')}>Revoke sessions</button>}
+                    {capabilities.deleteUsers && canManageAccount(editingUser) && editingUser.role !== 'owner' && <button type="button" className="danger" onClick={() => act(editingUser, 'delete')}>Delete account</button>}
+                    {!canManageAccount(editingUser) && <span className="user-editor-protected">This role is protected from your account-management permissions.</span>}
                   </div>
                 </section>
                 <section className="user-editor-section"><h3>Moderation summary</h3>
