@@ -15,6 +15,7 @@ export default function ReportIssue({
   yourSide,
   peerUid,
   matchMode,
+  reportedMessage,
   onSubmitted,
 }) {
   const [category, setCategory] = useState('other');
@@ -51,6 +52,12 @@ export default function ReportIssue({
         details,
         peerUid: peerUid || null,
         matchMode: matchMode || null,
+        reportContext: reportedMessage ? 'message' : 'debate',
+        messageSnapshot: reportedMessage ? {
+          text: reportedMessage.text,
+          sentAtMs: reportedMessage.sentAtMs,
+          authorUid: reportedMessage.authorUid || peerUid || null,
+        } : null,
       });
       onSubmitted?.(reportId);
       setDone(true);
@@ -65,11 +72,11 @@ export default function ReportIssue({
     <div className="report-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="report-title">
       <div className="report-modal panel">
         <h2 id="report-title" className="report-modal-title">
-          {done ? 'Report sent' : 'Report an issue'}
+          {done ? 'Report sent' : reportedMessage ? 'Report this message' : 'Report opponent'}
         </h2>
         {!done && (
           <p className="report-modal-lead">
-            Reports are reviewed by the platform. Include what happened and the topic you were on.
+            {reportedMessage ? 'The selected message and debate details will be sent to the moderation team.' : 'Reports are reviewed by the platform. Include what happened and the topic you were on.'}
           </p>
         )}
         {done ? (
@@ -78,6 +85,7 @@ export default function ReportIssue({
           </p>
         ) : (
           <form className="report-modal-form" onSubmit={onSubmit}>
+            {reportedMessage && <blockquote className="report-message-preview"><span>Selected message</span>{reportedMessage.text}</blockquote>}
             <label className="report-modal-label" htmlFor="report-category">
               Category
             </label>

@@ -732,12 +732,13 @@ export default function App() {
       setError('Opponent left. Waiting for next challenger...');
     });
 
-    socket.on('debate-chat', ({ text, from, sentAtMs }) => {
+    socket.on('debate-chat', ({ text, from, authorUid, sentAtMs }) => {
       setDebateChatMessages((prev) => [
         ...prev,
         {
           text,
           from,
+          authorUid,
           sentAtMs,
           key: `${from}-${sentAtMs}-${prev.length}`,
         },

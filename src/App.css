@@ -932,13 +932,20 @@
 }
 
 .debate-chat-msg {
+  position: relative;
+  display: block;
   max-width: 92%;
   padding: 0.5rem 0.65rem;
   border-radius: 12px;
   border: 1px solid transparent;
   word-break: break-word;
   box-sizing: border-box;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
+
+.debate-chat-msg:disabled { opacity: 1; }
 
 /* You = red accent, right */
 .debate-chat-msg--self {
@@ -962,6 +969,35 @@
   );
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.debate-chat-msg--peer:hover,
+.debate-chat-msg--peer:focus-visible {
+  border-color: rgba(255, 41, 56, 0.8);
+  background: linear-gradient(145deg, rgba(65, 29, 32, 0.96), rgba(23, 23, 23, 0.94));
+  outline: none;
+}
+
+.debate-chat-msg-report {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  color: #ff6670;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: max-height 0.16s ease, margin-top 0.16s ease, opacity 0.16s ease;
+}
+
+.debate-chat-msg--peer:hover .debate-chat-msg-report,
+.debate-chat-msg--peer:focus-visible .debate-chat-msg-report {
+  max-height: 1rem;
+  margin-top: 0.35rem;
+  opacity: 1;
 }
 
 .debate-chat-msg-label {
@@ -1957,6 +1993,29 @@
   background: #08090c;
   color: #fff;
   color-scheme: dark;
+}
+
+.report-message-preview {
+  margin: 0 0 0.55rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 41, 56, 0.35);
+  border-left: 3px solid #ff2938;
+  border-radius: 9px;
+  background: rgba(255, 41, 56, 0.07);
+  color: #f4f4f5;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.report-message-preview span {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #ff6670;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .report-modal-select option {

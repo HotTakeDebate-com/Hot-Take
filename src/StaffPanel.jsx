@@ -810,9 +810,10 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             <div className="staff-report-expanded">
               <div className="staff-report-description"><span>Report details</span><p>{r.details || 'No details supplied.'}</p></div>
               {r.reportContext === 'profile' && r.profileSnapshot && <div className="staff-report-profile-snapshot"><span>Profile when reported</span><strong>{r.profileSnapshot.displayName || 'No display name'}</strong><p>{r.profileSnapshot.bio || 'No bio was present.'}</p><small>{r.profileSnapshot.avatarUrl ? `Profile picture: ${r.profileSnapshot.avatarUrl}` : 'No profile picture was present.'}</small></div>}
+              {r.reportContext === 'message' && r.messageSnapshot && <div className="staff-report-profile-snapshot"><span>Reported chat message</span><strong>{r.reportedEmail || 'Reported user'}</strong><p>{r.messageSnapshot.text || 'Message text unavailable.'}</p><small>{r.messageSnapshot.sentAtMs ? new Date(r.messageSnapshot.sentAtMs).toLocaleString() : 'Message time unavailable.'}</small></div>}
               <dl>
                 <div><dt>Report ID</dt><dd>{r.id}</dd></div>
-                <div><dt>Context</dt><dd>{r.reportContext === 'profile' ? 'Member profile' : r.roomId ? `Debate room ${r.roomId}` : '—'}</dd></div>
+                <div><dt>Context</dt><dd>{r.reportContext === 'profile' ? 'Member profile' : r.reportContext === 'message' ? `Chat message · ${r.matchMode === 'custom' ? 'Custom room' : 'Quick Match'}` : r.roomId ? `Debate room ${r.roomId}` : '—'}</dd></div>
                 <div><dt>Reporting user</dt><dd><b>{r.reporterEmail || 'Email unavailable'}</b><small>{r.reporterUid || '—'}</small></dd></div>
                 <div><dt>Reported user</dt><dd><b>{r.reportedEmail || 'Email unavailable'}</b><small>{r.peerUid || '—'}</small></dd></div>
               </dl>

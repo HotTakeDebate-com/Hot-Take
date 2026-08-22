@@ -63,6 +63,7 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [opponentProfileOpen, setOpponentProfileOpen] = useState(false);
   const [opponentRating, setOpponentRating] = useState(null);
+  const [reportedMessage, setReportedMessage] = useState(null);
   const side = debateInfo.matchMode === 'custom' ? (debateInfo.yourSide === 'agree' ? 'Creator' : 'Challenger') : (debateInfo.yourSide === 'agree' ? 'Agree' : 'Disagree');
 
   useEffect(() => {
@@ -110,6 +111,21 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
     }
   };
 
+  const openDebateReport = () => {
+    setReportedMessage(null);
+    onReport();
+  };
+
+  const openMessageReport = (message) => {
+    setReportedMessage(message);
+    onReport();
+  };
+
+  const closeReport = () => {
+    setReportedMessage(null);
+    onCloseReport();
+  };
+
   return <div className="live-room">
     <header className="live-room-header"><img src="/hottake-logo-horizontal.png" alt="Hot Take" /><nav><DirectMessageCenter socket={socket} /><button onClick={onMenu}><LineIcon type="menu" />Menu</button><button onClick={onProfile}><LineIcon type="user" />Profile</button><button onClick={onSignOut}><LineIcon type="exit" />Sign out</button><span className={`live-connection conn-${connState}`}><i />{connectionText}</span></nav></header>
     <div className="live-topic"><p className="live-topic-copy" title={`Topic: ${topic} • You: ${side}`}><strong>TOPIC:</strong><span className="live-topic-title">{topic}</span><span className="live-topic-separator">&bull;</span><em>You:</em><b>{side}</b></p><div className={`live-topic-statuses ${hostQueueCount != null ? 'has-queue-count' : ''}`}>{hostQueueCount != null && <span className={`live-queue-count ${hostQueueCount > 0 ? 'has-waiters' : ''}`} aria-live="polite"><i aria-hidden="true" />{hostQueueCount} {hostQueueCount === 1 ? 'user' : 'users'} in queue</span>}<button type="button" className={`live-opponent-name ${isSearching ? 'live-opponent-name--searching' : ''}`} disabled={isSearching || !debateInfo.peerUid} onClick={() => setOpponentProfileOpen(true)} aria-label={isSearching ? 'Finding you a match' : `View ${opponentName}'s profile`}>
@@ -122,10 +138,10 @@ export default function DebateRoomPage({ debateInfo, topic, opponentName = 'Oppo
         <span className="live-video-label"><span>You</span><ConnectionBars connState={connState} connectionText={connectionText} /><AudioLevelMeter stream={localStream} compact muted={!micOn} /></span>
       </div>
       <div className={`live-video live-video--remote ${isSearching ? 'live-video--searching' : ''}`}><video ref={remoteVideoRef} autoPlay playsInline onLoadedMetadata={onEnableRemoteAudio} />{remoteAudioBlocked && !isSearching && <button type="button" className="remote-audio-enable" onClick={onEnableRemoteAudio}>Enable opponent audio</button>}{isSearching && <div className="live-searching-overlay" role="status" aria-live="polite"><div className="live-search-orb" aria-hidden="true"><span /><i /><i /><i /></div><h2>Finding you a match<span>...</span></h2><p>Your public room is live. We’ll bring your challenger in as soon as someone joins.</p></div>}<span className="live-video-label"><span>{isSearching ? 'Searching' : 'Opponent'}</span>{isSearching ? <span className="live-search-label-dots" aria-hidden="true"><i /><i /><i /></span> : <ConnectionBars connState={connState} connectionText={connectionText} />}</span></div>
-    </div><div className="live-controls"><button onClick={onToggleMic}><LineIcon type={micOn ? 'mic' : 'micOff'} />{micOn ? 'Mute mic' : 'Unmute mic'}</button><button onClick={onToggleCam}><LineIcon type={camOn ? 'camera' : 'cameraOff'} />{camOn ? 'Camera off' : 'Camera on'}</button><button onClick={onReport}><LineIcon type="flag" />Report issue</button>{canKick && <button onClick={kickOpponent}>Kick opponent</button>}<button className="live-leave" onClick={() => setLeaveConfirmOpen(true)}><LineIcon type="exit" />Leave debate</button></div></section>
-      <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} />
+    </div><div className="live-controls"><button onClick={onToggleMic}><LineIcon type={micOn ? 'mic' : 'micOff'} />{micOn ? 'Mute mic' : 'Unmute mic'}</button><button onClick={onToggleCam}><LineIcon type={camOn ? 'camera' : 'cameraOff'} />{camOn ? 'Camera off' : 'Camera on'}</button><button className="live-report" onClick={openDebateReport}><LineIcon type="flag" />Report opponent</button>{canKick && <button onClick={kickOpponent}>Kick opponent</button>}<button className="live-leave" onClick={() => setLeaveConfirmOpen(true)}><LineIcon type="exit" />Leave debate</button></div></section>
+      <DebateChatPanel messages={messages} draft={draft} onDraftChange={onDraftChange} onSend={onSend} disabled={!debateInfo.roomId} mySocketId={socketId} onReportMessage={openMessageReport} />
     </main>
-    <ReportIssue open={reportOpen} onClose={onCloseReport} topicId={debateInfo.topicId} roomId={debateInfo.roomId} yourSide={debateInfo.yourSide} peerUid={debateInfo.peerUid ?? null} matchMode={debateInfo.matchMode ?? null} onSubmitted={onReportSubmitted} />
+    <ReportIssue open={reportOpen} onClose={closeReport} topicId={debateInfo.topicId} roomId={debateInfo.roomId} yourSide={debateInfo.yourSide} peerUid={debateInfo.peerUid ?? null} matchMode={debateInfo.matchMode ?? null} reportedMessage={reportedMessage} onSubmitted={onReportSubmitted} />
     {opponentProfileOpen && debateInfo.peerUid && <div className="debate-profile-backdrop" role="dialog" aria-modal="true" aria-label={`${opponentName}'s profile`} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpponentProfileOpen(false); }}>
       <section className="debate-profile-modal">
         <header className="debate-profile-modal-header"><div><span>Debater profile</span><strong>{opponentName}</strong></div><button type="button" onClick={() => setOpponentProfileOpen(false)} aria-label="Close profile">×</button></header>

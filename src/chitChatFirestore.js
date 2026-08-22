@@ -226,6 +226,7 @@ export async function submitReport({
   matchMode,
   reportContext,
   profileSnapshot,
+  messageSnapshot,
 }) {
   if (!isFirebaseConfigured || !db || !auth?.currentUser) {
     throw new Error('Not signed in.');
@@ -267,6 +268,16 @@ export async function submitReport({
       bio: String(snapshot.bio || '').trim().slice(0, 500),
       avatarUrl: avatar.startsWith('data:') ? '[uploaded profile image]' : avatar.slice(0, 2000),
     };
+  } else if (reportContext === 'message') {
+    const snapshot = messageSnapshot || {};
+    doc.reportContext = 'message';
+    doc.messageSnapshot = {
+      text: String(snapshot.text || '').trim().slice(0, 2000),
+      sentAtMs: Number(snapshot.sentAtMs) || null,
+      authorUid: String(snapshot.authorUid || peerUid || '').trim().slice(0, 128) || null,
+    };
+  } else {
+    doc.reportContext = 'debate';
   }
   const reportRef = await addDoc(collection(db, 'reports'), doc);
   markReportSubmitted();

@@ -1438,6 +1438,7 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('debate-chat', {
       text: trimmed,
       from: socket.id,
+      authorUid: socket.data.uid ?? null,
       sentAtMs: now,
     });
   });

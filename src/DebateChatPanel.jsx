@@ -13,6 +13,7 @@ export default function DebateChatPanel({
   onSend,
   disabled,
   mySocketId,
+  onReportMessage,
 }) {
   const listRef = useRef(null);
   const containsLink = LINK_PATTERN.test(draft.trim());
@@ -40,13 +41,19 @@ export default function DebateChatPanel({
           messages.map((m) => {
             const isSelf = m.from === mySocketId;
             return (
-              <div
+              <button
+                type="button"
                 key={m.key}
                 className={`debate-chat-msg ${isSelf ? 'debate-chat-msg--self' : 'debate-chat-msg--peer'}`}
+                onClick={() => !isSelf && onReportMessage?.(m)}
+                disabled={isSelf || !onReportMessage}
+                aria-label={isSelf ? 'Your message' : `Report opponent message: ${m.text}`}
+                title={isSelf ? '' : 'Click to report this message'}
               >
                 <span className="debate-chat-msg-label">{isSelf ? 'You' : 'Opponent'}</span>
                 <div className="debate-chat-msg-body">{m.text}</div>
-              </div>
+                {!isSelf && onReportMessage && <span className="debate-chat-msg-report">Report</span>}
+              </button>
             );
           })
         )}
