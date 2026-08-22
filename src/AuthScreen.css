@@ -765,10 +765,16 @@
 
   .signup-policy-mobile-help {
     display: block;
-    margin: 12px 2px 0;
-    color: #aaaab0;
+    margin: 18px 0 2px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 48, 53, .28);
+    border-radius: 10px;
+    background: rgba(255, 32, 37, .045);
+    color: #ff777b;
     font-size: 12px;
-    line-height: 1.45;
+    font-weight: 750;
+    letter-spacing: .08em;
+    line-height: 1.55;
   }
 
   .signup-policy-main {
@@ -920,5 +926,113 @@
     min-height: 32px;
     padding-block: 5px;
     overflow-wrap: anywhere;
+  }
+}
+
+/* Compact account creation on phones without shrinking the tap targets. */
+@media (max-width: 680px) {
+  .auth-screen--signup-account {
+    grid-template-rows: 64px 1fr;
+  }
+
+  .auth-screen--signup-account .signup-new-header {
+    height: 64px;
+    padding-inline: 10px;
+  }
+
+  .auth-screen--signup-account .signup-new-header .landing-logo-img--nav {
+    width: 164px;
+  }
+
+  .auth-screen--signup-account .signup-new-header b {
+    height: 38px;
+    padding-inline: 11px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .auth-screen--signup-account > .auth-screen-inner {
+    grid-row: 2;
+    width: 100%;
+    padding: 8px 6px 24px;
+  }
+
+  .auth-screen--signup-account .auth-screen-card {
+    width: 100%;
+    max-width: none;
+    padding: 20px 12px 18px;
+    border-radius: 14px;
+  }
+
+  .auth-screen--signup-account .auth-screen-title {
+    margin: 0 0 5px;
+    font-size: clamp(25px, 8vw, 32px);
+    line-height: 1.08;
+  }
+
+  .auth-screen--signup-account .auth-screen-lead {
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .auth-screen--signup-account .signup-google-button {
+    height: 46px;
+    margin-bottom: 12px;
+  }
+
+  .auth-screen--signup-account .signup-provider-or {
+    margin-bottom: 13px;
+  }
+
+  .auth-screen--signup-account .auth-label {
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .auth-screen--signup-account .auth-input {
+    height: 46px;
+    padding-inline: 13px;
+    font-size: 16px;
+  }
+
+  .auth-screen--signup-account .auth-field-hint {
+    margin: 5px 0 13px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .auth-screen--signup-account .auth-password-row {
+    margin-top: 13px;
+  }
+
+  .auth-screen--signup-account .auth-screen-label {
+    margin-top: 13px;
+  }
+
+  .auth-screen--signup-account .auth-screen-certify {
+    margin-top: 14px;
+    padding-top: 13px;
+  }
+
+  .auth-screen--signup-account .auth-screen-certify-intro {
+    margin-bottom: 9px;
+    font-size: 12px;
+  }
+
+  .auth-screen--signup-account .auth-legal-block {
+    gap: 7px;
+  }
+
+  .auth-screen--signup-account .auth-legal-row {
+    min-height: 44px;
+    padding: 9px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .auth-screen--signup-account .btn-primary.auth-submit {
+    height: 49px;
+    margin-top: 14px;
   }
 }
