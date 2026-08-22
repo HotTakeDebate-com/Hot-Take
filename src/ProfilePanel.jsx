@@ -184,6 +184,7 @@ export default function ProfilePanel({
           networkBlockedAccounts(),
         ]);
         setNetworkIdentityState(meResult.identity || { uid: auth.currentUser.uid, role: 'user', premium: false, verifiedDebater: false });
+        if (meResult.identity?.displayName) setDisplayName(meResult.identity.displayName);
         setFollowerCount((followersResult.members || []).length);
         setAppearOffline(meResult.privacy?.appearOffline === true);
         setFollowerMembers(followersResult.members || []);

@@ -19,6 +19,20 @@ import './AuthScreen.css';
 import './AuthProviderFix.css';
 import { networkUpdateDisplayName, networkUpdateProfile } from './networkApi.js';
 
+async function restoreReservedDisplayName(user) {
+  const token = await user?.getIdToken();
+  if (!token) return '';
+  const response = await fetch('/api/auth/restore-display-name', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Could not verify your existing display name.');
+  const displayName = String(result.displayName || '').trim();
+  if (displayName && user.displayName !== displayName) await updateProfile(user, { displayName });
+  return displayName;
+}
+
 function mapAuthError(code) {
   switch (code) {
     case 'auth/email-already-in-use':
@@ -194,7 +208,8 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
           console.warn('Could not send verification email automatically.', verificationError);
         }
       } else {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+        const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+        await restoreReservedDisplayName(credential.user);
       }
       onAuthenticated?.();
     } catch (err) {
@@ -254,6 +269,7 @@ export default function AuthScreen({ variant = 'page', initialMode = 'signin', o
         setError(null);
         return;
       }
+      await restoreReservedDisplayName(credential.user);
       onAuthenticated?.();
     } catch (err) {
       if (err?.code === 'auth/operation-not-allowed') setError(`${kind === 'google' ? 'Google' : 'Apple'} sign-in is not enabled in Firebase yet.`);

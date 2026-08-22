@@ -347,6 +347,38 @@ app.get('/api/rtc-config', async (_req, res) => {
 app.use(express.json({ limit: '384kb' }));
 
 /**
+ * Google can replace Firebase Auth's displayName when it is linked to an
+ * existing password account. Restore the display name that Hot Take already
+ * reserved for this UID instead of trusting the provider profile name.
+ */
+app.post('/api/auth/restore-display-name', async (req, res) => {
+  if (!firebaseAdminReady) return res.status(503).json({ error: 'Account profiles are temporarily unavailable.' });
+  const match = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+  if (!match) return res.status(401).json({ error: 'Sign-in required.' });
+  try {
+    const claims = await admin.auth().verifyIdToken(match[1].trim(), true);
+    const owner = await admin.firestore().collection('display_name_owners').doc(claims.uid).get();
+    const displayName = String(owner.data()?.displayName || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+    if (!displayName) return res.json({ ok: true, restored: false, displayName: '' });
+
+    const user = await admin.auth().getUser(claims.uid);
+    if (user.displayName !== displayName) await admin.auth().updateUser(claims.uid, { displayName });
+    const email = String(user.email || claims.email || '').trim().toLowerCase();
+    if (email) {
+      await admin.firestore().collection('publicProfiles').doc(email).set({
+        uid: claims.uid,
+        displayName,
+        displayNameNormalized: displayName.toLocaleLowerCase(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    res.json({ ok: true, restored: user.displayName !== displayName, displayName });
+  } catch {
+    res.status(401).json({ error: 'Your account name could not be verified.' });
+  }
+});
+
+/**
  * Check mailbox deliverability before the browser creates a Firebase email/password account.
  * The provider key stays server-side in Railway. Firebase email verification remains the
  * separate proof that the registrant controls the mailbox.

@@ -42,6 +42,8 @@ async function publicIdentity(uid) {
   const email = String(user.email || '').toLowerCase();
   const role = OWNER_EMAILS.has(email) ? 'owner' : String(user.customClaims?.role || 'user');
   let profile = {};
+  const owner = await admin.firestore().collection('display_name_owners').doc(uid).get();
+  const reservedDisplayName = String(owner.data()?.displayName || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
   if (email) {
     const snap = await admin.firestore().collection('publicProfiles').doc(email).get();
     if (snap.exists) {
@@ -53,7 +55,7 @@ async function publicIdentity(uid) {
   }
   return {
     uid,
-    displayName: String(profile.displayName || user.displayName || 'Hot Take member'),
+    displayName: String(reservedDisplayName || profile.displayName || user.displayName || 'Hot Take member'),
     avatarUrl: String(profile.avatarUrl || ''),
     bio: String(profile.bio || ''),
     interests: sanitizeProfileInterests(profile.interests).slice(0, MAX_PROFILE_INTERESTS),
