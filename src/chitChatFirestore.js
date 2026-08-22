@@ -236,52 +236,56 @@ export async function submitReport({
     const sec = Math.max(1, Math.ceil(remaining / 1000));
     throw new Error(`Please wait ${sec} seconds before sending another report.`);
   }
-  const reporterUid = auth.currentUser.uid;
   const text = (details ?? '').trim().slice(0, 2000);
   if (!text) {
     throw new Error('Please add a short description.');
   }
-  const doc = {
-    reporterUid,
+  const report = {
     topicId: topicId ?? '',
     roomId: roomId ?? null,
     yourSide: yourSide === 'disagree' ? 'disagree' : 'agree',
     category,
     details: text,
-    status: 'open',
-    staffResponse: null,
-    respondedAt: null,
-    createdAt: serverTimestamp(),
   };
   if (peerUid && typeof peerUid === 'string') {
-    doc.peerUid = peerUid.slice(0, 128);
+    report.peerUid = peerUid.slice(0, 128);
   }
   if (matchMode === 'quick' || matchMode === 'custom') {
-    doc.matchMode = matchMode;
+    report.matchMode = matchMode;
   }
   if (reportContext === 'profile') {
     const snapshot = profileSnapshot || {};
     const avatar = String(snapshot.avatarUrl || '').trim();
-    doc.reportContext = 'profile';
-    doc.profileSnapshot = {
+    report.reportContext = 'profile';
+    report.profileSnapshot = {
       displayName: String(snapshot.displayName || '').trim().slice(0, 40),
       bio: String(snapshot.bio || '').trim().slice(0, 500),
       avatarUrl: avatar.startsWith('data:') ? '[uploaded profile image]' : avatar.slice(0, 2000),
     };
   } else if (reportContext === 'message') {
     const snapshot = messageSnapshot || {};
-    doc.reportContext = 'message';
-    doc.messageSnapshot = {
+    report.reportContext = 'message';
+    report.messageSnapshot = {
       text: String(snapshot.text || '').trim().slice(0, 2000),
       sentAtMs: Number(snapshot.sentAtMs) || null,
       authorUid: String(snapshot.authorUid || peerUid || '').trim().slice(0, 128) || null,
     };
   } else {
-    doc.reportContext = 'debate';
+    report.reportContext = 'debate';
   }
-  const reportRef = await addDoc(collection(db, 'reports'), doc);
+  const token = await auth.currentUser.getIdToken();
+  const response = await fetch('/api/reports', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(report),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Your report could not be sent.');
   markReportSubmitted();
-  return reportRef.id;
+  return result.id;
 }
 
 // --- Social: public profiles, follows, feed posts ---

@@ -21,6 +21,7 @@ import { releaseDisplayNameClaim } from './displayNameClaims.js';
 import { blockRelationship, usersHaveBlock } from './blocks.js';
 import { createCallSessions } from './callSessions.js';
 import { cleanupDeletedUserRelationships } from './accountRelationshipCleanup.js';
+import { attachReportRoutes } from './reportApi.js';
 
 const joinQueueWindowMs = Math.max(
   5000,
@@ -553,6 +554,7 @@ attachDailyTakeRoutes(app, { isAdminReady: () => firebaseAdminReady });
 attachStaffRoutes(app, { isAdminReady: () => firebaseAdminReady, io, customGames });
 attachWarningRoutes(app, { isAdminReady: () => firebaseAdminReady });
 attachNetworkRoutes(app, { isAdminReady: () => firebaseAdminReady, io });
+attachReportRoutes(app, { isAdminReady: () => firebaseAdminReady });
 
 if (existsSync(dist)) {
   app.use(
