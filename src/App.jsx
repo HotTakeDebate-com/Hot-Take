@@ -29,6 +29,7 @@ import StaffPanel from './StaffPanel.jsx';
 import { SiteFooter, SiteHeader } from './SiteChrome.jsx';
 import { staffMe } from './staffApi.js';
 import VerificationApplicationPage from './VerificationApplicationPage.jsx';
+import PasswordResetAction from './PasswordResetAction.jsx';
 import IdentityBadges from './IdentityBadges.jsx';
 import NotificationCenter from './NotificationCenter.jsx';
 import DirectMessageCenter from './DirectMessageCenter.jsx';
@@ -1215,6 +1216,12 @@ export default function App() {
   }, [step, debateInfo?.roomId, localStream]);
 
   const showAppShell = authReady && isFirebaseConfigured;
+  const emailActionParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const passwordResetCode = emailActionParams?.get('mode') === 'resetPassword' ? emailActionParams.get('oobCode') : '';
+
+  if (passwordResetCode) {
+    return <PasswordResetAction code={passwordResetCode} />;
+  }
 
   if (typeof window !== 'undefined') {
     window.__hotTakeAdminAction = staffRole ? openAdminPanel : null;
