@@ -121,7 +121,10 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
   .landing-nav-actions>.member-search-center,
   .landing-nav-actions>.dm-center,
   .landing-nav-actions>.network-notifications{width:0!important;min-width:0!important;flex:0 0 0!important}
-  .landing-nav-actions>.header-nav--landing{margin-left:0!important}
+  /* HomePage.css historically hid this menu on phones. This more-specific rule
+     intentionally restores the single mobile navigation control. */
+  .landing .landing-nav-actions>.header-nav--landing,
+  .landing-nav-actions>.header-nav--landing{display:block!important;margin-left:0!important}
   .header-nav--landing .landing-nav-menu-trigger{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex-basis:44px!important;border-color:#555861!important;background:#0d0f13!important}
   .header-nav--landing .landing-menu-icon{width:19px;height:15px}
   .header-nav-mobile-primary{display:block}
