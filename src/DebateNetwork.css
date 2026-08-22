@@ -35,7 +35,7 @@
   .dm-center-inbox-page .dm-center-preview b{font-size:1rem}
   .dm-center-inbox-page .dm-center-preview em{margin-top:.38rem;font-size:.78rem;white-space:normal;line-height:1.4}
   .dm-center-inbox-page .dm-center-list time{grid-column:2;margin-top:-.55rem;font-size:.68rem}
-  .dm-center-inbox-page .dm-center-empty{align-self:center;padding:2rem;max-width:330px;font-size:1rem;line-height:1.55;overflow-wrap:anywhere}
+  .dm-center-inbox-page .dm-center-empty{align-self:center;justify-self:center;box-sizing:border-box;width:min(84vw,360px);max-width:100%;margin:0 auto;padding:2rem 1rem;color:#92959f;font-size:1rem;line-height:1.55;text-align:center;white-space:normal!important;overflow-wrap:anywhere;word-break:normal}
   .dm-center-drawer{position:fixed!important;z-index:7100!important;inset:0!important;width:100vw!important;height:100dvh!important;max-height:none!important;border:0!important;border-radius:0!important;margin:0!important;background:#08090c!important;box-shadow:none!important;grid-template-rows:auto minmax(0,1fr) auto!important}
   .dm-center-drawer>header{min-height:96px;padding:calc(1rem + env(safe-area-inset-top)) 1rem 1rem!important;border-bottom:1px solid rgba(255,255,255,.1)!important}
   .dm-center-drawer .public-profile-message-list{padding:1rem!important}
