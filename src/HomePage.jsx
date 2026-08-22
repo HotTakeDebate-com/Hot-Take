@@ -452,6 +452,23 @@ export default function HomePage({
   const howSectionRef = useRef(null);
   const [howSectionVisible, setHowSectionVisible] = useState(false);
 
+  useEffect(() => {
+    const moveToTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    moveToTop();
+    const frame = requestAnimationFrame(moveToTop);
+    const timer = window.setTimeout(moveToTop, 80);
+    window.addEventListener('pageshow', moveToTop);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+      window.removeEventListener('pageshow', moveToTop);
+    };
+  }, []);
+
   const handleQuick = () => {
     if (!isSignedIn) onSignIn();
     else onQuickMatch();
