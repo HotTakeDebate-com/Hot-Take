@@ -64,7 +64,7 @@ export default function TermsOfService({ onBack, onPickLegal, embedded = false }
   const handleSignOut = async () => { try { if (auth) await signOut(auth); } catch { /* ignore */ } onBack?.(); };
   const openLegal = (documentId) => onPickLegal?.(documentId);
 
-  return <div className="privacy-policy-page terms-policy-page">
+  return <div className="privacy-policy-page terms-policy-page legal-traditional-page">
     <SiteHeader onHome={onBack} onAbout={onBack} onTopics={handleQuickMatch} onFaq={onBack} onSupport={onBack} isSignedIn={isSignedIn} onSignIn={() => setAuthModal('signin')} onSignUp={() => setAuthModal('signup')} onSignOut={handleSignOut} onProfile={onBack} onPickLegal={openLegal} />
     <main className="privacy-policy-content">
       <aside className="privacy-intro">

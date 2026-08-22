@@ -3,6 +3,7 @@ import CommunityGuidelines from './CommunityGuidelines.jsx';
 import PrivacyPolicy from './PrivacyPolicy.jsx';
 import RecordingAgreement from './RecordingAgreement.jsx';
 import TermsOfService from './TermsOfService.jsx';
+import './LegalDesktop.css';
 
 export default function LegalViewer({ documentId, onBack }) {
   const [activeDocumentId, setActiveDocumentId] = useState(documentId);

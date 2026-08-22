@@ -1,0 +1,193 @@
+/* Desktop legal documents use a familiar, single-column reading layout.
+   Mobile keeps the existing compact presentation used during account setup. */
+@media (min-width: 681px) {
+  .legal-viewer-shell:has(.legal-traditional-page) {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .legal-viewer-shell > .legal-traditional-page {
+    position: static;
+    inset: auto;
+    width: 100%;
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+    box-sizing: border-box;
+  }
+
+  .legal-traditional-page .privacy-policy-content,
+  .legal-traditional-page .community-guidelines-content {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: clamp(44px, 5vw, 76px) 0 24px;
+    box-sizing: border-box;
+  }
+
+  .legal-traditional-page .community-guidelines-content {
+    padding-left: clamp(28px, 5vw, 84px);
+    padding-right: clamp(28px, 5vw, 84px);
+  }
+
+  .legal-traditional-page .privacy-intro,
+  .legal-traditional-page .community-intro {
+    display: block;
+    width: 100%;
+    max-width: none;
+    padding: 0 0 clamp(34px, 4vw, 54px);
+    border-bottom: 1px solid #303137;
+  }
+
+  .legal-traditional-page .privacy-intro h1,
+  .legal-traditional-page .community-intro h1 {
+    max-width: 980px;
+    font-size: clamp(50px, 5.2vw, 78px);
+    line-height: .98;
+  }
+
+  .legal-traditional-page .privacy-lead,
+  .legal-traditional-page .privacy-side-copy,
+  .legal-traditional-page .community-lead {
+    max-width: 920px;
+    margin-top: 18px;
+    margin-bottom: 0;
+    font-size: 17px;
+    line-height: 1.72;
+  }
+
+  .legal-traditional-page .privacy-meta {
+    margin-top: 24px;
+    font-size: 14px;
+  }
+
+  .legal-traditional-page .privacy-on-page-title,
+  .legal-traditional-page .privacy-side-nav {
+    display: none;
+  }
+
+  .legal-traditional-page .privacy-side-card,
+  .legal-traditional-page .community-side-card,
+  .legal-traditional-page .community-agreement {
+    width: 100%;
+    max-width: none;
+    margin: 24px 0 0;
+    box-sizing: border-box;
+  }
+
+  .legal-traditional-page .privacy-grid,
+  .legal-traditional-page .terms-grid,
+  .legal-traditional-page .community-grid {
+    display: block;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .legal-traditional-page .privacy-card,
+  .legal-traditional-page .terms-grid .terms-card,
+  .legal-traditional-page .community-card,
+  .legal-traditional-page .community-card--2,
+  .legal-traditional-page .community-card--4 {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    padding: clamp(30px, 3.2vw, 48px) 0;
+    border: 0 !important;
+    border-bottom: 1px solid #303137 !important;
+    background: transparent;
+    box-sizing: border-box;
+  }
+
+  .legal-traditional-page .privacy-card header,
+  .legal-traditional-page .community-card header {
+    align-items: center;
+    gap: 14px;
+  }
+
+  .legal-traditional-page .privacy-card header > svg,
+  .legal-traditional-page .community-card header > svg {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+
+  .legal-traditional-page .privacy-card h2,
+  .legal-traditional-page .community-card h2 {
+    font-size: clamp(20px, 1.7vw, 27px);
+    line-height: 1.25;
+  }
+
+  .legal-traditional-page .privacy-card-body,
+  .legal-traditional-page .community-card-body {
+    max-width: 1120px;
+    margin: 18px 0 0 42px;
+    color: #c1c2c7;
+    font-size: 16px;
+    line-height: 1.72;
+  }
+
+  .legal-traditional-page .privacy-card-body p,
+  .legal-traditional-page .community-card-body p {
+    margin: 0 0 15px;
+  }
+
+  .legal-traditional-page .privacy-card-body ul,
+  .legal-traditional-page .community-card-body ul {
+    margin: 8px 0 18px;
+    padding-left: 24px;
+  }
+
+  .legal-traditional-page .privacy-card-body li,
+  .legal-traditional-page .community-card-body li {
+    margin-bottom: 7px;
+  }
+
+  .legal-traditional-page .privacy-card-body h4,
+  .legal-traditional-page .community-card-body h4 {
+    margin: 22px 0 8px;
+    font-size: 15px;
+  }
+
+  .legal-traditional-page .privacy-collect-sections {
+    display: block;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+  }
+
+  .legal-traditional-page .privacy-collect-sections section {
+    padding: 18px 0;
+    border: 0 !important;
+    border-top: 1px solid #282a30 !important;
+    overflow: visible;
+  }
+
+  .legal-traditional-page .privacy-enlarge-button,
+  .legal-traditional-page .community-enlarge-button,
+  .legal-traditional-page .privacy-enlarge-overlay,
+  .legal-traditional-page .community-enlarge-overlay {
+    display: none !important;
+  }
+
+  .legal-traditional-page .privacy-note,
+  .legal-traditional-page .community-note {
+    width: 100%;
+    padding: 22px 0;
+    border-bottom: 1px solid #303137;
+    background: transparent;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: left;
+    box-sizing: border-box;
+  }
+
+  .legal-traditional-page .landing-footer {
+    margin-top: 64px;
+  }
+}

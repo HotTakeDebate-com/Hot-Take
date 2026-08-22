@@ -104,7 +104,7 @@ export default function PrivacyPolicy({ onBack, onPickLegal, embedded = false })
     </article>;
   }
 
-  return <div className="privacy-policy-page">
+  return <div className="privacy-policy-page legal-traditional-page">
     <SiteHeader onHome={onBack} onAbout={onBack} onTopics={handleQuickMatch} onFaq={onBack} onSupport={onBack} isSignedIn={isSignedIn} onSignIn={() => setAuthModal('signin')} onSignUp={() => setAuthModal('signup')} onSignOut={handleSignOut} onProfile={onBack} onPickLegal={openLegal} />
 
     <main className="privacy-policy-content">

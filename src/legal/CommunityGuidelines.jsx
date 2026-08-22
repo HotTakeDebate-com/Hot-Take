@@ -93,7 +93,7 @@ export default function CommunityGuidelines({ onBack, embedded = false }) {
     </article>;
   }
 
-  return <div className="community-guidelines-page">
+  return <div className="community-guidelines-page legal-traditional-page">
     <SiteHeader
       onHome={onBack}
       onAbout={onBack}
