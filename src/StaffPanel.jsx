@@ -623,6 +623,18 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     } catch (e) { setError(e.message); }
   };
 
+  const openReportedAccount = (report) => {
+    const reportedUid = String(report?.peerUid || '').trim();
+    const reportedEmail = String(report?.reportedEmail || '').trim().toLowerCase();
+    const account = users.find((user) => user.uid === reportedUid)
+      || users.find((user) => reportedEmail && user.email?.toLowerCase() === reportedEmail);
+    if (!account) {
+      setError('The reported account is no longer available. It may have been deleted.');
+      return;
+    }
+    openUserEditor(account);
+  };
+
   const reviewVerification = async (application, action) => {
     const labels = { approve: 'approve', deny: 'deny', request_info: 'request more information from', revoke: 'revoke verification for' };
     if (!window.confirm(`Are you sure you want to ${labels[action]} ${application.email || application.uid}?`)) return;
@@ -806,6 +818,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               </dl>
               {r.staffResponse && <blockquote><b>{r.respondedBy || 'Staff'}:</b> {r.staffResponse}</blockquote>}
               <div className="staff-report-actions">
+                <button onClick={() => openReportedAccount(r)}>View reported account</button>
                 <button onClick={() => respond(r)}>Respond / update status</button>
                 {capabilities.deleteReports && <button className="danger" onClick={() => deleteReport(r)}>Delete junk report</button>}
               </div>
