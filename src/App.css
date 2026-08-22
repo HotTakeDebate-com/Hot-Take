@@ -2745,6 +2745,7 @@
 
 /* Report state and separated membership styling */
 .staff-report-list { display:grid; gap:8px; }
+.staff-report-filters{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:4px;overflow-x:auto;scrollbar-width:thin}.staff-report-filters button{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 13px;border:1px solid #30323a;border-radius:999px;background:#0d0e12;color:#a5a8b1;font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}.staff-report-filters button:hover{border-color:#686b76;color:#fff}.staff-report-filters button.active{border-color:#ff2938;background:rgba(255,41,56,.11);color:#fff}.staff-report-filters button b{display:inline-grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#22242b;color:#c8cad1;font-size:10px}.staff-report-filters button.active b{background:#ff2938;color:#fff}
 .staff-report-row { overflow:hidden; border:1px solid #2b2d34; border-radius:9px; background:#111217; }
 .staff-report-row[open] { border-color:#454852; background:#14151a; }
 .staff-report-row summary {
@@ -2754,6 +2755,7 @@
 .staff-report-row summary::-webkit-details-marker { display:none; }
 .staff-report-row summary:hover { background:rgba(255,255,255,.025); }
 .staff-report-category { min-width:0; color:#fff; font-weight:850; text-transform:capitalize; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.staff-report-category small{display:block;margin-bottom:2px;color:#ff5e68;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 .staff-report-users { min-width:0; display:flex; align-items:center; gap:7px; color:#c8cad1; font-size:12px; overflow:hidden; }
 .staff-report-users b { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .staff-report-users i { color:#656873; font-style:normal; }
@@ -2782,6 +2784,7 @@
   .staff-report-expanded dl { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:700px) {
+  .staff-report-filters{margin-inline:-2px;padding-bottom:8px}
   .staff-report-row summary { grid-template-columns:auto 1fr auto; gap:9px; }
   .staff-report-users,.staff-report-preview { display:none; }
   .staff-report-row time { grid-column:2; }

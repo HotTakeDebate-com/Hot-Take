@@ -331,6 +331,7 @@ function DailyTakeManager({ data, onReload }) {
 export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, onFaq, onSupport, onAccount, onSignOut, onPickLegal }) {
   const [tab, setTab] = useState('dashboard');
   const [reports, setReports] = useState([]);
+  const [reportFilter, setReportFilter] = useState('all');
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
   const [punishments, setPunishments] = useState([]);
@@ -648,6 +649,21 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
   };
 
   const openReports = reports.filter((r) => !['resolved', 'closed'].includes(r.status)).length;
+  const reportContext = (report) => report.reportContext === 'message'
+    ? 'message'
+    : report.reportContext === 'profile' ? 'profile' : 'debate';
+  const reportFilters = [
+    { id: 'all', label: 'All', count: reports.length },
+    { id: 'message', label: 'Chat messages', count: reports.filter((report) => reportContext(report) === 'message').length },
+    { id: 'profile', label: 'Profiles', count: reports.filter((report) => reportContext(report) === 'profile').length },
+    { id: 'debate', label: 'Debates', count: reports.filter((report) => reportContext(report) === 'debate').length },
+    { id: 'harassment', label: 'Harassment', count: reports.filter((report) => report.category === 'harassment').length },
+    { id: 'spam', label: 'Spam', count: reports.filter((report) => report.category === 'spam').length },
+    { id: 'other', label: 'Other', count: reports.filter((report) => !['harassment', 'spam'].includes(report.category)).length },
+  ];
+  const filteredReports = reports.filter((report) => reportFilter === 'all'
+    || reportContext(report) === reportFilter
+    || (reportFilter === 'other' ? !['harassment', 'spam'].includes(report.category) : report.category === reportFilter));
   const bannedUsers = users.filter((u) => u.disabled).length;
   const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'super_admin', 'owner'].includes(u.role)).length;
   const recentStaff = users
@@ -798,10 +814,13 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         </section>}
 
         {tab === 'reports' && !busy && <section className="staff-report-list">
-          {reports.length ? pageSlice(reports).map((r) => <details className="staff-report-row" key={r.id}>
+          <nav className="staff-report-filters" aria-label="Filter reports by type">
+            {reportFilters.map((filter) => <button type="button" key={filter.id} className={reportFilter === filter.id ? 'active' : ''} onClick={() => { setReportFilter(filter.id); setPage(1); }}><span>{filter.label}</span><b>{filter.count}</b></button>)}
+          </nav>
+          {filteredReports.length ? pageSlice(filteredReports).map((r) => <details className="staff-report-row" key={r.id}>
             <summary>
               <strong className={'staff-report-status status-' + String(r.status || 'open').toLowerCase()}>{r.status === 'reviewing' ? 'IN PROGRESS' : String(r.status || 'open').toUpperCase()}</strong>
-              <span className="staff-report-category">{r.reportContext === 'profile' ? 'PROFILE · ' : ''}{r.category || 'Report'}</span>
+              <span className="staff-report-category"><small>{reportContext(r) === 'message' ? 'Chat message' : reportContext(r) === 'profile' ? 'Profile' : 'Debate'}</small>{r.category || 'Other'}</span>
               <span className="staff-report-users"><b>{r.reporterEmail || 'Unknown reporter'}</b><i>→</i><b>{r.reportedEmail || 'Unknown user'}</b></span>
               <span className="staff-report-preview">{r.details || 'No details supplied.'}</span>
               <time>{dateValue(r.createdAt)}</time>
@@ -824,8 +843,8 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                 {capabilities.deleteReports && <button className="danger" onClick={() => deleteReport(r)}>Delete junk report</button>}
               </div>
             </div>
-          </details>) : <div className="admin-notice">No reports found.</div>}
-          <Pagination page={page} total={reports.length} onChange={setPage} />
+          </details>) : <div className="admin-notice">No {reportFilter === 'all' ? '' : `${reportFilters.find((filter) => filter.id === reportFilter)?.label.toLowerCase()} `}reports found.</div>}
+          <Pagination page={page} total={filteredReports.length} onChange={setPage} />
         </section>}
 
         {tab === 'debates' && !busy && <section className="admin-debates-log">
