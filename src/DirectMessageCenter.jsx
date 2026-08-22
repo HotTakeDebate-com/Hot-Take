@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { auth } from './firebase.js';
 import {
   networkDecideDirectMessage,
+  networkDeleteDirectConversation,
   networkDirectConversations,
   networkDirectMessages,
   networkSendDirectMessage,
@@ -93,6 +94,13 @@ export default function DirectMessageCenter({ socket }) {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [thread?.messages]);
   useEffect(() => {
+    if (!open && !active) return undefined;
+    const mobile = window.matchMedia('(max-width: 680px)').matches;
+    if (!mobile) return undefined;
+    document.body.classList.add('dm-mobile-page-open');
+    return () => document.body.classList.remove('dm-mobile-page-open');
+  }, [active, open]);
+  useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return undefined;
     const syncViewport = () => {
@@ -155,6 +163,24 @@ export default function DirectMessageCenter({ socket }) {
     }
   };
 
+  const deleteConversation = async () => {
+    if (!active?.otherUid || busy) return;
+    if (!window.confirm(`Delete your conversation with ${profile.displayName || 'this member'}? This removes it from your inbox only.`)) return;
+    setBusy(true);
+    setError('');
+    try {
+      await networkDeleteDirectConversation(active.otherUid);
+      setConversations((current) => current.filter((conversation) => conversation.id !== active.id));
+      setActive(null);
+      setThread(null);
+      setText('');
+    } catch (deleteError) {
+      setError(deleteError.message || 'The conversation could not be deleted.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const profile = active?.otherProfile || {};
   const isPendingRecipient = Boolean(thread?.pendingForRecipient || active?.pendingForRecipient);
   const isDeclinedRecipient = Boolean(thread?.declinedForRecipient || active?.declinedForRecipient);
@@ -169,7 +195,7 @@ export default function DirectMessageCenter({ socket }) {
       {pendingCount > 0 && <span>{pendingCount > 9 ? '9+' : pendingCount}</span>}
     </button>
 
-    {open && <section className="dm-center-panel" aria-label="Direct message inbox">
+    {open && <section className="dm-center-panel dm-center-inbox-page" aria-label="Direct message inbox">
       <header><div><small>Private conversations</small><h3>Messages</h3></div><div className="dm-center-panel-actions"><button type="button" onClick={loadConversations}>Refresh</button><button type="button" className="dm-center-panel-close" aria-label="Close direct messages" onClick={() => setOpen(false)}>&times;</button></div></header>
       {conversations.length ? <div className="dm-center-list">
         {conversations.map((conversation) => {
@@ -187,7 +213,7 @@ export default function DirectMessageCenter({ socket }) {
       <header>
         <span className={`dm-center-avatar${profile.avatarUrl ? ' has-image' : ''}`}>{profile.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : <GenericAvatar />}</span>
         <div><span>Direct messages</span><h2>{profile.displayName || 'Deleted account'} <IdentityBadges compact verified={profile.verifiedDebater} premium={profile.premium} role={profile.role} /></h2><small>{deleted ? 'Account deleted · conversation retained' : 'Private conversation'}</small></div>
-        <button type="button" className="public-profile-message-close" aria-label="Close messages" onClick={() => { setActive(null); setThread(null); }}>&times;</button>
+        <div className="dm-center-header-actions">{!isRequestRecipient && <button type="button" className="dm-center-delete" onClick={deleteConversation} disabled={busy}>Delete</button>}<button type="button" className="public-profile-message-close" aria-label="Close messages" onClick={() => { setActive(null); setThread(null); }}>&times;</button></div>
       </header>
       {isRequestRecipient ? <div className="dm-center-request">
         <small>{isDeclinedRecipient ? 'Declined message request' : 'Message request'}</small><h3>{isDeclinedRecipient ? `Accept DMs from ${profile.displayName || 'this user'} later?` : `Accept DMs from ${profile.displayName || 'this user'}?`}</h3><p>{isDeclinedRecipient ? 'This request remains here in case you decide to accept it later.' : 'The first message is hidden until you approve this conversation.'}</p>

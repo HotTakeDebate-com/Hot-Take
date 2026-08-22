@@ -31,6 +31,7 @@ export const networkDirectMessages = (uid) => networkRequest('/messages/' + enco
 export const networkDirectConversations = () => networkRequest('/messages');
 export const networkSendDirectMessage = (uid, text) => networkRequest('/messages/' + encodeURIComponent(uid), { method: 'POST', body: JSON.stringify({ text }) });
 export const networkDecideDirectMessage = (uid, decision) => networkRequest('/messages/' + encodeURIComponent(uid) + '/decision', { method: 'POST', body: JSON.stringify({ decision }) });
+export const networkDeleteDirectConversation = (uid) => networkRequest('/messages/' + encodeURIComponent(uid) + '/conversation', { method: 'DELETE' });
 export const networkNotifications = () => networkRequest('/notifications');
 export const networkReadNotification = (id) => networkRequest('/notifications/' + encodeURIComponent(id) + '/read', { method: 'POST' });
 export const networkNotificationPreferences = (preferences) => networkRequest('/notification-preferences', { method: 'POST', body: JSON.stringify(preferences) });

@@ -678,32 +678,6 @@ export default function App() {
         statement: statement ?? null,
       });
       setStep('debate');
-      if (!localStreamRef.current) {
-        getUserMediaWithRecovery(videoDeviceId, audioDeviceId)
-          .then((stream) => {
-            localStreamRef.current = stream;
-            setLocalStream(stream);
-            if (localVideoRef.current) {
-              localVideoRef.current.srcObject = stream;
-            }
-            debateSessionRef.current = {
-              topicId: 'custom',
-              yourSide: 'agree',
-              roomId: roomCode ?? null,
-              startedAtMs: Date.now(),
-              peerUid: null,
-              matchMode: 'custom',
-              roomCode: roomCode ?? null,
-              statement: statement ?? null,
-            };
-          })
-          .catch((e) => {
-            console.warn('[hot-take] custom lobby media unavailable; retrying when matched', e);
-            localStreamRef.current = null;
-            setLocalStream(null);
-            setError('Your room is live. Camera and microphone will be tried again when someone joins.');
-          });
-      }
     });
 
     socket.on('custom-lobby-waiting', ({ roomCode, statement }) => {
@@ -728,6 +702,11 @@ export default function App() {
         remoteVideoRef.current.srcObject = null;
       }
       remoteStreamRef.current = null;
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+        setLocalStream(null);
+      }
       setConnState(null);
       setError('Opponent left. Waiting for next challenger...');
     });
@@ -887,6 +866,13 @@ export default function App() {
       setMediaPrompt(null);
       pendingMediaActionRef.current = null;
       await action(stream);
+      const inActiveDebate = step === 'debate' && Boolean(debateInfo?.roomId);
+      if (!inActiveDebate) {
+        stream.getTracks().forEach((track) => track.stop());
+        if (localStreamRef.current === stream) localStreamRef.current = null;
+        setLocalStream((current) => (current === stream ? null : current));
+        if (localVideoRef.current?.srcObject === stream) localVideoRef.current.srcObject = null;
+      }
     } catch (mediaError) {
       let permissionBlocked = mediaError?.name === 'NotAllowedError' || mediaError?.name === 'PermissionDeniedError';
       if (navigator.permissions?.query) {
@@ -910,7 +896,7 @@ export default function App() {
     } finally {
       setMediaPromptBusy(false);
     }
-  }, [audioDeviceId, videoDeviceId]);
+  }, [audioDeviceId, debateInfo?.roomId, step, videoDeviceId]);
 
   const retryDebateMedia = () => {
     const pending = pendingMediaActionRef.current;
@@ -940,6 +926,7 @@ export default function App() {
 
   const cancelWaiting = () => {
     socketRef.current?.emit('leave-queue');
+    cleanupMedia();
     setWaiting(false);
     setCustomQueuePosition(null);
     setSide(null);
@@ -1167,6 +1154,16 @@ export default function App() {
       t.enabled = camOn;
     });
   }, [camOn]);
+
+  useEffect(() => {
+    if (step === 'debate' && debateInfo?.roomId) return;
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    stream.getTracks().forEach((track) => track.stop());
+    localStreamRef.current = null;
+    setLocalStream(null);
+    if (localVideoRef.current?.srcObject === stream) localVideoRef.current.srcObject = null;
+  }, [debateInfo?.roomId, step]);
 
   const restoreActiveCallMedia = useCallback(async (stream) => {
     const pc = pcRef.current;

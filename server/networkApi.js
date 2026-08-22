@@ -211,7 +211,11 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     try {
       const snap = await admin.firestore().collection('direct_conversations')
         .where('participants', 'array-contains', req.networkUser.uid).limit(100).get();
-      const visibleDocs = snap.docs.filter((doc) => doc.data()?.status !== 'blocked');
+      const visibleDocs = snap.docs.filter((doc) => {
+        const data = doc.data() || {};
+        return data.status !== 'blocked'
+          && !(Array.isArray(data.hiddenFor) && data.hiddenFor.includes(req.networkUser.uid));
+      });
       const conversations = await Promise.all(visibleDocs.map(async (doc) => {
         const data = doc.data() || {};
         const otherUid = (data.participants || []).find((uid) => uid !== req.networkUser.uid) || '';
@@ -264,12 +268,16 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         ...doc.data(),
         createdAtMs: serializeTime(doc.data()?.createdAt),
       })).reverse();
+      const clearedAtMs = serializeTime(conversationData?.clearedAtBy?.[req.networkUser.uid]);
+      const visibleMessages = clearedAtMs
+        ? messages.filter((message) => (message.createdAtMs || 0) > clearedAtMs)
+        : messages;
       res.json({
         conversationId,
         conversation: conversationData,
         pendingForRecipient,
         declinedForRecipient,
-        messages: pendingForRecipient || declinedForRecipient ? [] : messages,
+        messages: pendingForRecipient || declinedForRecipient ? [] : visibleMessages,
       });
     } catch {
       res.status(404).json({ error: 'Conversation not found.' });
@@ -315,6 +323,7 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
         requestedByUid: startsNewRequest ? req.networkUser.uid : (existingData?.requestedByUid || null),
         requestedRecipientUid: startsNewRequest ? otherUid : (existingData?.requestedRecipientUid || null),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        hiddenFor: admin.firestore.FieldValue.arrayRemove(req.networkUser.uid, otherUid),
       }, { merge: true });
       batch.set(messageRef, {
         senderUid: req.networkUser.uid,
@@ -349,6 +358,24 @@ export function attachNetworkRoutes(app, { isAdminReady, io }) {
     } catch {
       res.status(404).json({ error: 'That member could not be messaged.' });
     }
+  });
+
+  router.delete('/messages/:uid/conversation', async (req, res) => {
+    const otherUid = String(req.params.uid || '').trim();
+    if (!otherUid || otherUid === req.networkUser.uid) return res.status(400).json({ error: 'Choose another member.' });
+    const conversationId = [req.networkUser.uid, otherUid].sort().join('__');
+    const ref = admin.firestore().collection('direct_conversations').doc(conversationId);
+    const snap = await ref.get();
+    const data = snap.exists ? snap.data() : null;
+    if (!data || !Array.isArray(data.participants) || !data.participants.includes(req.networkUser.uid)) {
+      return res.status(404).json({ error: 'Conversation not found.' });
+    }
+    await ref.update(
+      'hiddenFor', admin.firestore.FieldValue.arrayUnion(req.networkUser.uid),
+      new admin.firestore.FieldPath('clearedAtBy', req.networkUser.uid), admin.firestore.FieldValue.serverTimestamp(),
+      'updatedAt', admin.firestore.FieldValue.serverTimestamp(),
+    );
+    res.json({ ok: true });
   });
 
   router.post('/messages/:uid/decision', async (req, res) => {
