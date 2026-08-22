@@ -10,7 +10,21 @@ const LEGAL_ITEMS = [
 /**
  * Header “more” menu: legal docs, mission, support — easy to extend with more entries later.
  */
-export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickFaq, onPickSupport, variant = 'default' }) {
+export default function HeaderNavMenu({
+  onPickLegal,
+  onPickMission,
+  onPickFaq,
+  onPickSupport,
+  onPickSearch,
+  onPickMessages,
+  onPickNotifications,
+  onPickWhatsHot,
+  onPickFollowing,
+  onPickAccount,
+  onPickAdmin,
+  onSignOut,
+  variant = 'default',
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const menuId = useId();
@@ -53,6 +67,10 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickFaq, o
     window.__hotTakeOpenVerification?.();
     close();
   };
+  const pick = (action) => {
+    close();
+    window.setTimeout(() => action?.(), 0);
+  };
 
   const triggerClass =
     variant === 'landing'
@@ -79,6 +97,21 @@ export default function HeaderNavMenu({ onPickLegal, onPickMission, onPickFaq, o
       </button>
       {open && (
         <div id={menuId} className="header-nav-panel" role="menu">
+          {variant === 'landing' && <>
+            <div className="header-nav-mobile-primary">
+              <div className="header-nav-group-label" role="presentation">Navigate</div>
+              <button type="button" className="header-nav-item" role="menuitem" onClick={() => pick(onPickSearch)}>Search members</button>
+              <button type="button" className="header-nav-item" role="menuitem" onClick={() => pick(onPickMessages)}>Messages</button>
+              <button type="button" className="header-nav-item" role="menuitem" onClick={() => pick(onPickNotifications)}>Notifications</button>
+              <button type="button" className="header-nav-item header-nav-item--hot" role="menuitem" onClick={() => pick(onPickWhatsHot)}>What&apos;s Hot</button>
+              <button type="button" className="header-nav-item" role="menuitem" onClick={() => pick(onPickFollowing)}>Following</button>
+              <div className="header-nav-sep" role="separator" />
+              <button type="button" className="header-nav-item" role="menuitem" onClick={() => pick(onPickAccount)}>Account</button>
+              {onPickAdmin && <button type="button" className="header-nav-item" role="menuitem" onClick={() => pick(onPickAdmin)}>Admin panel</button>}
+              <button type="button" className="header-nav-item header-nav-item--signout" role="menuitem" onClick={() => pick(onSignOut)}>Sign out</button>
+              <div className="header-nav-sep" role="separator" />
+            </div>
+          </>}
           <div className="header-nav-group-label" role="presentation">
             Legal
           </div>

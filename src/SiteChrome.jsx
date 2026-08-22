@@ -12,6 +12,10 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, onFollowing,
     <button type="button" className="landing-admin-link" onClick={globalAdminAction}>Admin</button>
   ) : null);
   const followingAction = onFollowing || (typeof window !== 'undefined' ? window.__hotTakeOpenFollowing : null);
+  const openHeaderControl = (selector) => {
+    if (typeof document === 'undefined') return;
+    document.querySelector(selector)?.click();
+  };
   return <header className="landing-nav">
     <div className="landing-nav-brand-group">
       <button type="button" className="landing-nav-brand site-brand-button" onClick={onHome}><HotTakeWordmark variant="nav" /></button>
@@ -31,7 +35,21 @@ export function SiteHeader({ onHome, onAbout, onTopics, onWhatsHot, onFollowing,
         <button type="button" className={`landing-account-avatar${avatarUrl ? ' has-image' : ''}`} onClick={onProfile} aria-label="Account" title="Account">
           {avatarUrl ? <img src={avatarUrl} alt="" /> : <GenericAvatar />}
         </button>
-        <HeaderNavMenu variant="landing" onPickLegal={onPickLegal} onPickMission={onAbout} onPickFaq={onFaq} onPickSupport={onSupport} />
+        <HeaderNavMenu
+          variant="landing"
+          onPickLegal={onPickLegal}
+          onPickMission={onAbout}
+          onPickFaq={onFaq}
+          onPickSupport={onSupport}
+          onPickSearch={() => openHeaderControl('.member-search-trigger')}
+          onPickMessages={() => openHeaderControl('.dm-center-trigger')}
+          onPickNotifications={() => openHeaderControl('.network-bell')}
+          onPickWhatsHot={onWhatsHot || onHome}
+          onPickFollowing={followingAction}
+          onPickAccount={onProfile}
+          onPickAdmin={globalAdminAction || undefined}
+          onSignOut={onSignOut}
+        />
         <button type="button" className="landing-btn landing-btn--ghost landing-sign-out-compact" onClick={onSignOut}>Sign out</button>
       </> : <>
         <button type="button" className="landing-btn landing-btn--ghost" onClick={onSignIn}>Sign in</button>
