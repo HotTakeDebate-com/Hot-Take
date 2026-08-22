@@ -2440,7 +2440,7 @@
 .admin-nav-badge { margin-left:auto; min-width:25px; height:25px; padding:0 7px; display:grid; place-items:center; border-radius:99px; background:#ff2029; color:#fff; font-size:11px; }
 .admin-sidebar-spacer { height:24px; }
 
-.admin-staff-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.admin-staff-summary { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
 .admin-staff-summary article { display:flex; flex-direction:column; gap:4px; padding:18px 20px; border:1px solid #2a2d35; border-radius:14px; background:#111319; }
 .admin-staff-summary strong { color:#fff; font-size:28px; line-height:1; }
 .admin-staff-summary span { color:#9296a2; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
@@ -2450,6 +2450,10 @@
 .admin-staff-person small { color:#8e929e; overflow:hidden; text-overflow:ellipsis; }
 .admin-role-pill { display:inline-flex; align-items:center; justify-content:center; min-width:92px; padding:7px 11px; border-radius:999px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
 .admin-role-pill.owner { color:#171006; background:#ffc04c; }
+.admin-role-pill.super_admin { color:#160b22; background:#c88cff; }
+.identity-badge--super_admin { filter:drop-shadow(0 0 4px rgba(200,140,255,.65)); }
+.identity-badge--super_admin .badge-shield { stroke:#c88cff; stroke-width:2.15; }
+.identity-badge--super_admin .badge-star { display:block; fill:#c88cff; stroke:none; }
 .admin-role-pill.admin { color:#fff; background:#e31328; }
 .admin-role-pill.moderator { color:#ffd0d5; border:1px solid #8b2631; background:#2a1217; }
 .admin-staff-presence { display:inline-flex; align-items:center; gap:7px; color:#a2a5ae; font-weight:700; }
@@ -2758,6 +2762,7 @@
 .role-card-icon { flex:0 0 42px; width:42px; height:42px; display:grid; place-items:center; border-radius:50%; background:#272930; color:#fff; font-size:18px; font-weight:900; }
 .role-card-icon.role-moderator { background:#351b10; color:#ffad42; }
 .role-card-icon.role-admin { background:#3a1015; color:#ff4b52; }
+.role-card-icon.role-super_admin { background:#251437; color:#c88cff; }
 .role-card-icon.role-owner { background:#3a2c0d; color:#f4cd58; }
 .role-card-grid h2 { margin:1px 0 6px; font-size:16px; text-transform:capitalize; }
 .role-card-grid p { margin:0; color:#92959e; font-size:12px; line-height:1.5; }

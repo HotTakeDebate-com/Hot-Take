@@ -5,7 +5,7 @@ import { MAX_PROFILE_INTERESTS, sanitizeProfileInterests } from '../src/profileI
 import { blockRef, blockRelationship } from './blocks.js';
 
 const OWNER_EMAILS = new Set(['justinself88@gmail.com']);
-const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
+const STAFF_ROLES = new Set(['moderator', 'admin', 'super_admin', 'owner']);
 
 function roleFromClaims(claims = {}) {
   if (OWNER_EMAILS.has(String(claims.email || '').toLowerCase())) return 'owner';

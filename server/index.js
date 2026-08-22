@@ -784,7 +784,7 @@ if (!metricsLogTimer) {
 
 io.on('connection', (socket) => {
   if (socket.data.uid) socket.join(`user:${socket.data.uid}`);
-  if (['moderator', 'admin', 'owner'].includes(socket.data.role)) socket.join('staff:verification');
+  if (['moderator', 'admin', 'super_admin', 'owner'].includes(socket.data.role)) socket.join('staff:verification');
   const hasConcurrentSessionForUid = () => {
     const uid = socket.data.uid;
     if (!uid) return false;
@@ -1354,7 +1354,7 @@ io.on('connection', (socket) => {
   });
 
   onSafe('staff-watch-debate', ({ roomId }) => {
-    if (!['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
+    if (!['moderator', 'admin', 'super_admin', 'owner'].includes(socket.data.role)) return;
     const members = [...(io.sockets.adapter.rooms.get(String(roomId)) || [])]
       .map((id) => io.sockets.sockets.get(id))
       .filter((member) => member?.data?.roomId === roomId);
@@ -1366,12 +1366,12 @@ io.on('connection', (socket) => {
   onSafe('staff-spectator-signal', ({ watcherId, roomId, type, payload }) => {
     if (socket.data.roomId !== roomId) return;
     const watcher = io.sockets.sockets.get(String(watcherId));
-    if (!watcher || watcher.data.watchingRoomId !== roomId || !['moderator', 'admin', 'owner'].includes(watcher.data.role)) return;
+    if (!watcher || watcher.data.watchingRoomId !== roomId || !['moderator', 'admin', 'super_admin', 'owner'].includes(watcher.data.role)) return;
     watcher.emit('staff-spectator-signal', { participantId: socket.id, roomId, type, payload });
   });
 
   onSafe('staff-spectator-return-signal', ({ participantId, roomId, type, payload }) => {
-    if (socket.data.watchingRoomId !== roomId || !['moderator', 'admin', 'owner'].includes(socket.data.role)) return;
+    if (socket.data.watchingRoomId !== roomId || !['moderator', 'admin', 'super_admin', 'owner'].includes(socket.data.role)) return;
     const participant = io.sockets.sockets.get(String(participantId));
     if (!participant || participant.data.roomId !== roomId) return;
     participant.emit('staff-spectator-return-signal', { watcherId: socket.id, roomId, type, payload });

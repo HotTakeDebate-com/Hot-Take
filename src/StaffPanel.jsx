@@ -30,6 +30,7 @@ function AdminIcon({ type }) {
     member: <><circle cx="12" cy="8" r="4" /><path d="M4.5 21c.8-5 3.3-7.5 7.5-7.5s6.7 2.5 7.5 7.5" /></>,
     moderator: <><path d="M12 3 5 6v6c0 4.2 2.6 7.3 7 9 4.4-1.7 7-4.8 7-9V6l-7-3Z" /><path d="M9 12h6M12 9v6" /></>,
     admin: <><path d="m4 8 4 3 4-6 4 6 4-3-2 11H6L4 8Z" /><path d="M6 19h12" /></>,
+    super_admin: <><path d="m4 8 4 3 4-6 4 6 4-3-2 11H6L4 8Z" /><path d="M6 19h12M9 15h6" /></>,
     owner: <><path d="m12 3 2.3 4.7 5.2.8-3.8 3.7.9 5.3-4.6-2.5-4.6 2.5.9-5.3-3.8-3.7 5.2-.8L12 3Z" /></>,
   };
   return <svg className="admin-ui-icon" viewBox="0 0 24 24" aria-hidden="true">{paths[type]}</svg>;
@@ -156,46 +157,47 @@ function ActivityGraph({ users, reports, debates, punishments }) {
   );
 }
 
-const ROLE_RANK = { user: 0, moderator: 1, admin: 2, owner: 3 };
+const ROLE_RANK = { user: 0, moderator: 1, admin: 2, super_admin: 3, owner: 4 };
 
 const SITE_ROLES = [
   { id: 'user', name: 'User', description: 'Standard member access for debating and community features.' },
   { id: 'moderator', name: 'Moderator', description: 'Reviews reports and takes day-to-day safety actions.' },
   { id: 'admin', name: 'Admin', description: 'Full platform administration except the protected Owner account.' },
+  { id: 'super_admin', name: 'Super Admin', description: 'Senior administration that can manage Admins but cannot alter the protected Owner.' },
   { id: 'owner', name: 'Owner', description: 'Protected highest-level access reserved for the site owner.' },
 ];
 
 const ROLE_PERMISSIONS = [
   { group: 'Debates & account', permissions: [
-    { name: 'Join quick-match debates', values: [true, true, true, true] },
-    { name: 'Create and join custom debates', values: [true, true, true, true] },
-    { name: 'Use debate text chat', values: [true, true, true, true] },
-    { name: 'Edit own display name and bio', values: [true, true, true, true] },
-    { name: 'Report a debate or user', values: [true, true, true, true] },
+    { name: 'Join quick-match debates', values: [true, true, true, true, true] },
+    { name: 'Create and join custom debates', values: [true, true, true, true, true] },
+    { name: 'Use debate text chat', values: [true, true, true, true, true] },
+    { name: 'Edit own display name and bio', values: [true, true, true, true, true] },
+    { name: 'Report a debate or user', values: [true, true, true, true, true] },
   ]},
   { group: 'Moderation', permissions: [
-    { key: 'viewReports', name: 'View submitted reports', values: [false, true, true, true] },
-    { key: 'respondReports', name: 'Respond to reports and update status', values: [false, true, true, true] },
-    { key: 'deleteReports', name: 'Delete junk or invalid reports', values: [false, true, true, true] },
-    { key: 'viewUsers', name: 'View member emails and Firebase UIDs', values: [false, true, true, true] },
-    { key: 'warnUsers', name: 'Issue user warnings', values: [false, true, true, true] },
-    { key: 'banUsers', name: 'Ban user accounts', values: [false, true, true, true] },
-    { key: 'revokeSessions', name: 'Revoke active sign-in sessions', values: [false, true, true, true] },
-    { key: 'unbanUsers', name: 'Unban user accounts', values: [false, false, true, true] },
+    { key: 'viewReports', name: 'View submitted reports', values: [false, true, true, true, true] },
+    { key: 'respondReports', name: 'Respond to reports and update status', values: [false, true, true, true, true] },
+    { key: 'deleteReports', name: 'Delete junk or invalid reports', values: [false, true, true, true, true] },
+    { key: 'viewUsers', name: 'View member emails and Firebase UIDs', values: [false, true, true, true, true] },
+    { key: 'warnUsers', name: 'Issue user warnings', values: [false, true, true, true, true] },
+    { key: 'banUsers', name: 'Ban user accounts', values: [false, true, true, true, true] },
+    { key: 'revokeSessions', name: 'Revoke active sign-in sessions', values: [false, true, true, true, true] },
+    { key: 'unbanUsers', name: 'Unban user accounts', values: [false, false, true, true, true] },
   ]},
   { group: 'Administration', permissions: [
-    { key: 'viewVerification', name: 'View verified-debater applications', values: [false, true, true, true] },
-    { key: 'manageVerification', name: 'Approve, deny, and revoke verified status', values: [false, false, true, true] },
-    { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true] },
-    { key: 'viewPunishments', name: 'View the punishment log', values: [false, true, true, true] },
-    { key: 'editUsers', name: 'Edit user profile details', values: [false, false, true, true] },
-    { key: 'editAvatars', name: 'Edit profile pictures for lower roles', values: [false, true, true, true] },
-    { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true] },
-    { key: 'manageRoles', name: 'Assign User, Moderator, and Admin roles', values: [false, false, true, true] },
-    { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true] },
-    { key: 'manageNews', name: 'Create and publish What’s Hot stories', values: [false, false, true, true] },
-    { key: 'deleteUsers', name: 'Delete eligible user accounts', values: [false, false, true, true] },
-    { name: 'Manage the protected Owner account', values: [false, false, false, true] },
+    { key: 'viewVerification', name: 'View verified-debater applications', values: [false, true, true, true, true] },
+    { key: 'manageVerification', name: 'Approve, deny, and revoke verified status', values: [false, false, true, true, true] },
+    { key: 'viewAudit', name: 'View staff audit logs', values: [false, false, true, true, true] },
+    { key: 'viewPunishments', name: 'View the punishment log', values: [false, true, true, true, true] },
+    { key: 'editUsers', name: 'Edit user profile details', values: [false, false, true, true, true] },
+    { key: 'editAvatars', name: 'Edit profile pictures for lower roles', values: [false, true, true, true, true] },
+    { key: 'manageCredentials', name: 'Change emails, verification, and passwords', values: [false, false, true, true, true] },
+    { key: 'manageRoles', name: 'Assign User, Moderator, Admin, and Super Admin roles', values: [false, false, true, true, true] },
+    { key: 'managePremium', name: 'Assign or remove Premium membership', values: [false, false, true, true, true] },
+    { key: 'manageNews', name: 'Create and publish What’s Hot stories', values: [false, false, true, true, true] },
+    { key: 'deleteUsers', name: 'Delete eligible user accounts', values: [false, false, true, true, true] },
+    { name: 'Manage the protected Owner account', values: [false, false, false, false, true] },
   ]},
 ];
 
@@ -370,7 +372,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     try {
       if (tab === 'dashboard') {
         await staffAccess();
-        const auditRequest = role === 'admin' || role === 'owner' ? staffAudit() : Promise.resolve({ audit: [] });
+        const auditRequest = ['admin', 'super_admin', 'owner'].includes(role) ? staffAudit() : Promise.resolve({ audit: [] });
         const [reportData, userData, punishmentData, activityData, auditData] = await Promise.all([staffReports(), staffUsers(), staffPunishments(), staffDashboardActivity(), auditRequest]);
         setReports(reportData.reports || []);
         setUsers(userData.users || []);
@@ -493,7 +495,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
     return users.filter((u) => [u.email, u.displayName, u.uid, u.role].some((v) => String(v || '').toLowerCase().includes(q)));
   }, [users, query]);
   const staffMembers = useMemo(() => users
-    .filter((user) => ['moderator', 'admin', 'owner'].includes(user.role))
+    .filter((user) => ['moderator', 'admin', 'super_admin', 'owner'].includes(user.role))
     .sort((a, b) => (ROLE_RANK[b.role] - ROLE_RANK[a.role]) || String(a.displayName || a.email).localeCompare(String(b.displayName || b.email))), [users]);
 
   const act = async (user, action) => {
@@ -634,12 +636,12 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
 
   const openReports = reports.filter((r) => !['resolved', 'closed'].includes(r.status)).length;
   const bannedUsers = users.filter((u) => u.disabled).length;
-  const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'owner'].includes(u.role)).length;
+  const staffUsersCount = users.filter((u) => ['moderator', 'admin', 'super_admin', 'owner'].includes(u.role)).length;
   const recentStaff = users
-    .filter((u) => ['moderator', 'admin', 'owner'].includes(u.role))
+    .filter((u) => ['moderator', 'admin', 'super_admin', 'owner'].includes(u.role))
     .sort((a, b) => timestampValue(b.lastAdminAccessAt) - timestampValue(a.lastAdminAccessAt))
     .slice(0, 6);
-  const onlineStaff = users.filter((user) => ['moderator', 'admin', 'owner'].includes(user.role) && user.online);
+  const onlineStaff = users.filter((user) => ['moderator', 'admin', 'super_admin', 'owner'].includes(user.role) && user.online);
   const quickMatchTotals = quickMatchStats.reduce((totals, topic) => ({
     queueJoins: totals.queueJoins + topic.queueJoins,
     matches: totals.matches + topic.matches,
@@ -675,10 +677,10 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
         <button className={tab === 'quickMatch' ? 'active' : ''} onClick={() => setTab('quickMatch')}><b><AdminIcon type="statistics" /></b>Quick Match Stats</button>
         <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}><b><AdminIcon type="users" /></b>Users</button>
         <button className={tab === 'staff' ? 'active' : ''} onClick={() => setTab('staff')}><b><AdminIcon type="roles" /></b>Staff</button>
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b><AdminIcon type="news" /></b>What&apos;s Hot</button>}
-        {(role === 'admin' || role === 'owner') && <button className={tab === 'dailyTake' ? 'active' : ''} onClick={() => setTab('dailyTake')}><b><AdminIcon type="statistics" /></b>Daily Take</button>}
+        {['admin', 'super_admin', 'owner'].includes(role) && <button className={tab === 'roles' ? 'active' : ''} onClick={() => setTab('roles')}><b><AdminIcon type="roles" /></b>Roles & permissions</button>}
+        {['admin', 'super_admin', 'owner'].includes(role) && <button className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}><b><AdminIcon type="audit" /></b>Audit logs</button>}
+        {['admin', 'super_admin', 'owner'].includes(role) && <button className={tab === 'news' ? 'active' : ''} onClick={() => setTab('news')}><b><AdminIcon type="news" /></b>What&apos;s Hot</button>}
+        {['admin', 'super_admin', 'owner'].includes(role) && <button className={tab === 'dailyTake' ? 'active' : ''} onClick={() => setTab('dailyTake')}><b><AdminIcon type="statistics" /></b>Daily Take</button>}
         <button className={tab === 'verification' ? 'active' : ''} onClick={() => setTab('verification')}><b><AdminIcon type="verification" /></b>Verification {verificationApplications.filter((item) => item.status === 'pending').length > 0 && <i>{verificationApplications.filter((item) => item.status === 'pending').length}</i>}</button>
         <button className={tab === 'punishments' ? 'active' : ''} onClick={() => setTab('punishments')}><b><AdminIcon type="punishments" /></b>Punishment Log</button>
         <span />
@@ -730,7 +732,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                 <p><i className="ok"/><span><b>Firebase Admin</b><small>User directory available</small></span><strong>Healthy</strong></p>
                 <p><i className="ok"/><span><b>Moderation API</b><small>Reports and actions available</small></span><strong>Healthy</strong></p>
                 <p><i className="ok"/><span><b>Authorization</b><small>Role permissions enforced server-side</small></span><strong>Healthy</strong></p>
-                <p><i className={role === 'admin' || role === 'owner' ? 'ok' : 'limited'}/><span><b>Audit trail</b><small>{role === 'admin' || role === 'owner' ? 'Administrative log available' : 'Restricted for this role'}</small></span><strong>{role === 'admin' || role === 'owner' ? 'Healthy' : 'Restricted'}</strong></p>
+                <p><i className={['admin', 'super_admin', 'owner'].includes(role) ? 'ok' : 'limited'}/><span><b>Audit trail</b><small>{['admin', 'super_admin', 'owner'].includes(role) ? 'Administrative log available' : 'Restricted for this role'}</small></span><strong>{['admin', 'super_admin', 'owner'].includes(role) ? 'Healthy' : 'Restricted'}</strong></p>
               </div>
             </article>
           </section>
@@ -822,7 +824,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               <td><b>{u.displayName || 'No display name'}</b><small>{u.email}</small></td>
               <td className="staff-uid">{u.uid}</td>
               <td><small>{dateValue(u.createdAt)}<br />{dateValue(u.lastSignInAt)}</small></td>
-              <td><b>{u.role === 'moderator' ? 'Moderator' : u.role}</b></td>
+              <td><b>{u.role === 'super_admin' ? 'Super Admin' : u.role === 'moderator' ? 'Moderator' : u.role}</b></td>
               <td>{u.role === 'user' && u.premium ? <span className="staff-premium">Premium</span> : <span className="staff-not-applicable">Standard</span>}</td>
               <td>{u.disabled ? <span className="staff-banned">{u.banPermanent ? 'PERMANENTLY BANNED' : `BANNED · ${Math.max(1, Math.ceil((u.banUntilMs - Date.now()) / 60000))}m left`}</span> : 'Active'}</td>
               <td className="staff-actions">
@@ -839,13 +841,14 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
           <div className="admin-staff-summary">
             <article><strong>{staffMembers.length}</strong><span>Total staff</span></article>
             <article><strong>{staffMembers.filter((member) => member.role === 'owner').length}</strong><span>Owner</span></article>
+            <article><strong>{staffMembers.filter((member) => member.role === 'super_admin').length}</strong><span>Super Admins</span></article>
             <article><strong>{staffMembers.filter((member) => member.role === 'admin').length}</strong><span>Admins</span></article>
             <article><strong>{staffMembers.filter((member) => member.role === 'moderator').length}</strong><span>Moderators</span></article>
           </div>
           <div className="staff-table-wrap"><table><thead><tr><th>Staff member</th><th>Role</th><th>Status</th><th>Last admin access</th><th>Account created</th></tr></thead>
             <tbody>{staffMembers.map((member) => <tr key={member.uid}>
               <td><div className="admin-staff-person">{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : <span>{String(member.displayName || member.email || '?').charAt(0).toUpperCase()}</span>}<div><b>{member.displayName || 'No display name'}</b><small>{member.email}</small></div></div></td>
-              <td><span className={'admin-role-pill ' + member.role}>{member.role === 'owner' ? 'Owner' : member.role === 'admin' ? 'Admin' : 'Moderator'}</span></td>
+              <td><span className={'admin-role-pill ' + member.role}>{member.role === 'owner' ? 'Owner' : member.role === 'super_admin' ? 'Super Admin' : member.role === 'admin' ? 'Admin' : 'Moderator'}</span></td>
               <td><span className={'admin-staff-presence ' + (member.online ? 'online' : 'offline')}><i />{member.online ? 'Online' : 'Offline'}</span></td>
               <td>{dateValue(member.lastAdminAccessAt)}</td>
               <td>{dateValue(member.createdAt)}</td>
@@ -868,7 +871,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
             <table className="permission-table">
               <thead><tr><th>Permission</th>{SITE_ROLES.map((siteRole) => <th key={siteRole.id}>{siteRole.name}</th>)}</tr></thead>
               <tbody>{ROLE_PERMISSIONS.map((section) => <Fragment key={section.group}>
-                <tr className="permission-group"><th colSpan="5">{section.group}</th></tr>
+                <tr className="permission-group"><th colSpan={SITE_ROLES.length + 1}>{section.group}</th></tr>
                 {section.permissions.map((permission) => <tr key={permission.name}><td>{permission.name}{!permission.key && <small>Standard platform access</small>}</td>{SITE_ROLES.map((siteRole, index) => {
                   const value = permission.key ? (permissions[siteRole.id]?.[permission.key] ?? permission.values[index]) : permission.values[index];
                   const editable = Boolean(permission.key) && (siteRole.id === 'moderator' || siteRole.id === 'admin');
@@ -878,7 +881,7 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
               </Fragment>)}</tbody>
             </table>
           </div>
-          <p className="permission-footnote">Owner access and standard debate rights are protected. All other buttons can be changed by Admins and the Owner, and changes are enforced by the staff API.</p>
+          <p className="permission-footnote">Owner and Super Admin access, along with standard debate rights, are protected. Moderator and Admin permissions can be configured here and are enforced by the staff API.</p>
         </section>}
         {editingUser && userDraft && <div className="user-editor-backdrop" onMouseDown={() => setEditingUser(null)}>
           <section className="user-editor" role="dialog" aria-modal="true" aria-label={'Manage ' + (editingUser.email || editingUser.uid)} onMouseDown={(event) => event.stopPropagation()}>
@@ -912,9 +915,9 @@ export default function StaffPanel({ role, socket, rtcConfig, onBack, onAbout, o
                   <div className="user-star-summary" aria-label={editingUser.starCount ? `${editingUser.starAverage} stars from ${editingUser.starCount} ratings` : 'No star ratings yet'}><span>Debate stars</span><div><b>{editingUser.starAverage == null ? '—' : Number(editingUser.starAverage).toFixed(2)}</b><i aria-hidden="true">★</i><small>{editingUser.starCount ? `${editingUser.starCount} rating${editingUser.starCount === 1 ? '' : 's'}` : 'No ratings yet'}</small></div></div>
                 </section>
                 <section className="user-editor-section"><h3>Role & membership</h3>
-                  <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></label>
+                  <label><span>Primary role</span><select value={userDraft.role} disabled={!capabilities.manageRoles || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, role: event.target.value, premium: event.target.value === 'user' ? draft.premium : false }))}><option value="user">User</option><option value="moderator">Moderator</option><option value="admin">Admin</option>{role === 'owner' && <option value="super_admin">Super Admin</option>}</select></label>
                   <label className="user-editor-check"><span>Premium</span><input type="checkbox" checked={userDraft.role === 'user' && userDraft.premium} disabled={!capabilities.managePremium || editingProtected || userDraft.role !== 'user' || editingUser.role === 'owner'} onChange={(event) => setUserDraft((draft) => ({ ...draft, premium: event.target.checked }))} /><b>Premium member</b></label>
-                  <label className="user-editor-check"><span>Verified debater</span><input type="checkbox" checked={userDraft.verifiedDebater === true} disabled={!capabilities.manageVerification || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, verifiedDebater: event.target.checked }))} /><b>{userDraft.verifiedDebater ? 'Verified status granted' : 'Not a verified debater'}</b><small>Admins and the Owner can grant or revoke this status directly without an application.</small></label>
+                  <label className="user-editor-check"><span>Verified debater</span><input type="checkbox" checked={userDraft.verifiedDebater === true} disabled={!capabilities.manageVerification || editingProtected} onChange={(event) => setUserDraft((draft) => ({ ...draft, verifiedDebater: event.target.checked }))} /><b>{userDraft.verifiedDebater ? 'Verified status granted' : 'Not a verified debater'}</b><small>Admins, Super Admins, and the Owner can grant or revoke this status directly without an application.</small></label>
                 </section>
               </>}
               {editorTab === 'security' && <>

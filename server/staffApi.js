@@ -7,8 +7,8 @@ import { cleanupDeletedUserRelationships } from './accountRelationshipCleanup.js
 
 const PRIMARY_OWNER_EMAIL = 'justinself88@gmail.com';
 const OWNER_EMAILS = new Set([PRIMARY_OWNER_EMAIL]);
-const STAFF_ROLES = new Set(['moderator', 'admin', 'owner']);
-const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, owner: 3 };
+const STAFF_ROLES = new Set(['moderator', 'admin', 'super_admin', 'owner']);
+const ROLE_LEVEL = { user: 0, moderator: 1, admin: 2, super_admin: 3, owner: 4 };
 const PERMISSION_DEFAULTS = {
   user: {
     viewReports: false, respondReports: false, deleteReports: false, viewUsers: false, warnUsers: false,
@@ -31,6 +31,7 @@ const PERMISSION_DEFAULTS = {
     manageRoles: true, managePremium: true, manageNews: true, viewVerification: true, manageVerification: true, editUsers: true, editAvatars: true, manageCredentials: true, deleteUsers: true,
   },
 };
+PERMISSION_DEFAULTS.super_admin = { ...PERMISSION_DEFAULTS.admin };
 const PERMISSION_KEYS = new Set(Object.keys(PERMISSION_DEFAULTS.admin));
 
 
@@ -777,7 +778,8 @@ export function attachStaffRoutes(app, { isAdminReady, io, customGames }) {
     if (uid === req.staff.uid) return res.status(400).json({ error: 'You cannot change your own role.' });
     const role = String(req.body?.role || 'user');
     const premium = role === 'user' && req.body?.premium === true;
-    if (!['user', 'moderator', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
+    if (!['user', 'moderator', 'admin', 'super_admin'].includes(role)) return res.status(400).json({ error: 'Invalid role.' });
+    if (role === 'super_admin' && req.staff.role !== 'owner') return res.status(403).json({ error: 'Only the Owner can assign Super Admin access.' });
     const target = await admin.auth().getUser(uid);
     if (OWNER_EMAILS.has(target.email?.toLowerCase())) return res.status(400).json({ error: 'Owner role is protected.' });
     const currentRole = roleOf({ email: target.email, role: target.customClaims?.role });

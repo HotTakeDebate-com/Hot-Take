@@ -485,7 +485,7 @@ export default function ProfilePanel({
     const query = followingSearch.trim().toLowerCase();
     return query ? followedMembers.filter((member) => String(member.displayName || '').toLowerCase().includes(query)) : followedMembers;
   }, [followedMembers, followingSearch]);
-  const isStaffProfile = ['moderator', 'admin', 'owner'].includes(networkIdentityState.role);
+  const isStaffProfile = ['moderator', 'admin', 'super_admin', 'owner'].includes(networkIdentityState.role);
   const openTags = () => {
     setTagDraft(interests);
     setTagsOpen(true);
