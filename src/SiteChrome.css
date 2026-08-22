@@ -95,3 +95,16 @@ html:has(.faq-page),body:has(.faq-page),html:has(.mission-page),body:has(.missio
   }
 }
 
+/* Signed-out mobile navigation keeps both account actions visible. */
+@media (max-width:680px){
+  .landing-nav-actions>.landing-btn--ghost:first-child{display:inline-flex!important}
+  .landing-nav-brand .landing-logo-img--nav{width:138px!important}
+  .landing-nav-actions{gap:6px!important}
+  .landing-nav-actions>.landing-btn{min-height:38px!important;padding:0 11px!important;font-size:12px!important}
+}
+@media (max-width:380px){
+  .landing-nav{gap:10px!important;padding-left:12px!important;padding-right:12px!important}
+  .landing-nav-brand .landing-logo-img--nav{width:112px!important}
+  .landing-nav-actions>.landing-btn{padding:0 9px!important;font-size:11px!important}
+}
+
